@@ -18,7 +18,7 @@ export function ContentManager({ kind }: { kind: Kind }) {
   const [edit, setEdit] = useState<any | null>(null);
   const load = useCallback(() => api(`/api/${kind}`).then((r) => setRows(r.rows)).catch((e) => { toast.err(e.message); setRows([]); }), [kind, toast]);
   useEffect(() => { load(); }, [load]);
-  const blank = isAnn ? { title: "", body: "", imageId: "", pinned: false, status: "draft" } : { name: "", description: "", headName: "", imageId: "", order: 0, active: true };
+  const blank = isAnn ? { title: "", body: "", imageId: "", pinned: false, status: "draft", notify: true } : { name: "", description: "", headName: "", imageId: "", order: 0, active: true };
   const remove = async (r: any) => { if (!confirm(`Delete "${r.title ?? r.name}"?`)) return; try { await api(`/api/${kind}/${r.id}`, { method: "DELETE" }); toast.ok("Deleted"); load(); } catch (e: any) { toast.err(e.message); } };
   const flip = async (r: any) => { try { await api(`/api/${kind}/${r.id}`, { method: "PATCH", json: isAnn ? { ...r, status: r.status === "published" ? "draft" : "published" } : { ...r, active: !r.active } }); toast.ok("Updated"); load(); } catch (e: any) { toast.err(e.message); } };
   return (
@@ -57,7 +57,7 @@ function Form({ kind, init, onClose, onDone }: { kind: Kind; init: any; onClose:
     setBusy(true);
     try {
       const { id, ...rest } = f;
-      const json = isAnn ? { title: rest.title, body: rest.body, imageId: rest.imageId || "", pinned: !!rest.pinned, status: rest.status } : { name: rest.name, description: rest.description, headName: rest.headName, imageId: rest.imageId || "", order: Number(rest.order) || 0, active: !!rest.active };
+      const json = isAnn ? { title: rest.title, body: rest.body, imageId: rest.imageId || "", pinned: !!rest.pinned, status: rest.status, notify: rest.notify !== false } : { name: rest.name, description: rest.description, headName: rest.headName, imageId: rest.imageId || "", order: Number(rest.order) || 0, active: !!rest.active };
       await api(id ? `/api/${kind}/${id}` : `/api/${kind}`, { method: id ? "PATCH" : "POST", json });
       toast.ok("Saved"); onClose(); onDone();
     } catch (e: any) { toast.err(e.message); }
@@ -71,6 +71,7 @@ function Form({ kind, init, onClose, onDone }: { kind: Kind; init: any; onClose:
           <AreaField label="Message" rows={7} value={f.body} onChange={set("body")} max={8000} />
           <ImageField label="Image (optional)" value={f.imageId} onChange={set("imageId")} />
           <Toggle label="Pin to the top" checked={!!f.pinned} onChange={set("pinned")} />
+          {!f.id && <Toggle label="Send a push notification when published" checked={f.notify !== false} onChange={set("notify")} />}
           <div><label className="label">Visibility</label><select className="input" value={f.status} onChange={(e) => set("status")(e.target.value)}><option value="draft">Draft (hidden)</option><option value="published">Published</option></select></div>
         </>) : (<>
           <TextField label="Department name" value={f.name} onChange={set("name")} max={100} />

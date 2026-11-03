@@ -10,7 +10,9 @@ export function IntegrationsPanel({ role }: { role: string }) {
   const toast = useToast();
   const [s, setS] = useState<any>(null);
   const [busy, setBusy] = useState("");
-  useEffect(() => { api("/api/integrations").then(setS).catch((e) => toast.err(e.message)); }, [toast]);
+  const load = () => api("/api/integrations").then(setS).catch((e) => toast.err(e.message));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
   const sync = async (d: string) => { setBusy(d); try { const r = await api("/api/integrations", { method: "POST", json: { dataset: d } }); toast.ok(`Synced ${r.rows} rows to the “${r.tab}” tab`); } catch (e: any) { toast.err(e.message); } setBusy(""); };
   if (!s) return <div className="grid gap-4 md:grid-cols-2">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-40" />)}</div>;
   const Card = ({ icon: I, title, st, children, steps }: { icon: any; title: string; st: any; children?: React.ReactNode; steps: string[] }) => (
@@ -31,7 +33,13 @@ export function IntegrationsPanel({ role }: { role: string }) {
       </Card>
       <Card icon={Mail} title="Email (Resend)" st={s.email} steps={["Create a Resend account and verify your sending domain.", "Create an API key.", "Set RESEND_API_KEY and MAIL_FROM (e.g. YAYA <no-reply@yourdomain.org>)."]}><p className="mt-2 text-xs text-white/50">Used for registration confirmations and password reset links.</p></Card>
       <Card icon={Bot} title="AI receipt reading" st={s.ai} steps={["Create an API key in the Anthropic Console.", "Set ANTHROPIC_API_KEY (and optionally ANTHROPIC_MODEL)."]}><p className="mt-2 text-xs text-white/50">Finance can ask for an advisory reading of a payment receipt (amount, date, reference). It never confirms or rejects a payment by itself.</p></Card>
-      <Card icon={Bell} title="Push notifications" st={s.push} steps={["Planned for a later phase."]}><p className="mt-2 text-xs text-white/50">Not built yet.</p></Card>
+      <Card icon={Bell} title="Push notifications" st={s.push} steps={["Run: npx web-push generate-vapid-keys", "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY from the output (and optionally VAPID_SUBJECT, e.g. mailto:you@example.com).", "Redeploy. Visitors can then tap Turn on notifications on the Install and Announcements pages."]}>
+        <p className="mt-2 text-xs text-white/50">New announcements are pushed to subscribed devices when published (you can untick this per announcement).</p>
+        {s.push.active && <>
+          <p className="mt-2 text-xs text-white/45">{s.push.subscribers} subscribed device{s.push.subscribers === 1 ? "" : "s"}.</p>
+          <button className="btn btn-ghost btn-sm mt-3" disabled={busy === "push"} onClick={async () => { setBusy("push"); try { const r = await api("/api/integrations/push", { method: "POST", json: {} }); toast.ok(`Sent to ${r.sent} device(s)${r.removed ? `, removed ${r.removed} expired` : ""}`); load(); } catch (e: any) { toast.err(e.message); } setBusy(""); }}>{busy === "push" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bell className="h-3.5 w-3.5" />}Send a test notification</button>
+        </>}
+      </Card>
     </div>
   );
 }

@@ -321,7 +321,18 @@ const resetSchema = new Schema(
   opts,
 );
 
-export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset"] as const;
+/** A browser/device that agreed to receive push notifications. Dead subscriptions are removed when the push service reports them gone. */
+const pushSchema = new Schema(
+  {
+    endpoint: { type: String, required: true, unique: true },
+    p256dh: { type: String, required: true },
+    auth: { type: String, required: true },
+    ua: { type: String, default: "" },
+  },
+  opts,
+);
+
+export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number];
 
 const schemas: Record<ModelName, Schema> = {
@@ -343,6 +354,7 @@ const schemas: Record<ModelName, Schema> = {
   Announcement: announcementSchema,
   Department: departmentSchema,
   PasswordReset: resetSchema,
+  PushSub: pushSchema,
 };
 
 export type Models = { [K in ModelName]: Model<any> };

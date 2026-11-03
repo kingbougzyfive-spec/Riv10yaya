@@ -67,5 +67,8 @@ Images live in the database (≤4 MB, big photos auto-shrunk in the browser), so
 ## Light / dark theme (added)
 A sun/moon button (website header and admin sidebar) switches themes and remembers the choice per device. Dark is the default. Tailwind's `white` colour is mapped to a theme variable, so existing `text-white/…`, `bg-white/…`, `border-white/…` classes adapt automatically; QR codes and print sheets stay true white.
 
+## Push notifications (added)
+Opt-in web push: visitors tap **Turn on notifications** on the Install and Announcements pages. Publishing an announcement notifies subscribed devices (untick per announcement). Super admins can send a test from Admin → Integrations. Needs `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (generate with `npx web-push generate-vapid-keys`); without them the button is hidden and nothing is sent. iPhones only receive push after the app is installed to the home screen.
+
 ## Not built yet (next phases)
-Web push notifications, SMS, and the remaining part of your spec after section 8.9.
+SMS, and the remaining part of your spec after section 8.9.
