@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { api } from "@/lib/fetcher";
 import { can } from "@/lib/rbac";
 import { ROLE_LABELS, type Role } from "@/lib/roles";
@@ -64,10 +65,11 @@ export function AdminShell({ user, brand, children }: { user: { name: string; ro
       <aside className="glass-strong sticky top-0 hidden h-dvh flex-col rounded-none border-y-0 border-l-0 p-4 lg:flex">
         <Link href="/admin" className="mb-5 flex items-center gap-2 px-1 text-sm font-black"><Home className="h-4 w-4 text-brand" /><span className="truncate">{brand}</span></Link>
         {Profile}{Nav}
+        <div className="pt-3"><ThemeToggle className="w-full" /></div>
       </aside>
       <header className="glass-strong sticky top-0 z-30 flex items-center justify-between rounded-none border-x-0 border-t-0 px-4 py-3 lg:hidden">
         <p className="truncate text-sm font-black">{brand}</p>
-        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)} aria-label="Menu"><Menu className="h-4 w-4" /></button>
+        <div className="flex gap-2"><ThemeToggle /><button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)} aria-label="Menu"><Menu className="h-4 w-4" /></button></div>
       </header>
       <AnimatePresence>
         {open && (

@@ -5,6 +5,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        white: "rgb(var(--fg) / <alpha-value>)",
         brand: "rgb(var(--brand) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
       },

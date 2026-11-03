@@ -24,7 +24,8 @@ export const dynamic = "force-dynamic";
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { site } = await getSite();
   return (
-    <html lang="en" style={themeVars(site) as React.CSSProperties}>
+    <html lang="en" style={themeVars(site) as React.CSSProperties} suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem("yaya-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}` }} /></head>
       <body>
         <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-xl focus:bg-brand focus:px-4 focus:py-2 focus:font-bold focus:text-[#04130d]">Skip to content</a>
         <Aurora />

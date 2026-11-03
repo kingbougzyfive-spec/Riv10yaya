@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { mediaUrl, type SiteData } from "@/lib/site-types";
 import { Reveal } from "@/components/ui/Reveal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const NAV = [
   { href: "/", label: "Home" },
@@ -68,6 +69,7 @@ export function SiteNav({ site, current = "/" }: { site: SiteData; current?: str
         </div>
         <div className="flex items-center gap-2">
           <Link href="/install" className="btn btn-primary btn-sm hidden sm:inline-flex"><Download className="h-3.5 w-3.5" />Install</Link>
+          <ThemeToggle />
           <Link href="/login" className="btn btn-ghost btn-sm">Sign in</Link>
           <button className="btn btn-ghost btn-sm lg:hidden" onClick={() => setOpen((o) => !o)} aria-label="Menu">{open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}</button>
         </div>

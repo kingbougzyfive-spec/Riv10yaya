@@ -11,5 +11,5 @@ export function useQr(value: string, size = 512) {
 export function QrCode({ value, size = 220, className = "" }: { value: string; size?: number; className?: string }) {
   const url = useQr(value, Math.max(size * 2, 400));
   // eslint-disable-next-line @next/next/no-img-element
-  return url ? <img src={url} alt="QR code" width={size} height={size} className={`rounded-2xl bg-white p-2 ${className}`} /> : <div className="skeleton" style={{ width: size, height: size }} />;
+  return url ? <img src={url} alt="QR code" width={size} height={size} className={`rounded-2xl bg-[#fff] p-2 ${className}`} /> : <div className="skeleton" style={{ width: size, height: size }} />;
 }

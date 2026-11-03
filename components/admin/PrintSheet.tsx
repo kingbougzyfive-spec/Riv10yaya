@@ -13,7 +13,7 @@ export function PrintSheet({ id, layout, brand }: { id: string; layout: string; 
   const url = `${origin}/attend/${d.session.token}`;
   const where = [d.session.zone, d.session.area, d.session.parish].filter(Boolean).join(" → ");
   return (
-    <div className="min-h-screen bg-white text-[#0b1220]">
+    <div className="min-h-screen bg-[#fff] text-[#0b1220]">
       <style>{`@media print{.aurora{display:none!important}.noprint{display:none!important}body{background:#fff!important}@page{margin:10mm}}body{background:#fff!important}`}</style>
       <div className="noprint sticky top-0 flex items-center justify-between gap-3 bg-[#0b1220] px-5 py-3 text-white"><span className="text-sm">Use <b>Print</b>, then choose “Save as PDF” to get a PDF.</span><button className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-black" onClick={() => window.print()}>Print / Save PDF</button></div>
       {layout === "stickers" ? (

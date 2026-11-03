@@ -42,7 +42,7 @@ export function Toggle({ label, checked, onChange, hint }: { label: string; chec
     <button type="button" onClick={() => onChange(!checked)} className="flex w-full items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:bg-white/10" role="switch" aria-checked={checked}>
       <span><span className="block text-sm font-medium">{label}</span>{hint && <span className="block text-xs text-white/45">{hint}</span>}</span>
       <span className={cn("relative h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-brand" : "bg-white/20")}>
-        <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all", checked ? "left-[22px]" : "left-0.5")} />
+        <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-[#fff] shadow transition-all", checked ? "left-[22px]" : "left-0.5")} />
       </span>
     </button>
   );
