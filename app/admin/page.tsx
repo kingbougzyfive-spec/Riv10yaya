@@ -6,6 +6,7 @@ import { connectionViews, failoverNote, getDb } from "@/lib/db";
 import { can, PERMS } from "@/lib/rbac";
 import { ROLE_LABELS } from "@/lib/roles";
 import { resolveIdentity } from "@/lib/scope";
+import { SeedButton } from "@/components/admin/SeedButton";
 import { MONTHS } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +51,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     <>
       <PageHeader title={`Hello, ${user.name.split(" ")[0]}`} subtitle={`You're signed in as ${ROLE_LABELS[user.role]}.`} />
       {sp.denied && <p className="badge-warn mb-4 rounded-xl p-3 text-sm">You don't have access to that page.</p>}
+      {user.role === "super_admin" && zones === 0 && <SeedButton />}
       {todo && (
         <div className={`glass mb-4 flex flex-wrap items-center justify-between gap-3 p-4 ${todo.done ? "" : "ring-1 ring-accent/50"}`}>
           <p className="flex items-center gap-2 text-sm font-semibold">{todo.done ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-accent" />}{todo.done ? `Your ${todo.label} report is submitted. Thank you!` : `Your ${todo.label} report hasn't been submitted yet.`}</p>
