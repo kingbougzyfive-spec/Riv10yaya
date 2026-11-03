@@ -1,0 +1,35 @@
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+import { Aurora } from "@/components/ui/Aurora";
+import { ToastProvider } from "@/components/ui/Toast";
+import { SwRegister } from "@/components/SwRegister";
+import { getSite } from "@/lib/cms";
+import { themeVars } from "@/lib/site-types";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { site } = await getSite();
+  return {
+    title: { default: site.brand.name, template: `%s · ${site.brand.shortName || site.brand.name}` },
+    description: site.hero.subtitle || site.brand.tagline,
+    applicationName: site.brand.name,
+    appleWebApp: { capable: true, title: site.brand.shortName || site.brand.name, statusBarStyle: "black-translucent" },
+    icons: { icon: "/icons/icon.svg", apple: "/icons/apple-touch-icon.png" },
+  };
+}
+
+export const viewport: Viewport = { themeColor: "#070b14", width: "device-width", initialScale: 1, viewportFit: "cover" };
+
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const { site } = await getSite();
+  return (
+    <html lang="en" style={themeVars(site) as React.CSSProperties}>
+      <body>
+        <Aurora />
+        <ToastProvider>{children}</ToastProvider>
+        <SwRegister />
+      </body>
+    </html>
+  );
+}
