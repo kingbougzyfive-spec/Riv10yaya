@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Banknote, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
+import { Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -23,6 +23,7 @@ const ITEMS = [
   { href: "/admin/departments", label: "Departments", icon: Network, perm: "content" as const },
   { href: "/admin/users", label: "Users & Roles", icon: Users, perm: "users" as const },
   { href: "/admin/database", label: "Database", icon: Database, perm: "database" as const },
+  { href: "/admin/integrations", label: "Integrations", icon: Plug, perm: "integrations" as const },
   { href: "/admin/audit", label: "Audit Log", icon: History, perm: "audit" as const },
 ];
 
@@ -44,6 +45,7 @@ export function AdminShell({ user, brand, children }: { user: { name: string; ro
         );
       })}
       <div className="mt-auto space-y-1 pt-4">
+        <Link href="/admin/account" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-white/5 hover:text-white"><KeyRound className="h-4 w-4" />My account</Link>
         <Link href="/" target="_blank" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-white/5 hover:text-white"><ExternalLink className="h-4 w-4" />View website</Link>
         <button onClick={async () => { await api("/api/auth/logout", { method: "POST" }); router.push("/login"); router.refresh(); }} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-red-500/10 hover:text-red-300"><LogOut className="h-4 w-4" />Sign out</button>
       </div>

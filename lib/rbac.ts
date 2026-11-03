@@ -19,6 +19,7 @@ export const PERMS = {
   attendanceView: ["super_admin", "provincial_admin", "event_admin", "zonal_admin", "area_admin", "parish_admin", "auditor"],
   members: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin"],
   content: ["super_admin", "provincial_admin"],
+  integrations: ["super_admin", "provincial_admin", "finance_admin"],
   database: ["super_admin"],
   audit: ["super_admin", "auditor"],
 } as const satisfies Record<string, readonly Role[]>;

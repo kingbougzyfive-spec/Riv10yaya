@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { ExternalLink, Landmark, Loader2, Percent } from "lucide-react";
+import { Bot, ExternalLink, Landmark, Loader2, Percent } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -90,6 +90,8 @@ function Detail({ r, role, canReview, onClose, onDone }: { r: any; role: Role; c
   const [amount, setAmount] = useState(String(r.amountKobo / 100));
   const [ev, setEv] = useState("");
   const [busy, setBusy] = useState("");
+  const [ai, setAi] = useState<any>(r.analysis ?? null);
+  const readAi = async () => { setBusy("ai"); try { const x = await api(`/api/remittances/${r.id}/analyze`, { method: "POST" }); setAi(x.analysis); } catch (e: any) { toast.err(e.message); } setBusy(""); };
   const canRespond = role === "parish_admin" && ["needs_evidence", "rejected", "flagged"].includes(r.status);
   const act = async (action: string) => {
     setBusy(action);
@@ -109,6 +111,20 @@ function Detail({ r, role, canReview, onClose, onDone }: { r: any; role: Role; c
           <div><p className="label">Status</p><span className={statusBadge[r.status]}>{statusLabel[r.status]}</span></div>
         </div>
         {r.remarks && <p className="rounded-xl bg-white/5 p-3 text-white/70">{r.remarks}</p>}
+        {canReview && r.evidenceId && (
+          <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/60"><Bot className="h-4 w-4 text-accent" />AI receipt reading <span className="badge">advisory</span></p><button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={readAi}>{busy === "ai" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{ai ? "Read again" : "Read receipt"}</button></div>
+            {ai && (<div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+              <p>Amount on receipt: <b>{ai.amountNaira != null ? formatNaira(Math.round(ai.amountNaira * 100)) : "couldn't read"}</b> {ai.amountMatches === true && <span className="badge badge-ok">matches declared</span>}{ai.amountMatches === false && <span className="badge badge-bad">differs from declared {formatNaira(Math.round(ai.declaredNaira * 100))}</span>}</p>
+              <p>Date: <b>{ai.date ?? "—"}</b></p>
+              <p>Reference: <b>{ai.reference ?? "—"}</b> {ai.refMatches === true && <span className="badge badge-ok">matches</span>}{ai.refMatches === false && <span className="badge badge-warn">differs</span>}</p>
+              <p>Bank: <b>{ai.bank ?? "—"}</b> · Confidence: <b>{ai.confidence}</b></p>
+              {!ai.looksLikePaymentProof && <p className="badge-warn rounded-lg p-2 sm:col-span-2">This may not be a payment receipt.</p>}
+              {ai.notes && <p className="text-white/60 sm:col-span-2">{ai.notes}</p>}
+              <p className="text-[11px] text-white/35 sm:col-span-2">Automated reading can be wrong. Always compare with your bank statement before confirming.</p>
+            </div>)}
+          </div>
+        )}
         {r.evidenceId && <a href={`/api/media/${r.evidenceId}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost"><ExternalLink className="h-4 w-4" />View payment evidence</a>}
         <div><p className="label">History (cannot be edited)</p><ul className="space-y-2">{r.history.map((h: any, i: number) => <li key={i} className="rounded-xl bg-white/5 p-3 text-xs"><b className="capitalize">{h.action.replace("_", " ")}</b> · {h.byName} · {new Date(h.at).toLocaleString("en-NG")}{h.note && <p className="mt-1 text-white/65">{h.note}</p>}{h.evidenceId && <a className="mt-1 inline-block text-brand underline" target="_blank" rel="noopener noreferrer" href={`/api/media/${h.evidenceId}`}>Attached evidence</a>}</li>)}</ul></div>
         {canReview && r.status !== "confirmed" && (

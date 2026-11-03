@@ -149,6 +149,8 @@ const remittanceSchema = new Schema(
     submittedBy: { type: Schema.Types.ObjectId, ref: "User" },
     reviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
     reviewedAt: Date,
+    /** Advisory AI reading of the receipt. Never changes status by itself. */
+    analysis: Schema.Types.Mixed,
     /** Append-only trail. Original submitted values are never overwritten by reviewers. */
     history: [historyEntry],
   },
@@ -309,7 +311,17 @@ const departmentSchema = new Schema(
   opts,
 );
 
-export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department"] as const;
+/** One-time password reset links. Only a hash of the token is stored; expired rows are removed by MongoDB. */
+const resetSchema = new Schema(
+  {
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    tokenHash: { type: String, required: true, unique: true },
+    expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
+  },
+  opts,
+);
+
+export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number];
 
 const schemas: Record<ModelName, Schema> = {
@@ -330,6 +342,7 @@ const schemas: Record<ModelName, Schema> = {
   Attendance: attendanceSchema,
   Announcement: announcementSchema,
   Department: departmentSchema,
+  PasswordReset: resetSchema,
 };
 
 export type Models = { [K in ModelName]: Model<any> };

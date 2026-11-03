@@ -45,6 +45,7 @@ export const GET = handle(async (req) => {
     rows: rows.map((r) => ({
       id: String(r._id), kind: r.kind, month: r.month, year: r.year, status: r.status, description: r.description,
       offeringKobo: r.offeringKobo, percentBp: r.percentBp, requiredKobo: r.requiredKobo, amountKobo: r.amountKobo, confirmedKobo: r.confirmedKobo,
+      analysis: r.analysis ?? null,
       paidAt: r.paidAt, reference: r.reference, remarks: r.remarks, evidenceId: r.evidenceId ? String(r.evidenceId) : null,
       zone: z.get(String(r.zone)), area: r.area ? a.get(String(r.area)) : null, parish: p.get(String(r.parish)), parishId: String(r.parish),
       history: (r.history ?? []).map((h: any) => ({ at: h.at, byName: h.byName, action: h.action, note: h.note, evidenceId: h.evidenceId ? String(h.evidenceId) : null })),

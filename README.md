@@ -59,5 +59,10 @@ Images live in the database (≤4 MB, big photos auto-shrunk in the browser), so
 - **Exports:** Excel (.xlsx), PDF and CSV for monthly reports and event attendee lists (needs `exceljs` and `pdf-lib`, already in package.json). Contact columns only for authorised roles.
 - **Member self sign-up** (/join) creates a plain member account and member ID; **/me** shows the member's own ID/QR, profile, event tickets and attendance. A member can only ever load their own record.
 
+## Phase 6: accounts, Sheets, AI receipts (added)
+- **Password reset** (/forgot → emailed one-time link, 1 hour, hashed token) and **change password** (Admin → My account, member portal). Without email configured the page tells users to ask the Super Admin.
+- **Admin → Integrations:** honest status of Google Sheets, Email, AI. **Sheets sync** replaces a tab each time (no duplicates): Reports, Finance (Youth Sunday and levies kept as separate rows), Attendance. Needs `GOOGLE_SERVICE_ACCOUNT_JSON` + `GOOGLE_SHEET_ID`.
+- **AI receipt reading** for finance (advisory): extracts amount/date/reference from private evidence and compares with the declared figures; never changes a status. Needs `ANTHROPIC_API_KEY`.
+
 ## Not built yet (next phases)
-Google Sheets sync, web push, OCR/AI evidence checks, password reset by email, and the remaining part of your spec after section 8.9.
+Web push notifications, SMS, and the remaining part of your spec after section 8.9.

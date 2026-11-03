@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QrCode } from "@/components/Qr";
+import { ChangePassword } from "@/components/ChangePassword";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
 
@@ -38,6 +39,7 @@ export function MemberPortal() {
         </div>
         <div className="glass p-5"><p className="mb-3 flex items-center gap-2 font-bold"><CalendarCheck className="h-4 w-4 text-accent" />My events</p>
           <div className="space-y-2">{d.events.map((e: any) => <Link key={e.id} href={`/events/${e.eventId}/ticket/${e.reference}`} className="glass-hover flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3 text-sm"><span className="min-w-0"><b className="block truncate">{e.title}</b><span className="text-xs text-white/45">{e.startsAt ? new Date(e.startsAt).toLocaleDateString("en-NG", { dateStyle: "medium" }) : ""}</span></span><span className={`badge ${e.attended ? "badge-ok" : ""}`}>{e.attended ? "Attended" : "View ticket"}</span></Link>)}{d.events.length === 0 && <p className="text-sm text-white/45">You haven't registered for any events yet. <Link className="text-brand underline" href="/events">Browse events</Link></p>}</div></div>
+        <ChangePassword />
         <div className="glass p-5"><p className="mb-3 font-bold">My attendance</p>
           <ul className="space-y-1.5 text-sm">{d.attendance.map((a: any) => <li key={a.id} className="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"><span className="truncate">{a.title}</span><span className="shrink-0 text-xs text-white/45">{new Date(a.at).toLocaleDateString("en-NG", { dateStyle: "medium" })}</span></li>)}{d.attendance.length === 0 && <li className="text-white/45">No attendance recorded yet.</li>}</ul></div>
       </div>
