@@ -5,6 +5,8 @@ import { requirePageUser } from "@/lib/auth";
 import { connectionViews, failoverNote, getDb } from "@/lib/db";
 import { can, PERMS } from "@/lib/rbac";
 import { ROLE_LABELS } from "@/lib/roles";
+import { resolveIdentity } from "@/lib/scope";
+import { MONTHS } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +15,20 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const { Zone, Area, Parish, User, Media, Audit } = await getDb();
   const [zones, areas, parishes, users, media, recent] = await Promise.all([
-    Zone.countDocuments(), Area.countDocuments(), Parish.countDocuments(), User.countDocuments(), Media.countDocuments(),
+    Zone.countDocuments(), Area.countDocuments(), Parish.countDocuments(), can(user.role, "users") ? User.countDocuments() : Promise.resolve(0), Media.countDocuments(),
     can(user.role, "audit") ? Audit.find().sort({ createdAt: -1 }).limit(6).lean<any[]>() : Promise.resolve([]),
   ]);
+  // Monthly to-do for the people who must submit a report
+  let todo: { done: boolean; label: string } | null = null;
+  if (can(user.role, "reportSubmit")) {
+    const id = await resolveIdentity(user);
+    if (id) {
+      const now = new Date();
+      const { Report } = await getDb();
+      const done = !!(await Report.exists({ type: id.type, zone: id.zone, area: id.area, parish: id.parish, month: now.getMonth() + 1, year: now.getFullYear() }));
+      todo = { done, label: `${MONTHS[now.getMonth()]} ${now.getFullYear()}` };
+    }
+  }
   const conns = connectionViews();
   const running = conns.find((c) => c.isRunning);
   const note = failoverNote();
@@ -24,7 +37,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     { label: "Zones", value: zones, icon: Layers },
     { label: "Areas", value: areas, icon: MapPin },
     { label: "Parishes", value: parishes, icon: Building2 },
-    { label: "Users", value: users, icon: Users },
+    ...(can(user.role, "users") ? [{ label: "Users", value: users, icon: Users }] : []),
   ];
   const actions = [
     { href: "/admin/site", label: "Edit website", desc: "Logo, text, colours, photos", icon: Palette, perm: "siteEdit" as const },
@@ -37,6 +50,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     <>
       <PageHeader title={`Hello, ${user.name.split(" ")[0]}`} subtitle={`You're signed in as ${ROLE_LABELS[user.role]}.`} />
       {sp.denied && <p className="badge-warn mb-4 rounded-xl p-3 text-sm">You don't have access to that page.</p>}
+      {todo && (
+        <div className={`glass mb-4 flex flex-wrap items-center justify-between gap-3 p-4 ${todo.done ? "" : "ring-1 ring-accent/50"}`}>
+          <p className="flex items-center gap-2 text-sm font-semibold">{todo.done ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-accent" />}{todo.done ? `Your ${todo.label} report is submitted. Thank you!` : `Your ${todo.label} report hasn't been submitted yet.`}</p>
+          {!todo.done && <Link href="/admin/reports/new" className="btn btn-primary btn-sm">Start report</Link>}
+        </div>
+      )}
       {note && <p className="badge-warn mb-4 flex items-center gap-2 rounded-xl p-3 text-sm"><AlertTriangle className="h-4 w-4" />{note}</p>}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s, i) => (

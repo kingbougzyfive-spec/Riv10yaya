@@ -26,6 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" style={themeVars(site) as React.CSSProperties}>
       <body>
+        <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-xl focus:bg-brand focus:px-4 focus:py-2 focus:font-bold focus:text-[#04130d]">Skip to content</a>
         <Aurora />
         <ToastProvider>{children}</ToastProvider>
         <SwRegister />

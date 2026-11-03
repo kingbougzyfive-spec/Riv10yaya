@@ -17,7 +17,7 @@ export function Frame({ site, current, preview, children }: { site: SiteData; cu
       }}
     >
       <SiteNav site={site} current={current} />
-      <main>{children}</main>
+      <main id="content">{children}</main>
       <SiteFooter site={site} />
     </div>
   );
