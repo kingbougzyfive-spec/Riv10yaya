@@ -73,5 +73,8 @@ A sun/moon button (website header and admin sidebar) switches themes and remembe
 ## Push notifications (added)
 Opt-in web push: visitors tap **Turn on notifications** on the Install and Announcements pages. Publishing an announcement notifies subscribed devices (untick per announcement). Super admins can send a test from Admin → Integrations. Needs `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (generate with `npx web-push generate-vapid-keys`); without them the button is hidden and nothing is sent. iPhones only receive push after the app is installed to the home screen.
 
+## SMS (added)
+Termii-based SMS. With `TERMII_API_KEY` set, a text with the reference and ticket link goes to everyone who registers for an event. Super admins can send a test from Admin → Integrations. Without the key nothing is sent.
+
 ## Not built yet (next phases)
-SMS, and the remaining part of your spec after section 8.9.
+The remaining part of your spec after section 8.9.

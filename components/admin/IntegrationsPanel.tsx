@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { Bot, CheckCircle2, Loader2, Mail, RefreshCw, Sheet, Bell, XCircle } from "lucide-react";
+import { Bot, CheckCircle2, Loader2, Mail, MessageSquare, RefreshCw, Sheet, Bell, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
@@ -10,6 +10,7 @@ export function IntegrationsPanel({ role }: { role: string }) {
   const toast = useToast();
   const [s, setS] = useState<any>(null);
   const [busy, setBusy] = useState("");
+  const [testTo, setTestTo] = useState("");
   const load = () => api("/api/integrations").then(setS).catch((e) => toast.err(e.message));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
@@ -33,6 +34,13 @@ export function IntegrationsPanel({ role }: { role: string }) {
       </Card>
       <Card icon={Mail} title="Email (Resend)" st={s.email} steps={["Create a Resend account and verify your sending domain.", "Create an API key.", "Set RESEND_API_KEY and MAIL_FROM (e.g. YAYA <no-reply@yourdomain.org>)."]}><p className="mt-2 text-xs text-white/50">Used for registration confirmations and password reset links.</p></Card>
       <Card icon={Bot} title="AI receipt reading" st={s.ai} steps={["Create an API key in the Anthropic Console.", "Set ANTHROPIC_API_KEY (and optionally ANTHROPIC_MODEL)."]}><p className="mt-2 text-xs text-white/50">Finance can ask for an advisory reading of a payment receipt (amount, date, reference). It never confirms or rejects a payment by itself.</p></Card>
+      <Card icon={MessageSquare} title="SMS (Termii)" st={s.sms} steps={["Create an account at termii.com and get an API key.", "Register a sender ID with Termii (until approved, messages use their default route).", "Set TERMII_API_KEY and optionally TERMII_SENDER_ID, then redeploy."]}>
+        <p className="mt-2 text-xs text-white/50">When active, people who register for an event get a text with their reference and ticket link. Each message is billed by Termii.</p>
+        {s.sms.active && <form className="mt-3 flex gap-2" onSubmit={async (e) => { e.preventDefault(); setBusy("sms"); try { await api("/api/integrations/sms", { method: "POST", json: { to: testTo } }); toast.ok("Test message sent"); } catch (err: any) { toast.err(err.message); } setBusy(""); }}>
+          <input className="input" placeholder="Phone number for a test" inputMode="tel" value={testTo} onChange={(e) => setTestTo(e.target.value)} aria-label="Phone number for a test message" />
+          <button className="btn btn-ghost btn-sm shrink-0" disabled={busy === "sms" || !testTo}>{busy === "sms" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />}Send test</button>
+        </form>}
+      </Card>
       <Card icon={Bell} title="Push notifications" st={s.push} steps={["Run: npx web-push generate-vapid-keys", "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY from the output (and optionally VAPID_SUBJECT, e.g. mailto:you@example.com).", "Redeploy. Visitors can then tap Turn on notifications on the Install and Announcements pages."]}>
         <p className="mt-2 text-xs text-white/50">New announcements are pushed to subscribed devices when published (you can untick this per announcement).</p>
         {s.push.active && <>

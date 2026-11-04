@@ -3,8 +3,9 @@ import mongoose from "mongoose";
 import { handle } from "@/lib/api";
 import { ApiError } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { newRegId, phoneKey, registrationRef, throttle, validPhone } from "@/lib/ids";
+import { appUrl, newRegId, phoneKey, registrationRef, throttle, validPhone } from "@/lib/ids";
 import { sendMail } from "@/lib/mail";
+import { sendSms, smsConfigured } from "@/lib/sms";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -47,6 +48,9 @@ export const POST = handle<Ctx>(async (req, ctx) => {
   const doc = await Registration.create({ event: id, regId: newRegId(), reference: registrationRef(), name: i.name, phone: i.phone, phoneKey: key, email: i.email || undefined, ...org, answers: i.answers });
   if (i.email) {
     await sendMail({ to: i.email, subject: `You're registered: ${ev.title}`, html: `<p>Hello ${i.name},</p><p>You're registered for <b>${ev.title}</b>.</p><p>Your reference: <b>${doc.reference}</b></p><p>Show your QR ticket at the entrance.</p>` }).catch(() => {});
+  }
+  if (smsConfigured()) {
+    await sendSms(i.phone, `You are registered for ${ev.title}. Ref: ${doc.reference}. Your ticket: ${appUrl()}/events/${id}/ticket/${doc.reference}`).catch(() => {});
   }
   return { reference: doc.reference, regId: doc.regId };
 });

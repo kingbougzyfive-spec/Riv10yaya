@@ -6,6 +6,7 @@ import { mailConfigured } from "@/lib/mail";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 import { pushConfigured } from "@/lib/push";
+import { smsConfigured } from "@/lib/sms";
 import { sheetsConfigured, sheetsServiceEmail, writeTab } from "@/lib/sheets";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export const GET = handle(async () => {
     email: { active: mailConfigured(), needs: ["RESEND_API_KEY", "MAIL_FROM (optional)"] },
     sheets: { active: sheetsConfigured(), serviceEmail: sheetsServiceEmail(), needs: ["GOOGLE_SERVICE_ACCOUNT_JSON", "GOOGLE_SHEET_ID"] },
     ai: { active: !!process.env.ANTHROPIC_API_KEY, needs: ["ANTHROPIC_API_KEY", "ANTHROPIC_MODEL (optional)"] },
+    sms: { active: smsConfigured(), needs: ["TERMII_API_KEY", "TERMII_SENDER_ID (optional)"] },
     push: { active: pushConfigured(), subscribers: await subscriberCount(), needs: ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT (optional)"] },
   };
 });
