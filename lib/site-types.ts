@@ -24,6 +24,9 @@ export const siteSchema = z.object({
     secondaryLink: str(200),
     imageId: str(40),
   }),
+  slides: z
+    .array(z.object({ badge: str(80), title: z.string().min(2).max(140), subtitle: str(400), ctaText: str(40), ctaLink: str(200), secondaryText: str(40), secondaryLink: str(200), imageId: str(40) }))
+    .max(8),
   welcome: z.object({ heading: str(120), body: str(2000), imageId: str(40) }),
   mission: str(1200),
   vision: str(1200),
@@ -61,6 +64,7 @@ export const defaultSite: SiteData = {
     secondaryLink: "/install",
     imageId: "",
   },
+  slides: [],
   welcome: {
     heading: "A message of welcome",
     body: "Edit this message from Admin → Site Editor. Share a warm welcome with visitors and tell them what to expect.",

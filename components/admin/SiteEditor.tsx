@@ -77,7 +77,24 @@ export function SiteEditor({ initial, updatedAt }: { initial: SiteData; updatedA
           <TextField label="Second button text" value={draft.hero.secondaryText} onChange={(v) => upd("hero", { secondaryText: v })} max={40} />
           <TextField label="Second button link" placeholder="/install" value={draft.hero.secondaryLink} onChange={(v) => upd("hero", { secondaryLink: v })} />
         </div>
-        <ImageField label="Hero photo" hint="Portrait or square photos look best." value={draft.hero.imageId} onChange={(v) => upd("hero", { imageId: v })} />
+        <ImageField label="Slide 1 photo" hint="Wide (landscape) photos look best. Leave empty for a colour gradient." value={draft.hero.imageId} onChange={(v) => upd("hero", { imageId: v })} />
+        <div className="border-t border-white/10 pt-4">
+          <p className="mb-1 text-sm font-bold">More slides</p>
+          <p className="mb-3 text-xs text-white/55">The slider starts with the hero above, then shows these. With no extra slides the hero stays a single banner.</p>
+          <RepeatList items={draft.slides} onChange={(v) => upd("slides", v)} blank={{ badge: "", title: "", subtitle: "", ctaText: "", ctaLink: "", secondaryText: "", secondaryLink: "", imageId: "" }} addLabel="Add a slide" max={8} title={(s) => s.title || "New slide"}
+            render={(s, set) => (<div className="space-y-3">
+              <TextField label="Small badge text" value={s.badge} onChange={(v) => set({ badge: v })} max={80} />
+              <AreaField label="Headline" rows={2} max={140} value={s.title} onChange={(v) => set({ title: v })} />
+              <AreaField label="Sub-headline" rows={2} max={400} value={s.subtitle} onChange={(v) => set({ subtitle: v })} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <TextField label="Button text" value={s.ctaText} onChange={(v) => set({ ctaText: v })} max={40} />
+                <TextField label="Button link" placeholder="/events" value={s.ctaLink} onChange={(v) => set({ ctaLink: v })} />
+                <TextField label="Second button text" value={s.secondaryText} onChange={(v) => set({ secondaryText: v })} max={40} />
+                <TextField label="Second button link" value={s.secondaryLink} onChange={(v) => set({ secondaryLink: v })} />
+              </div>
+              <ImageField label="Photo" value={s.imageId} onChange={(v) => set({ imageId: v })} />
+            </div>)} />
+        </div>
       </>)}
       {tab === "welcome" && (<>
         <TextField label="Heading" value={draft.welcome.heading} onChange={(v) => upd("welcome", { heading: v })} max={120} />

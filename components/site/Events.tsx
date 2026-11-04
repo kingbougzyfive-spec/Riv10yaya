@@ -11,9 +11,9 @@ import { cn } from "@/lib/cn";
 
 const fmt = (d: string) => new Date(d).toLocaleString("en-NG", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-export function EventsList() {
+export function EventsList({ limit }: { limit?: number } = {}) {
   const [events, setEvents] = useState<any[] | null>(null);
-  useEffect(() => { api("/api/public/events").then((r) => setEvents(r.events)).catch(() => setEvents([])); }, []);
+  useEffect(() => { api("/api/public/events").then((r) => setEvents(limit ? r.events.slice(0, limit) : r.events)).catch(() => setEvents([])); }, []);
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {events === null && [0, 1, 2].map((i) => <div key={i} className="skeleton h-72" />)}

@@ -5,6 +5,9 @@ import { mediaUrl } from "@/lib/site-types";
 import { ContactBlock, Gallery, Hero, Leaders, MissionVision, SectionTitle, SiteFooter, SiteNav, Stats, Welcome } from "./blocks";
 import { Reveal } from "@/components/ui/Reveal";
 import { AnnouncementsList } from "./Lists";
+import { EventsList } from "./Events";
+import { NextProgramme, type NextEvent } from "./NextProgramme";
+import Link from "next/link";
 
 export type Counts = { zones: number; areas: number; parishes: number } | null;
 
@@ -24,16 +27,19 @@ export function Frame({ site, current, preview, children }: { site: SiteData; cu
 }
 
 /** The home page. The same component renders the live site and the editor's preview. */
-export function HomeView({ site, counts, preview }: { site: SiteData; counts?: Counts; preview?: boolean }) {
+export function HomeView({ site, counts, preview, next }: { site: SiteData; counts?: Counts; preview?: boolean; next?: NextEvent }) {
   return (
     <Frame site={site} current="/" preview={preview}>
       <Hero site={site} />
+      {!preview && <NextProgramme event={next ?? null} />}
       {site.sections.stats && <Stats site={site} live={counts} />}
       <Welcome site={site} />
       <MissionVision site={site} />
+      {!preview && <section className="mx-auto max-w-6xl px-5 pt-16 sm:px-6"><SectionTitle eyebrow="Events" title="Upcoming events" /><EventsList limit={3} /><div className="mt-6"><Link href="/events" className="btn btn-ghost">See all events</Link></div></section>}
       {!preview && <section className="mx-auto max-w-6xl px-5 pt-16 sm:px-6"><SectionTitle eyebrow="News" title="Latest announcements" /><AnnouncementsList limit={2} /></section>}
       {site.sections.leadership && <Leaders site={site} limit={4} />}
       {site.sections.gallery && <Gallery site={site} limit={6} />}
+      {!preview && <section className="mx-auto max-w-6xl px-5 pt-16 sm:px-6"><div className="glass grid justify-items-center gap-4 p-8 text-center sm:p-12"><p className="text-xs font-bold uppercase tracking-widest text-accent">Be part of it</p><h2 className="gradient-text max-w-xl text-3xl font-black sm:text-4xl">Find your parish. Find your people.</h2><p className="max-w-lg text-white/60">Create your free profile in under a minute and never miss an event.</p><div className="flex flex-wrap justify-center gap-3"><Link href="/join" className="btn btn-primary px-6 py-3">Join the community</Link><Link href="/events" className="btn btn-ghost px-6 py-3">Register for an event</Link></div></div></section>}
       {site.sections.contact && <ContactBlock site={site} />}
     </Frame>
   );

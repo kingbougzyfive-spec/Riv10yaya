@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { mediaUrl, type SiteData } from "@/lib/site-types";
 import { Reveal } from "@/components/ui/Reveal";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { HeroCarousel } from "./HeroCarousel";
 
 export const NAV = [
   { href: "/", label: "Home" },
@@ -96,44 +97,7 @@ export function SiteNav({ site, current = "/" }: { site: SiteData; current?: str
 }
 
 export function Hero({ site }: { site: SiteData }) {
-  const img = mediaUrl(site.hero.imageId);
-  const h = site.hero;
-  return (
-    <section className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-14 sm:px-6 md:pt-20 lg:grid-cols-[1.15fr_.85fr]">
-      <div>
-        {h.badge && (
-          <motion.span initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold text-white/80">
-            <span className="h-2 w-2 animate-pulse-ring rounded-full bg-accent" />{h.badge}
-          </motion.span>
-        )}
-        <motion.h1
-          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
-          className="gradient-text mt-5 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl"
-        >{h.title}</motion.h1>
-        <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.8 }} className="mt-5 max-w-xl text-base leading-relaxed text-white/65 sm:text-lg">{h.subtitle}</motion.p>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }} className="mt-8 flex flex-wrap gap-3">
-          {h.ctaText && <Link href={h.ctaLink || "/"} className="btn btn-primary px-6 py-3">{h.ctaText}<ArrowRight className="h-4 w-4" /></Link>}
-          {h.secondaryText && <Link href={h.secondaryLink || "/"} className="btn btn-ghost px-6 py-3">{h.secondaryText}</Link>}
-        </motion.div>
-      </div>
-      <motion.div initial={{ opacity: 0, scale: 0.92, rotate: 2 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} transition={{ delay: 0.3, duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }} className="relative">
-        <div className="glass relative aspect-[4/5] overflow-hidden p-2 sm:aspect-square lg:aspect-[4/5]">
-          {img ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={img} alt="" className="h-full w-full rounded-[1rem] object-cover" />
-          ) : (
-            <div className="grid h-full w-full place-items-center rounded-[1rem] bg-gradient-to-br from-brand/25 via-white/5 to-accent/25">
-              <Logo site={site} size={96} />
-            </div>
-          )}
-        </div>
-        <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 5 }} className="glass-strong absolute -bottom-4 -left-3 hidden rounded-2xl px-4 py-3 text-xs sm:block">
-          <p className="font-bold text-accent">{site.brand.shortName || site.brand.name}</p>
-          <p className="text-white/55">{site.brand.tagline}</p>
-        </motion.div>
-      </motion.div>
-    </section>
-  );
+  return <HeroCarousel site={site} />;
 }
 
 export function Stats({ site, live }: { site: SiteData; live?: { zones: number; areas: number; parishes: number } | null }) {
