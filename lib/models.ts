@@ -94,6 +94,8 @@ const mediaSchema = new Schema(
     /** Payment evidence is private: only the owning parish and finance/provincial staff may fetch it. */
     private: { type: Boolean, default: false, index: true },
     parish: { type: Schema.Types.ObjectId, ref: "Parish" },
+    /** SHA-256 of the file bytes. Used to spot the same receipt being uploaded again. */
+    hash: { type: String, index: true },
   },
   opts,
 );
@@ -151,6 +153,8 @@ const remittanceSchema = new Schema(
     reviewedAt: Date,
     /** Advisory AI reading of the receipt. Never changes status by itself. */
     analysis: Schema.Types.Mixed,
+    /** Deterministic checks run at submission (repeated file / repeated reference). Prompts a human look, proves nothing. */
+    checks: Schema.Types.Mixed,
     /** Append-only trail. Original submitted values are never overwritten by reviewers. */
     history: [historyEntry],
   },
@@ -158,8 +162,24 @@ const remittanceSchema = new Schema(
 );
 remittanceSchema.index({ parish: 1, month: 1, year: 1 }, { unique: true, partialFilterExpression: { kind: "yst" } });
 
+const reportRevision = {
+  revision: Number,
+  at: Date,
+  by: { type: Schema.Types.ObjectId, ref: "User" },
+  byName: String,
+  contact: { fullName: String, phone: String, altPhone: String },
+  activity: Schema.Types.Mixed,
+  note: String,
+};
+
 const reportSchema = new Schema(
   {
+    /** Human-readable unique report ID, e.g. RPT-P-7K3M9X. */
+    reportId: { type: String, unique: true, sparse: true },
+    status: { type: String, enum: ["submitted", "revised"], default: "submitted", index: true },
+    revision: { type: Number, default: 1 },
+    /** Append-only: the previous version of the contact snapshot and answers each time a report is revised. */
+    history: [reportRevision],
     type: { type: String, enum: ["parish", "area", "zone"], required: true, index: true },
     zone: { type: Schema.Types.ObjectId, ref: "Zone", required: true, index: true },
     area: { type: Schema.Types.ObjectId, ref: "Area", default: null, index: true },

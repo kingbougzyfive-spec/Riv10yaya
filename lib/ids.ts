@@ -9,6 +9,7 @@ export function code(len: number): string {
 export const newToken = () => crypto.randomBytes(18).toString("base64url"); // session tokens / QR payloads
 export const newRegId = () => crypto.randomUUID();
 export const registrationRef = () => `YAYA-${code(3)}-${code(4)}`;
+export const reportRef = (type: "parish" | "area" | "zone") => `RPT-${type[0].toUpperCase()}-${code(6)}`;
 export const memberId = () => `YM-${code(6)}`;
 
 /** Canonical phone key so 0803…, +234803… and 234803… are the same person. */

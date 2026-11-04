@@ -111,6 +111,15 @@ function Detail({ r, role, canReview, onClose, onDone }: { r: any; role: Role; c
           <div><p className="label">Status</p><span className={statusBadge[r.status]}>{statusLabel[r.status]}</span></div>
         </div>
         {r.remarks && <p className="rounded-xl bg-white/5 p-3 text-white/70">{r.remarks}</p>}
+        {(r.flags?.length > 0 || ai?.flags?.length > 0) && (
+          <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/60">Points to check <span className="badge">for human review</span></p>
+            <ul className="space-y-2">{[...(r.flags ?? []).filter((f: any) => !(ai?.flags ?? []).some((a: any) => a.code === f.code)), ...(ai?.flags ?? [])].map((f: any, i: number) => (
+              <li key={i} className={cn("rounded-lg p-2.5 text-xs", f.level === "alert" ? "badge-bad" : f.level === "warn" ? "badge-warn" : "bg-white/5 text-white/65")}><b>{f.label}</b>{f.detail && <p className="mt-0.5 opacity-80">{f.detail}</p>}</li>
+            ))}</ul>
+            <p className="mt-2 text-[11px] text-white/40">These are prompts, not findings. A flag does not mean anyone did something wrong, and no flags does not prove the money arrived. Confirm against the bank statement.</p>
+          </div>
+        )}
         {canReview && r.evidenceId && (
           <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
             <div className="flex flex-wrap items-center justify-between gap-2"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/60"><Bot className="h-4 w-4 text-accent" />AI receipt reading <span className="badge">advisory</span></p><button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={readAi}>{busy === "ai" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{ai ? "Read again" : "Read receipt"}</button></div>
@@ -119,6 +128,8 @@ function Detail({ r, role, canReview, onClose, onDone }: { r: any; role: Role; c
               <p>Date: <b>{ai.date ?? "—"}</b></p>
               <p>Reference: <b>{ai.reference ?? "—"}</b> {ai.refMatches === true && <span className="badge badge-ok">matches</span>}{ai.refMatches === false && <span className="badge badge-warn">differs</span>}</p>
               <p>Bank: <b>{ai.bank ?? "—"}</b> · Confidence: <b>{ai.confidence}</b></p>
+              <p>Paid to: <b>{ai.beneficiaryName ?? "—"}</b>{ai.beneficiaryAccount ? ` · ${ai.beneficiaryAccount}` : ""}</p>
+              <p>Sender: <b>{ai.payerName ?? "—"}</b> · Time: <b>{ai.time ?? "—"}</b> · Status on receipt: <b>{ai.transactionStatus ?? "—"}</b></p>
               {!ai.looksLikePaymentProof && <p className="badge-warn rounded-lg p-2 sm:col-span-2">This may not be a payment receipt.</p>}
               {ai.notes && <p className="text-white/60 sm:col-span-2">{ai.notes}</p>}
               <p className="text-[11px] text-white/35 sm:col-span-2">Automated reading can be wrong. Always compare with your bank statement before confirming.</p>

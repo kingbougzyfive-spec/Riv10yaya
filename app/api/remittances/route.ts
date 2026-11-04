@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { handle, audit } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { duplicateChecks, flagsFromDuplicates } from "@/lib/receipt-checks";
 import { getFinance } from "@/lib/finance";
 import { remittanceKobo, toKobo } from "@/lib/money";
 import { periodSchema } from "@/lib/report-config";
@@ -45,7 +46,7 @@ export const GET = handle(async (req) => {
     rows: rows.map((r) => ({
       id: String(r._id), kind: r.kind, month: r.month, year: r.year, status: r.status, description: r.description,
       offeringKobo: r.offeringKobo, percentBp: r.percentBp, requiredKobo: r.requiredKobo, amountKobo: r.amountKobo, confirmedKobo: r.confirmedKobo,
-      analysis: r.analysis ?? null,
+      analysis: r.analysis ?? null, flags: flagsFromDuplicates(r.checks),
       paidAt: r.paidAt, reference: r.reference, remarks: r.remarks, evidenceId: r.evidenceId ? String(r.evidenceId) : null,
       zone: z.get(String(r.zone)), area: r.area ? a.get(String(r.area)) : null, parish: p.get(String(r.parish)), parishId: String(r.parish),
       history: (r.history ?? []).map((h: any) => ({ at: h.at, byName: h.byName, action: h.action, note: h.note, evidenceId: h.evidenceId ? String(h.evidenceId) : null })),
@@ -79,8 +80,13 @@ export const POST = handle(async (req) => {
     amountKobo: i.amountPaid !== undefined ? toKobo(i.amountPaid) : requiredKobo,
     paidAt: new Date(i.paidAt), reference: i.reference, evidenceId: i.evidenceId, remarks: i.remarks, history: hist("Remittance submitted"),
   });
+  // Repeated-file / repeated-reference checks need no AI key; they just prompt a human look.
+  yst.checks = await duplicateChecks(yst).catch(() => null);
+  if (yst.checks) await yst.save();
   for (const l of i.levies) {
-    await Remittance.create({ ...base, kind: "levy", description: l.description, amountKobo: toKobo(l.amount), paidAt: new Date(l.paidAt), reference: l.reference, evidenceId: l.evidenceId, history: hist("Levy submitted") });
+    const lv = await Remittance.create({ ...base, kind: "levy", description: l.description, amountKobo: toKobo(l.amount), paidAt: new Date(l.paidAt), reference: l.reference, evidenceId: l.evidenceId, history: hist("Levy submitted") });
+    lv.checks = await duplicateChecks(lv).catch(() => null);
+    if (lv.checks) await lv.save();
   }
   await audit(user, "remittance.submit", `${id.names.parish} ${i.month}/${i.year}`, { offeringKobo, requiredKobo, percentBp }, req);
   return { id: String(yst._id), requiredKobo, percentBp };

@@ -9,7 +9,7 @@ import { api } from "@/lib/fetcher";
 import { cn } from "@/lib/cn";
 import { formatNaira, MONTHS } from "@/lib/money";
 import { FIELDS } from "@/lib/report-config";
-import { PeriodPicker, statusBadge, statusLabel } from "./report-bits";
+import { ActivityFields, ContactSection, PeriodPicker, statusBadge, statusLabel, type Contact } from "./report-bits";
 
 const Bar = ({ a, b, label }: { a: number; b: number; label: string }) => (
   <div className="glass p-5">
@@ -29,18 +29,33 @@ export function ReportsHub({ canSubmit }: { canSubmit: boolean }) {
   const [sum, setSum] = useState<any>(null);
   const [rows, setRows] = useState<any[] | null>(null);
   const [open, setOpen] = useState<any>(null);
+  const [org, setOrg] = useState<{ zones: any[]; areas: any[]; parishes: any[] } | null>(null);
+  const [f, setF] = useState({ zone: "", area: "", parish: "", status: "", fin: "" });
+  const [revising, setRevising] = useState<any>(null);
+  useEffect(() => { api("/api/org").then((d) => setOrg({ zones: d.zones ?? [], areas: d.areas ?? [], parishes: d.parishes ?? [] })).catch(() => setOrg(null)); }, []);
+  const filterQs = [["type", type], ["zone", f.zone], ["area", f.area], ["parish", f.parish], ["status", f.status], ["finance", f.fin]].filter(([, v]) => v).map(([k, v]) => `&${k}=${v}`).join("");
+  const areaOpts = org?.areas.filter((a) => !f.zone || String(a.zone?.id ?? a.zone) === f.zone) ?? [];
+  const parishOpts = org?.parishes.filter((x) => (!f.zone || String(x.zone?.id ?? x.zone) === f.zone) && (!f.area || String(x.area?.id ?? x.area) === f.area)) ?? [];
+  const reload = () => { setRows(null); api(`/api/reports?month=${p.month}&year=${p.year}${filterQs}`).then((r) => setRows(r.rows)).catch((e) => { toast.err(e.message); setRows([]); }); };
 
   useEffect(() => {
     setRows(null); setSum(null);
     api(`/api/reports/summary?month=${p.month}&year=${p.year}`).then(setSum).catch((e) => toast.err(e.message));
-    api(`/api/reports?month=${p.month}&year=${p.year}${type ? `&type=${type}` : ""}`).then((r) => setRows(r.rows)).catch((e) => { toast.err(e.message); setRows([]); });
-  }, [p, type, toast]);
+    api(`/api/reports?month=${p.month}&year=${p.year}${filterQs}`).then((r) => setRows(r.rows)).catch((e) => { toast.err(e.message); setRows([]); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p, filterQs, toast]);
 
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <PeriodPicker month={p.month} year={p.year} onChange={(month, year) => setP({ month, year })} />
-        <select className="input !w-auto" value={type} onChange={(e) => setType(e.target.value)}><option value="">All levels</option><option value="parish">Parish</option><option value="area">Area</option><option value="zone">Zonal</option></select>
+        <select className="input !w-auto" aria-label="Report type" value={type} onChange={(e) => setType(e.target.value)}><option value="">All report types</option><option value="parish">Parish</option><option value="area">Area</option><option value="zone">Zonal</option></select>
+        {org && org.zones.length > 1 && <select className="input !w-auto" aria-label="Zone" value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value, area: "", parish: "" })}><option value="">All zones</option>{org.zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}</select>}
+        {org && areaOpts.length > 1 && <select className="input !w-auto" aria-label="Area" value={f.area} onChange={(e) => setF({ ...f, area: e.target.value, parish: "" })}><option value="">All areas</option>{areaOpts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>}
+        {org && parishOpts.length > 1 && <select className="input !w-auto" aria-label="Parish" value={f.parish} onChange={(e) => setF({ ...f, parish: e.target.value })}><option value="">All parishes</option>{parishOpts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>}
+        <select className="input !w-auto" aria-label="Submission status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="">Any submission status</option><option value="submitted">Submitted</option><option value="revised">Revised</option></select>
+        <select className="input !w-auto" aria-label="Financial verification" value={f.fin} onChange={(e) => setF({ ...f, fin: e.target.value })}><option value="">Any financial status</option>{Object.entries(statusLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+        {(type || f.zone || f.area || f.parish || f.status || f.fin) && <button className="btn btn-ghost btn-sm" onClick={() => { setType(""); setF({ zone: "", area: "", parish: "", status: "", fin: "" }); }}>Clear filters</button>}
         <div className="ml-auto flex gap-2">
           {([["xlsx", "Excel"], ["pdf", "PDF"], ["csv", "CSV"]] as const).map(([f, l]) => <a key={f} className="btn btn-ghost" href={`/api/reports/export?month=${p.month}&year=${p.year}${type ? `&type=${type}` : ""}&format=${f}`}><Download className="h-4 w-4" />{l}</a>)}
           {canSubmit && <Link href="/admin/reports/new" className="btn btn-primary"><FilePlus2 className="h-4 w-4" />Submit report</Link>}
@@ -69,7 +84,7 @@ export function ReportsHub({ canSubmit }: { canSubmit: boolean }) {
         {rows?.map((r, i) => (
           <motion.button key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }} onClick={() => setOpen(r)} className="glass glass-hover flex flex-wrap items-center justify-between gap-3 p-4 text-left">
             <div className="min-w-0"><p className="truncate font-bold">{r.names.parish ?? r.names.area ?? r.names.zone}</p><p className="truncate text-xs text-white/45">{[r.names.zone, r.names.area].filter(Boolean).join(" → ")} · {MONTHS[r.month - 1]} {r.year}</p></div>
-            <div className="flex flex-wrap items-center gap-2"><span className="badge capitalize">{r.type}</span>{r.remittance && <span className={statusBadge[r.remittance.status]}>{statusLabel[r.remittance.status]}</span>}{r.contact && <span className="text-xs text-white/55">{r.contact.fullName}</span>}</div>
+            <div className="flex flex-wrap items-center gap-2"><span className="badge capitalize">{r.type}</span>{r.status === "revised" && <span className="badge badge-warn">Revised v{r.revision}</span>}{r.remittance && <span className={statusBadge[r.remittance.status]}>{statusLabel[r.remittance.status]}</span>}{r.contact && <span className="text-xs text-white/55">{r.contact.fullName}</span>}</div>
           </motion.button>
         ))}
         {rows?.length === 0 && <div className="glass p-10 text-center text-white/45">No reports submitted for {MONTHS[p.month - 1]} {p.year} yet.</div>}
@@ -78,6 +93,7 @@ export function ReportsHub({ canSubmit }: { canSubmit: boolean }) {
       <Modal open={!!open} onClose={() => setOpen(null)} wide title={open ? `${open.names.parish ?? open.names.area ?? open.names.zone} · ${MONTHS[open.month - 1]} ${open.year}` : ""}>
         {open && (
           <div className="space-y-5 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-xs"><span className="badge">{open.reportId ?? "No report ID"}</span><span className={cn("badge", open.status === "revised" ? "badge-warn" : "badge-ok")}>{open.status === "revised" ? `Revised (version ${open.revision})` : "Submitted"}</span><span className="text-white/45">Submitted {new Date(open.submittedAt).toLocaleString("en-NG")}</span></div>
             <div className="grid gap-3 sm:grid-cols-3">{[["Zone", open.names.zone], ["Area", open.names.area ?? "—"], ["Parish", open.names.parish ?? "—"]].map(([k, v]) => <div key={k}><p className="label">{k}</p><b>{v}</b></div>)}</div>
             {open.contact ? (
               <div className="rounded-2xl border border-brand/30 bg-brand/10 p-4">
@@ -90,9 +106,48 @@ export function ReportsHub({ canSubmit }: { canSubmit: boolean }) {
             {open.remittance && <div className="rounded-xl bg-white/5 p-4"><p className="label">Youth Sunday remittance</p><p>Offering {formatNaira(open.remittance.offeringKobo)} · required <b>{formatNaira(open.remittance.requiredKobo)}</b> · <span className={statusBadge[open.remittance.status]}>{statusLabel[open.remittance.status]}</span></p></div>}
             {open.rollup && <div className="rounded-xl bg-white/5 p-4"><p className="label">Consolidation at submission</p><p className="text-white/70">{Object.entries(open.rollup).filter(([, v]) => typeof v === "number").map(([k, v]) => `${k.replace(/([A-Z])/g, " $1").toLowerCase()}: ${v}`).join(" · ")}</p></div>}
             <div className="space-y-3">{FIELDS[open.type as "parish"].map((f) => open.activity?.[f.key] !== undefined && open.activity?.[f.key] !== null && open.activity?.[f.key] !== "" ? <div key={f.key}><p className="label">{f.label}</p><p className="whitespace-pre-line text-white/80">{String(open.activity[f.key])}</p></div> : null)}</div>
+            {open.history?.length > 0 && (
+              <details className="rounded-xl bg-white/5 p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-white/60">Revision history ({open.history.length}, read-only)</summary>
+                <ul className="mt-3 space-y-3">{[...open.history].reverse().map((h: any, i: number) => (
+                  <li key={i} className="rounded-lg border border-white/10 p-3 text-xs"><b>Version {h.revision}</b> · {new Date(h.at).toLocaleString("en-NG")}{h.byName && <> · {h.byName}</>}{h.note && <p className="mt-1 text-white/60">Reason for revision: {h.note}</p>}
+                    {h.contact && <p className="mt-1 text-white/60">Contact then: {h.contact.fullName}, {h.contact.phone}{h.contact.altPhone ? `, ${h.contact.altPhone}` : ""}</p>}
+                    <div className="mt-2 space-y-1">{FIELDS[open.type as "parish"].map((fd) => h.activity?.[fd.key] !== undefined && h.activity?.[fd.key] !== "" ? <p key={fd.key} className="text-white/55"><span className="text-white/40">{fd.label}:</span> {String(h.activity[fd.key])}</p> : null)}</div></li>
+                ))}</ul></details>
+            )}
+            {canSubmit && <button className="btn btn-ghost" onClick={() => setRevising(open)}>Revise this report</button>}
           </div>
         )}
       </Modal>
+      {revising && <ReviseModal r={revising} onClose={() => setRevising(null)} onDone={() => { setRevising(null); setOpen(null); reload(); }} />}
     </>
+  );
+}
+
+function ReviseModal({ r, onClose, onDone }: { r: any; onClose: () => void; onDone: () => void }) {
+  const toast = useToast();
+  const [contact, setContact] = useState<Contact>({ fullName: r.contact?.fullName ?? "", phone: r.contact?.phone ?? "", altPhone: r.contact?.altPhone ?? "" });
+  const [act, setAct] = useState<Record<string, string>>(Object.fromEntries(Object.entries(r.activity ?? {}).map(([k, v]) => [k, String(v ?? "")])));
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    try {
+      const activity: Record<string, unknown> = {};
+      for (const fd of FIELDS[r.type as "parish"]) { const v = act[fd.key] ?? ""; activity[fd.key] = fd.kind === "int" ? (v === "" ? "" : Number(v)) : v; }
+      await api(`/api/reports/${r.id}`, { method: "PATCH", json: { contact, activity, note } });
+      toast.ok("Report revised. The earlier version is kept in its history."); onDone();
+    } catch (e: any) { toast.err(e.message); }
+    setBusy(false);
+  };
+  return (
+    <Modal open onClose={onClose} wide title={`Revise ${r.reportId ?? "report"}`}>
+      <div className="space-y-5 text-sm">
+        <p className="rounded-xl bg-white/5 p-3 text-xs text-white/60">Your earlier answers are not lost. They stay in the revision history. The financial section isn't changed here.</p>
+        <ContactSection value={contact} onChange={setContact} />
+        <ActivityFields fields={[...FIELDS[r.type as "parish"]]} values={act} onChange={(k, v) => setAct((a) => ({ ...a, [k]: v }))} />
+        <div><label className="label" htmlFor="rev-note">Reason for revising (optional)</label><input id="rev-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} /></div>
+        <div className="flex gap-2"><button className="btn btn-primary" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save revision"}</button><button className="btn btn-ghost" onClick={onClose}>Cancel</button></div>
+      </div>
+    </Modal>
   );
 }

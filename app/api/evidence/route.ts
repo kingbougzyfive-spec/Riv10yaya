@@ -1,5 +1,6 @@
 import { handle } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
+import crypto from "node:crypto";
 import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,8 @@ export const POST = handle(async (req) => {
   if (!ALLOWED.includes(file.type)) throw new ApiError(415, "Upload a JPG, PNG, WebP or PDF.");
   if (file.size > MAX) throw new ApiError(413, "That file is over 4 MB.");
   const { Media } = await getDb();
-  const m = await Media.create({ name: file.name.slice(0, 120), mime: file.type, size: file.size, data: Buffer.from(await file.arrayBuffer()), uploadedBy: user.id, private: true, parish: user.parish });
+  const data = Buffer.from(await file.arrayBuffer());
+  const hash = crypto.createHash("sha256").update(data).digest("hex");
+  const m = await Media.create({ name: file.name.slice(0, 120), mime: file.type, size: file.size, data, hash, uploadedBy: user.id, private: true, parish: user.parish });
   return { id: String(m._id), name: m.name };
 });
