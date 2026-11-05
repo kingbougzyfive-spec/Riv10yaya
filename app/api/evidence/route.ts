@@ -9,8 +9,9 @@ const ALLOWED = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
 
 /** Private upload of payment evidence (receipt / transfer screenshot / PDF). Parish admins only. */
 export const POST = handle(async (req) => {
-  const user = await requireApiUser(["parish_admin"]);
-  if (!user.parish) throw new ApiError(400, "Your account isn't linked to a parish yet.");
+  // Parishes upload receipts; finance staff may attach statement extracts or other supporting evidence.
+  const user = await requireApiUser(["parish_admin", "finance_admin", "super_admin"]);
+  if (user.role === "parish_admin" && !user.parish) throw new ApiError(400, "Your account isn't linked to a parish yet.");
   const file = (await req.formData()).get("file");
   if (!(file instanceof File)) throw new ApiError(400, "Choose a file to upload.");
   if (!ALLOWED.includes(file.type)) throw new ApiError(415, "Upload a JPG, PNG, WebP or PDF.");
@@ -18,6 +19,6 @@ export const POST = handle(async (req) => {
   const { Media } = await getDb();
   const data = Buffer.from(await file.arrayBuffer());
   const hash = crypto.createHash("sha256").update(data).digest("hex");
-  const m = await Media.create({ name: file.name.slice(0, 120), mime: file.type, size: file.size, data, hash, uploadedBy: user.id, private: true, parish: user.parish });
+  const m = await Media.create({ name: file.name.slice(0, 120), mime: file.type, size: file.size, data, hash, uploadedBy: user.id, private: true, ...(user.role === "parish_admin" ? { parish: user.parish } : {}) });
   return { id: String(m._id), name: m.name };
 });

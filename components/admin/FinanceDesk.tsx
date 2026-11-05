@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
 import { cn } from "@/lib/cn";
 import { formatNaira, MONTHS } from "@/lib/money";
+import { FV_LABEL, PROBLEM_STATUSES } from "@/lib/verification";
 import { EvidenceUpload, PeriodPicker, statusBadge, statusLabel } from "./report-bits";
 
 type Role = string;
@@ -33,7 +34,7 @@ export function FinanceDesk({ role }: { role: Role }) {
 
       <div className="mb-4 mt-8 flex flex-wrap items-center gap-3">
         <PeriodPicker month={p.month} year={p.year} onChange={(month, year) => setP({ month, year })} />
-        <select className="input !w-auto" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">All statuses</option>{Object.entries(statusLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+        <select className="input !w-auto" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">All statuses</option>{Object.entries(FV_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
         <div className="glass ml-auto flex gap-1 p-1">{([["yst", "Youth Sunday 40%"], ["levy", "Other levies"]] as const).map(([k, l]) => <button key={k} onClick={() => setKind(k)} className={cn("relative rounded-xl px-4 py-2 text-sm font-semibold", kind === k ? "text-[#04130d]" : "text-white/60")}>{kind === k && <motion.span layoutId="fin-kind" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">{l}</span></button>)}</div>
       </div>
 
@@ -42,8 +43,8 @@ export function FinanceDesk({ role }: { role: Role }) {
         {rows?.map((r, i) => (
           <motion.button key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }} onClick={() => setSel(r)} className="glass glass-hover grid gap-3 p-4 text-left sm:grid-cols-[1.4fr_1fr_auto] sm:items-center">
             <div className="min-w-0"><p className="truncate font-bold">{r.parish}</p><p className="truncate text-xs text-white/45">{[r.zone, r.area].filter(Boolean).join(" → ")} · {MONTHS[r.month - 1]} {r.year}{r.description ? ` · ${r.description}` : ""}</p></div>
-            <div className="text-sm">{r.kind === "yst" ? <><p>Required <b>{formatNaira(r.requiredKobo)}</b></p><p className="text-xs text-white/45">Paid {formatNaira(r.amountKobo)}{r.confirmedKobo != null ? ` · confirmed ${formatNaira(r.confirmedKobo)}` : ""}</p></> : <p>Amount <b>{formatNaira(r.amountKobo)}</b></p>}</div>
-            <span className={statusBadge[r.status]}>{statusLabel[r.status]}</span>
+            <div className="text-sm">{r.kind === "yst" ? <><p>Required <b>{formatNaira(r.requiredKobo)}</b></p><p className="text-xs text-white/45">Paid {formatNaira(r.totals.declaredKobo)} · confirmed {formatNaira(r.totals.confirmedKobo)}{r.totals.outstandingKobo > 0 ? ` · owing ${formatNaira(r.totals.outstandingKobo)}` : r.totals.overpaidKobo > 0 ? ` · over by ${formatNaira(r.totals.overpaidKobo)}` : ""}</p></> : <p>Amount <b>{formatNaira(r.amountKobo)}</b></p>}</div>
+            <span className={statusBadge[r.fv]}>{statusLabel[r.fv]}</span>
           </motion.button>
         ))}
         {rows?.length === 0 && <div className="glass p-10 text-center text-white/45">No {kind === "yst" ? "remittances" : "levies"} for {MONTHS[p.month - 1]} {p.year}.</div>}
@@ -86,68 +87,164 @@ function Settings({ s, onSaved }: { s: any; onSaved: () => void }) {
 
 function Detail({ r, role, canReview, onClose, onDone }: { r: any; role: Role; canReview: boolean; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
-  const [note, setNote] = useState("");
-  const [amount, setAmount] = useState(String(r.amountKobo / 100));
-  const [ev, setEv] = useState("");
   const [busy, setBusy] = useState("");
-  const [ai, setAi] = useState<any>(r.analysis ?? null);
-  const readAi = async () => { setBusy("ai"); try { const x = await api(`/api/remittances/${r.id}/analyze`, { method: "POST" }); setAi(x.analysis); } catch (e: any) { toast.err(e.message); } setBusy(""); };
-  const canRespond = role === "parish_admin" && ["needs_evidence", "rejected", "flagged"].includes(r.status);
-  const act = async (action: string) => {
-    setBusy(action);
-    try { await api(`/api/remittances/${r.id}`, { method: "PATCH", json: { action, note, ...(action === "confirm" ? { confirmedAmount: Number(amount) } : {}), ...(ev ? { evidenceId: ev } : {}) } }); toast.ok("Done"); onDone(); }
+  const isParish = role === "parish_admin";
+  const t = r.totals;
+  // The original payment plus any additional payments toward the same obligation.
+  const pays = [
+    { id: undefined as string | undefined, label: "Payment 1", status: r.status, amountKobo: r.amountKobo, confirmedKobo: r.confirmedKobo, seenKobo: r.seenKobo, paidAt: r.paidAt, reference: r.reference, remarks: r.remarks, evidenceId: r.evidenceId, analysis: r.analysis, flags: r.flags, history: r.history },
+    ...r.payments.map((x: any, n: number) => ({ ...x, label: `Payment ${n + 2}` })),
+  ];
+  const act = async (body: Record<string, unknown>, key: string) => {
+    setBusy(key);
+    try { await api(`/api/remittances/${r.id}`, { method: "PATCH", json: body }); toast.ok("Saved. The history has been updated."); onDone(); }
     catch (e: any) { toast.err(e.message); }
     setBusy("");
   };
-  const Btn = ({ a, l, cls }: { a: string; l: string; cls: string }) => <button className={cn("btn btn-sm", cls)} disabled={!!busy} onClick={() => act(a)}>{busy === a && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{l}</button>;
   return (
     <Modal open onClose={onClose} wide title={`${r.parish} · ${MONTHS[r.month - 1]} ${r.year}`}>
       <div className="space-y-5 text-sm">
         <div className="grid gap-3 sm:grid-cols-3">
           {r.kind === "yst" ? <><div><p className="label">Offering</p><b>{formatNaira(r.offeringKobo)}</b></div><div><p className="label">Required ({r.percentBp / 100}%)</p><b>{formatNaira(r.requiredKobo)}</b></div></> : <div className="sm:col-span-2"><p className="label">Levy</p><b>{r.description}</b></div>}
-          <div><p className="label">Parish says it paid</p><b>{formatNaira(r.amountKobo)}</b></div>
-          <div><p className="label">Paid on</p><b>{new Date(r.paidAt).toLocaleDateString("en-NG")}</b></div>
-          <div><p className="label">Reference</p><b>{r.reference || "—"}</b></div>
-          <div><p className="label">Status</p><span className={statusBadge[r.status]}>{statusLabel[r.status]}</span></div>
+          <div><p className="label">Overall payment status</p><span className={statusBadge[r.fv]}>{statusLabel[r.fv]}</span></div>
+          <div><p className="label">Declared by parish</p><b>{formatNaira(t.declaredKobo)}</b></div>
+          <div><p className="label">Confirmed by finance</p><b>{formatNaira(t.confirmedKobo)}</b></div>
+          {r.kind === "yst" && <div><p className="label">{t.overpaidKobo ? "Overpaid" : "Outstanding balance"}</p><b className={t.outstandingKobo ? "text-accent" : ""}>{formatNaira(t.overpaidKobo || t.outstandingKobo)}</b></div>}
         </div>
-        {r.remarks && <p className="rounded-xl bg-white/5 p-3 text-white/70">{r.remarks}</p>}
-        {(r.flags?.length > 0 || ai?.flags?.length > 0) && (
-          <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/60">Points to check <span className="badge">for human review</span></p>
-            <ul className="space-y-2">{[...(r.flags ?? []).filter((f: any) => !(ai?.flags ?? []).some((a: any) => a.code === f.code)), ...(ai?.flags ?? [])].map((f: any, i: number) => (
-              <li key={i} className={cn("rounded-lg p-2.5 text-xs", f.level === "alert" ? "badge-bad" : f.level === "warn" ? "badge-warn" : "bg-white/5 text-white/65")}><b>{f.label}</b>{f.detail && <p className="mt-0.5 opacity-80">{f.detail}</p>}</li>
-            ))}</ul>
-            <p className="mt-2 text-[11px] text-white/40">These are prompts, not findings. A flag does not mean anyone did something wrong, and no flags does not prove the money arrived. Confirm against the bank statement.</p>
-          </div>
-        )}
-        {canReview && r.evidenceId && (
-          <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/60"><Bot className="h-4 w-4 text-accent" />AI receipt reading <span className="badge">advisory</span></p><button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={readAi}>{busy === "ai" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{ai ? "Read again" : "Read receipt"}</button></div>
-            {ai && (<div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-              <p>Amount on receipt: <b>{ai.amountNaira != null ? formatNaira(Math.round(ai.amountNaira * 100)) : "couldn't read"}</b> {ai.amountMatches === true && <span className="badge badge-ok">matches declared</span>}{ai.amountMatches === false && <span className="badge badge-bad">differs from declared {formatNaira(Math.round(ai.declaredNaira * 100))}</span>}</p>
-              <p>Date: <b>{ai.date ?? "—"}</b></p>
-              <p>Reference: <b>{ai.reference ?? "—"}</b> {ai.refMatches === true && <span className="badge badge-ok">matches</span>}{ai.refMatches === false && <span className="badge badge-warn">differs</span>}</p>
-              <p>Bank: <b>{ai.bank ?? "—"}</b> · Confidence: <b>{ai.confidence}</b></p>
-              <p>Paid to: <b>{ai.beneficiaryName ?? "—"}</b>{ai.beneficiaryAccount ? ` · ${ai.beneficiaryAccount}` : ""}</p>
-              <p>Sender: <b>{ai.payerName ?? "—"}</b> · Time: <b>{ai.time ?? "—"}</b> · Status on receipt: <b>{ai.transactionStatus ?? "—"}</b></p>
-              {!ai.looksLikePaymentProof && <p className="badge-warn rounded-lg p-2 sm:col-span-2">This may not be a payment receipt.</p>}
-              {ai.notes && <p className="text-white/60 sm:col-span-2">{ai.notes}</p>}
-              <p className="text-[11px] text-white/35 sm:col-span-2">Automated reading can be wrong. Always compare with your bank statement before confirming.</p>
-            </div>)}
-          </div>
-        )}
-        {r.evidenceId && <a href={`/api/media/${r.evidenceId}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost"><ExternalLink className="h-4 w-4" />View payment evidence</a>}
-        <div><p className="label">History (cannot be edited)</p><ul className="space-y-2">{r.history.map((h: any, i: number) => <li key={i} className="rounded-xl bg-white/5 p-3 text-xs"><b className="capitalize">{h.action.replace("_", " ")}</b> · {h.byName} · {new Date(h.at).toLocaleString("en-NG")}{h.note && <p className="mt-1 text-white/65">{h.note}</p>}{h.evidenceId && <a className="mt-1 inline-block text-brand underline" target="_blank" rel="noopener noreferrer" href={`/api/media/${h.evidenceId}`}>Attached evidence</a>}</li>)}</ul></div>
-        {canReview && r.status !== "confirmed" && (
-          <div className="space-y-3 border-t border-white/10 pt-4">
-            <div className="grid gap-3 sm:grid-cols-2"><div><label className="label">Amount seen in bank (₦)</label><input className="input" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></div><div><label className="label">Note (required unless confirming)</label><input className="input" value={note} onChange={(e) => setNote(e.target.value)} /></div></div>
-            <div className="flex flex-wrap gap-2"><Btn a="confirm" l="Confirm payment" cls="btn-primary" /><Btn a="request_evidence" l="Request more evidence" cls="btn-ghost" /><Btn a="flag" l="Flag as missing/mismatch" cls="btn-ghost" /><Btn a="reject" l="Reject" cls="btn-danger" /></div>
-          </div>
-        )}
-        {canRespond && (
-          <div className="space-y-3 border-t border-white/10 pt-4"><p className="font-bold">Respond to finance</p><textarea className="input" rows={3} placeholder="Explain or clarify…" value={note} onChange={(e) => setNote(e.target.value)} /><EvidenceUpload label="New evidence (optional)" value={ev} onChange={(id) => setEv(id)} /><Btn a="respond" l="Send response" cls="btn-primary" /></div>
-        )}
+        {r.kind === "yst" && <p className="text-xs text-white/45">Only money confirmed against the receiving account counts. The obligation is paid only when confirmed payments (plus audited adjustments) reach the required amount.</p>}
+
+        {pays.map((pay) => <PaymentCard key={pay.id ?? "root"} r={r} pay={pay} canReview={canReview} isParish={isParish} act={act} busy={busy} />)}
+
+        {r.adjustments.length > 0 && <div><p className="label">Manual adjustments (permanent)</p><ul className="space-y-2">{r.adjustments.map((a: any, i: number) => <li key={i} className="rounded-xl bg-white/5 p-3 text-xs"><b>{a.amountKobo > 0 ? "+" : ""}{formatNaira(a.amountKobo)}</b> · {a.byName} · {new Date(a.at).toLocaleString("en-NG")}<p className="mt-1 text-white/65">{a.reason}</p></li>)}</ul></div>}
+
+        {canReview && r.kind === "yst" && <Adjust act={act} busy={busy} />}
+        {isParish && r.kind === "yst" && !t.satisfied && <AddPayment r={r} onDone={onDone} />}
       </div>
     </Modal>
+  );
+}
+
+function PaymentCard({ r, pay, canReview, isParish, act, busy }: { r: any; pay: any; canReview: boolean; isParish: boolean; act: (b: Record<string, unknown>, k: string) => void; busy: string }) {
+  const toast = useToast();
+  const [ai, setAi] = useState<any>(pay.analysis ?? null);
+  const [f, setF] = useState({ amount: String(pay.amountKobo / 100), seen: "", ref: "", reason: "", note: "", ev: "" });
+  const [aiBusy, setAiBusy] = useState(false);
+  const fv = ai && pay.status === "submitted" ? "ai_examined" : pay.status === "submitted" ? "receipt_uploaded" : pay.status;
+  const problem = PROBLEM_STATUSES.includes(pay.status);
+  const key = pay.id ?? "root";
+  const readAi = async () => { setAiBusy(true); try { const x = await api(`/api/remittances/${r.id}/analyze${pay.id ? `?paymentId=${pay.id}` : ""}`, { method: "POST" }); setAi(x.analysis); } catch (e: any) { toast.err(e.message); } setAiBusy(false); };
+  const base = { paymentId: pay.id };
+  const decide = (action: string) => act({ ...base, action, reason: f.reason, note: f.note, bankReference: f.ref, ...(f.ev ? { evidenceId: f.ev } : {}), ...(action === "confirm" ? { confirmedAmount: Number(f.amount) } : {}), ...(action === "amount_mismatch" && f.seen ? { seenAmount: Number(f.seen) } : {}) }, `${key}-${action}`);
+  const B = ({ a, l, cls }: { a: string; l: string; cls: string }) => <button className={cn("btn btn-sm", cls)} disabled={!!busy} onClick={() => decide(a)}>{busy === `${key}-${a}` && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{l}</button>;
+  return (
+    <section className="space-y-4 rounded-2xl border border-white/10 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold">{pay.label}</p><span className={statusBadge[fv]}>{statusLabel[fv]}</span></div>
+      <div className="grid gap-3 sm:grid-cols-4">
+        <div><p className="label">Parish says it paid</p><b>{formatNaira(pay.amountKobo)}</b></div>
+        <div><p className="label">Paid on</p><b>{new Date(pay.paidAt).toLocaleDateString("en-NG")}</b></div>
+        <div><p className="label">Reference</p><b>{pay.reference || "—"}</b></div>
+        <div><p className="label">{pay.status === "confirmed" ? "Confirmed" : pay.seenKobo != null ? "Amount finance found" : "Confirmed"}</p><b>{pay.status === "confirmed" ? formatNaira(pay.confirmedKobo ?? 0) : pay.seenKobo != null ? formatNaira(pay.seenKobo) : "—"}</b></div>
+      </div>
+      {pay.remarks && <p className="rounded-xl bg-white/5 p-3 text-white/70">{pay.remarks}</p>}
+      {pay.status === "payment_not_found" && <p className="rounded-xl p-3 text-xs badge-warn">Payment not found: financial verification outstanding. This is an open verification issue, not a finding that nothing was paid. The monthly report is unaffected.</p>}
+
+      {(pay.flags?.length > 0 || ai?.flags?.length > 0) && (
+        <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/60">Points to check <span className="badge">for human review</span></p>
+          <ul className="space-y-2">{[...(pay.flags ?? []).filter((x: any) => !(ai?.flags ?? []).some((a: any) => a.code === x.code)), ...(ai?.flags ?? [])].map((x: any, i: number) => (
+            <li key={i} className={cn("rounded-lg p-2.5 text-xs", x.level === "alert" ? "badge-bad" : x.level === "warn" ? "badge-warn" : "bg-white/5 text-white/65")}><b>{x.label}</b>{x.detail && <p className="mt-0.5 opacity-80">{x.detail}</p>}</li>
+          ))}</ul>
+          <p className="mt-2 text-[11px] text-white/40">These are prompts, not findings. A flag does not mean anyone did something wrong, and no flags does not prove the money arrived. Confirm against the bank statement.</p>
+        </div>
+      )}
+
+      {canReview && pay.evidenceId && (
+        <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/60"><Bot className="h-4 w-4 text-accent" />AI receipt reading <span className="badge">advisory</span></p><button className="btn btn-ghost btn-sm" disabled={aiBusy} onClick={readAi}>{aiBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{ai ? "Read again" : "Read receipt"}</button></div>
+          {ai && (<div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+            <p>Amount on receipt: <b>{ai.amountNaira != null ? formatNaira(Math.round(ai.amountNaira * 100)) : "couldn't read"}</b> {ai.amountMatches === true && <span className="badge badge-ok">matches declared</span>}{ai.amountMatches === false && <span className="badge badge-bad">differs from declared {formatNaira(Math.round(ai.declaredNaira * 100))}</span>}</p>
+            <p>Date: <b>{ai.date ?? "—"}</b> · Time: <b>{ai.time ?? "—"}</b></p>
+            <p>Reference: <b>{ai.reference ?? "—"}</b> {ai.refMatches === true && <span className="badge badge-ok">matches</span>}{ai.refMatches === false && <span className="badge badge-warn">differs</span>}</p>
+            <p>Bank: <b>{ai.bank ?? "—"}</b> · Confidence: <b>{ai.confidence}</b></p>
+            <p>Paid to: <b>{ai.beneficiaryName ?? "—"}</b>{ai.beneficiaryAccount ? ` · ${ai.beneficiaryAccount}` : ""}</p>
+            <p>Sender: <b>{ai.payerName ?? "—"}</b> · Status on receipt: <b>{ai.transactionStatus ?? "—"}</b></p>
+            {ai.notes && <p className="text-white/60 sm:col-span-2">{ai.notes}</p>}
+            <p className="text-[11px] text-white/35 sm:col-span-2">Automated reading can be wrong. Always compare with your bank statement before confirming.</p>
+          </div>)}
+        </div>
+      )}
+
+      {pay.evidenceId && <a href={`/api/media/${pay.evidenceId}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm"><ExternalLink className="h-4 w-4" />View original receipt</a>}
+      <div><p className="label">History (cannot be edited or deleted)</p>
+        <ul className="space-y-2">{pay.history.map((h: any, i: number) => (
+          <li key={i} className="rounded-xl bg-white/5 p-3 text-xs"><b className="capitalize">{h.action.replaceAll("_", " ")}</b> · {h.byName} · {new Date(h.at).toLocaleString("en-NG")}
+            {h.amountKobo != null && <span> · {formatNaira(h.amountKobo)}</span>}{h.reference && <span> · bank ref {h.reference}</span>}
+            {h.reason && <p className="mt-1 text-white/75">Reason: {h.reason}</p>}{h.note && <p className="mt-1 text-white/65">{h.note}</p>}
+            {h.evidenceId && <a className="mt-1 inline-block text-brand underline" target="_blank" rel="noopener noreferrer" href={`/api/media/${h.evidenceId}`}>Attached evidence</a>}</li>
+        ))}</ul></div>
+
+      {canReview && pay.status !== "confirmed" && (
+        <div className="space-y-3 border-t border-white/10 pt-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-white/60">Finance verification</p>
+          <p className="text-xs text-white/45">Compare with the actual receiving account statement, not just the receipt.</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div><label className="label">Amount found in account (₦)</label><input className="input" type="number" step="0.01" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></div>
+            <div><label className="label">Bank / transaction reference</label><input className="input" value={f.ref} onChange={(e) => setF({ ...f, ref: e.target.value })} /></div>
+            <div><label className="label">Different amount seen (₦, if mismatch)</label><input className="input" type="number" step="0.01" value={f.seen} onChange={(e) => setF({ ...f, seen: e.target.value })} /></div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div><label className="label">Reason (required unless confirming)</label><input className="input" value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></div>
+            <div><label className="label">Remarks</label><input className="input" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></div>
+          </div>
+          <EvidenceUpload label="Attach statement extract or other evidence (optional)" value={f.ev} onChange={(id) => setF({ ...f, ev: id })} />
+          <div className="flex flex-wrap gap-2">
+            {pay.status === "submitted" && <B a="begin_review" l="Begin verification" cls="btn-ghost" />}
+            <B a="confirm" l="Confirm payment" cls="btn-primary" /><B a="payment_not_found" l="Payment not found" cls="btn-ghost" /><B a="amount_mismatch" l="Amount mismatch" cls="btn-ghost" /><B a="request_resubmission" l="Request resubmission" cls="btn-ghost" /><B a="reject" l="Reject" cls="btn-danger" />
+          </div>
+        </div>
+      )}
+      {isParish && problem && (
+        <div className="space-y-3 border-t border-white/10 pt-4"><p className="font-bold">Respond to finance</p><textarea className="input" rows={3} placeholder="Add transaction details or explain…" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /><EvidenceUpload label="Additional evidence (optional). Your original receipt stays on file." value={f.ev} onChange={(id) => setF({ ...f, ev: id })} />
+          <button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => act({ ...base, action: "respond", note: f.note, ...(f.ev ? { evidenceId: f.ev } : {}) }, `${key}-respond`)}>{busy === `${key}-respond` && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Send response</button></div>
+      )}
+    </section>
+  );
+}
+
+function Adjust({ act, busy }: { act: (b: Record<string, unknown>, k: string) => void; busy: string }) {
+  const [a, setA] = useState({ amount: "", reason: "", ref: "", ev: "" });
+  return (
+    <details className="rounded-2xl border border-white/10 p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-white/60">Manual financial adjustment</summary>
+      <div className="mt-3 space-y-3">
+        <p className="text-xs text-white/50">Use only for corrections that can't be recorded as a payment (for example a verified offline payment or a credit carried forward). A reason is mandatory and the entry can never be removed.</p>
+        <div className="grid gap-3 sm:grid-cols-3"><div><label className="label">Amount (₦, negative to reduce)</label><input className="input" type="number" step="0.01" value={a.amount} onChange={(e) => setA({ ...a, amount: e.target.value })} /></div><div className="sm:col-span-2"><label className="label">Reason (required)</label><input className="input" value={a.reason} onChange={(e) => setA({ ...a, reason: e.target.value })} /></div></div>
+        <EvidenceUpload label="Supporting evidence (optional)" value={a.ev} onChange={(id) => setA({ ...a, ev: id })} />
+        <button className="btn btn-ghost btn-sm" disabled={!!busy || !a.amount || a.reason.length < 5} onClick={() => act({ action: "adjust", adjustAmount: Number(a.amount), reason: a.reason, ...(a.ev ? { evidenceId: a.ev } : {}) }, "adjust")}>{busy === "adjust" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Record adjustment</button>
+      </div>
+    </details>
+  );
+}
+
+function AddPayment({ r, onDone }: { r: any; onDone: () => void }) {
+  const toast = useToast();
+  const [f, setF] = useState({ amount: String(r.totals.outstandingKobo / 100), paidAt: new Date().toISOString().slice(0, 10), reference: "", evidenceId: "", remarks: "" });
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!f.evidenceId) return toast.err("Upload the payment evidence first.");
+    setBusy(true);
+    try { await api(`/api/remittances/${r.id}/payments`, { method: "POST", json: { amountPaid: Number(f.amount), paidAt: f.paidAt, reference: f.reference, evidenceId: f.evidenceId, remarks: f.remarks } }); toast.ok("Additional payment submitted for verification."); onDone(); }
+    catch (e: any) { toast.err(e.message); }
+    setBusy(false);
+  };
+  return (
+    <details className="rounded-2xl border border-white/10 p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-white/60">Make another payment toward this remittance (balance {formatNaira(r.totals.outstandingKobo)})</summary>
+      <div className="mt-3 space-y-3">
+        <p className="text-xs text-white/50">Pay into the same official provincial account, then upload the receipt. It counts only after finance confirms it.</p>
+        <div className="grid gap-3 sm:grid-cols-3"><div><label className="label">Amount paid (₦)</label><input className="input" type="number" step="0.01" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></div><div><label className="label">Date of payment</label><input className="input" type="date" value={f.paidAt} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setF({ ...f, paidAt: e.target.value })} /></div><div><label className="label">Reference</label><input className="input" value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} /></div></div>
+        <EvidenceUpload value={f.evidenceId} onChange={(id) => setF({ ...f, evidenceId: id })} />
+        <input className="input" placeholder="Remarks (optional)" value={f.remarks} onChange={(e) => setF({ ...f, remarks: e.target.value })} />
+        <button className="btn btn-primary btn-sm" disabled={busy} onClick={save}>{busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Submit payment</button>
+      </div>
+    </details>
   );
 }

@@ -34,14 +34,15 @@ export const GET = handle(async (req) => {
   const f: any = { ...scope };
   if (q.get("month")) f.month = Number(q.get("month"));
   if (q.get("year")) f.year = Number(q.get("year"));
-  if (q.get("status")) f.status = q.get("status");
   if (q.get("kind")) f.kind = q.get("kind");
   const { Remittance, Zone, Area, Parish } = await getDb();
-  const [rows, zones, areas, parishes] = await Promise.all([
+  let [rows, zones, areas, parishes] = await Promise.all([
     Remittance.find(f).sort({ createdAt: -1 }).limit(500).lean<any[]>(),
     Zone.find({}, { name: 1 }).lean<any[]>(), Area.find({}, { name: 1 }).lean<any[]>(), Parish.find({}, { name: 1 }).lean<any[]>(),
   ]);
   const hist = (h: any) => ({ at: h.at, byName: h.byName, action: h.action, note: h.note, reason: h.reason, reference: h.reference, amountKobo: h.amountKobo, paymentId: h.paymentId, evidenceId: h.evidenceId ? String(h.evidenceId) : null });
+  const want = q.get("status");
+  if (want) rows = rows.filter((r) => obligationFv(r) === want);
   const nm = (l: any[]) => new Map(l.map((x) => [String(x._id), x.name]));
   const [z, a, p] = [nm(zones), nm(areas), nm(parishes)];
   return {

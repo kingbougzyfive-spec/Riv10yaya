@@ -67,6 +67,14 @@ Images live in the database (≤4 MB, big photos auto-shrunk in the browser), so
 ## Home page (updated)
 The hero is a slider: slide 1 is the Hero tab in Admin → Site Editor, and **More slides** adds up to 8 more (each with its own photo, text and buttons). Below it, a countdown bar shows the next published event, followed by upcoming events and a join call-to-action. No sample events are created; the home page shows only what you publish under Admin → Events.
 
+## Financial verification and compliance (sections 9.3 to 9.7)
+- **Two independent statuses.** Report status (not started, draft, submitted, completed, revision requested, incomplete) and financial verification status (awaiting evidence, receipt uploaded, AI examination completed, awaiting finance verification, confirmed, payment not found, amount mismatch, rejected, resubmission required). A report never waits for payment verification.
+- **Finance decisions** (finance admin / super admin only, never on your own parish): begin verification, confirm (amount found, bank reference, remarks, optional attachment), payment not found, amount mismatch, request resubmission, reject. Every decision stores who, when, why, reference and amount, and is append-only.
+- **Payment not found** notifies the parish, area and zonal administrators (in-app bell, plus email when configured), asks for more details, lets the parish respond and upload more evidence, keeps the original receipt, and never touches the submitted report.
+- **Part payments, overpayments, adjustments.** A remittance can have several payments, each verified separately. Outstanding = required minus confirmed; it is paid only when confirmed money reaches the requirement. Manual adjustments need a reason and are permanent.
+- **Compliance** (Admin → Reports → Compliance) is derived from both statuses. Only confirmed money counts as revenue; pending, rejected or unverified evidence never does.
+- **Report review**: zonal/area/provincial reviewers can mark a report completed, request a revision or mark it incomplete. Parish administrators can save drafts and revise submitted reports (history kept).
+
 ## Light / dark theme (added)
 A sun/moon button (website header and admin sidebar) switches themes and remembers the choice per device. Dark is the default. Tailwind's `white` colour is mapped to a theme variable, so existing `text-white/…`, `bg-white/…`, `border-white/…` classes adapt automatically; QR codes and print sheets stay true white.
 
