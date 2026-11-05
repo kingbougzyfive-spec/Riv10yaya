@@ -5,6 +5,7 @@ import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { duplicateChecks, flagsFromDuplicates } from "@/lib/receipt-checks";
 import { getFinance } from "@/lib/finance";
+import { obligationFv, paymentFv, totals } from "@/lib/verification";
 import { remittanceKobo, toKobo } from "@/lib/money";
 import { periodSchema } from "@/lib/report-config";
 import { PERMS } from "@/lib/rbac";
@@ -40,17 +41,23 @@ export const GET = handle(async (req) => {
     Remittance.find(f).sort({ createdAt: -1 }).limit(500).lean<any[]>(),
     Zone.find({}, { name: 1 }).lean<any[]>(), Area.find({}, { name: 1 }).lean<any[]>(), Parish.find({}, { name: 1 }).lean<any[]>(),
   ]);
+  const hist = (h: any) => ({ at: h.at, byName: h.byName, action: h.action, note: h.note, reason: h.reason, reference: h.reference, amountKobo: h.amountKobo, paymentId: h.paymentId, evidenceId: h.evidenceId ? String(h.evidenceId) : null });
   const nm = (l: any[]) => new Map(l.map((x) => [String(x._id), x.name]));
   const [z, a, p] = [nm(zones), nm(areas), nm(parishes)];
   return {
-    rows: rows.map((r) => ({
-      id: String(r._id), kind: r.kind, month: r.month, year: r.year, status: r.status, description: r.description,
-      offeringKobo: r.offeringKobo, percentBp: r.percentBp, requiredKobo: r.requiredKobo, amountKobo: r.amountKobo, confirmedKobo: r.confirmedKobo,
-      analysis: r.analysis ?? null, flags: flagsFromDuplicates(r.checks),
-      paidAt: r.paidAt, reference: r.reference, remarks: r.remarks, evidenceId: r.evidenceId ? String(r.evidenceId) : null,
-      zone: z.get(String(r.zone)), area: r.area ? a.get(String(r.area)) : null, parish: p.get(String(r.parish)), parishId: String(r.parish),
-      history: (r.history ?? []).map((h: any) => ({ at: h.at, byName: h.byName, action: h.action, note: h.note, evidenceId: h.evidenceId ? String(h.evidenceId) : null })),
-    })),
+    rows: rows.map((r) => {
+      const t = totals(r);
+      const pay = (x: any) => ({ id: String(x._id), status: x.status, amountKobo: x.amountKobo, confirmedKobo: x.confirmedKobo, seenKobo: x.seenKobo, paidAt: x.paidAt, reference: x.reference, remarks: x.remarks, evidenceId: x.evidenceId ? String(x.evidenceId) : null, analysis: x.analysis ?? null, flags: flagsFromDuplicates(x.checks), fv: paymentFv(x), history: (x.history ?? []).map(hist) });
+      return {
+        id: String(r._id), kind: r.kind, month: r.month, year: r.year, status: r.status, description: r.description, fv: obligationFv(r),
+        offeringKobo: r.offeringKobo, percentBp: r.percentBp, requiredKobo: r.requiredKobo, amountKobo: r.amountKobo, confirmedKobo: r.confirmedKobo, seenKobo: r.seenKobo,
+        totals: t, payments: (r.payments ?? []).map(pay), adjustments: (r.adjustments ?? []).map((a: any) => ({ amountKobo: a.amountKobo, reason: a.reason, byName: a.byName, at: a.at })),
+        analysis: r.analysis ?? null, flags: flagsFromDuplicates(r.checks),
+        paidAt: r.paidAt, reference: r.reference, remarks: r.remarks, evidenceId: r.evidenceId ? String(r.evidenceId) : null,
+        zone: z.get(String(r.zone)), area: r.area ? a.get(String(r.area)) : null, parish: p.get(String(r.parish)), parishId: String(r.parish),
+        history: (r.history ?? []).map(hist),
+      };
+    }),
   };
 });
 

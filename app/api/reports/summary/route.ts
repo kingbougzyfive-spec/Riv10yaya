@@ -3,6 +3,7 @@ import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 import { recordScope } from "@/lib/scope";
+import { obligationFv, totals } from "@/lib/verification";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export const GET = handle(async (req) => {
     Zone.find(scope.zone ? { _id: scope.zone } : { active: true }, { name: 1 }).sort({ name: 1 }).lean<any[]>(),
     Area.find({ ...aScope, active: true }, { name: 1, zone: 1 }).lean<any[]>(),
     Parish.find({ ...pScope, active: true }, { name: 1, zone: 1, area: 1 }).sort({ name: 1 }).lean<any[]>(),
-    Report.find({ ...scope, month, year }, { type: 1, zone: 1, area: 1, parish: 1 }).lean<any[]>(),
+    Report.find({ ...scope, month, year, status: { $ne: "draft" } }, { type: 1, zone: 1, area: 1, parish: 1 }).lean<any[]>(),
     Remittance.find({ ...scope, month, year, kind: "yst" }).lean<any[]>(),
     Remittance.find({ ...scope, month, year, kind: "levy" }).lean<any[]>(),
   ]);
@@ -42,7 +43,9 @@ export const GET = handle(async (req) => {
   const doneZ = new Set(reports.filter((r) => r.type === "zone").map((r) => String(r.zone)));
   const sum = (l: any[], k: string) => l.reduce((n, x) => n + (x[k] || 0), 0);
   const byStatus: Record<string, number> = {};
-  for (const r of yst) byStatus[r.status] = (byStatus[r.status] || 0) + 1;
+  for (const r of yst) { const k = obligationFv(r); byStatus[k] = (byStatus[k] || 0) + 1; }
+  const tot = yst.map((r) => totals(r));
+  const confirmedOf = (l: any[]) => l.reduce((n, r) => n + totals(r).confirmedKobo, 0);
   const ystByParish = new Map(yst.map((r) => [String(r.parish), r]));
 
   return {
@@ -54,8 +57,11 @@ export const GET = handle(async (req) => {
     finance: {
       offeringKobo: sum(yst, "offeringKobo"),
       requiredKobo: sum(yst, "requiredKobo"),
-      declaredKobo: sum(yst, "amountKobo"),
-      confirmedKobo: sum(yst.filter((r) => r.status === "confirmed"), "confirmedKobo"),
+      declaredKobo: tot.reduce((n, t) => n + t.declaredKobo, 0),
+      // Only confirmed money (and audited adjustments) is provincial revenue. Pending, rejected or unverified evidence never counts.
+      confirmedKobo: confirmedOf(yst),
+      outstandingKobo: tot.reduce((n, t) => n + t.outstandingKobo, 0),
+      overpaidKobo: tot.reduce((n, t) => n + t.overpaidKobo, 0),
       parishesWithoutRemittance: parishes.filter((p) => !ystByParish.has(String(p._id))).length,
       byStatus,
     },
@@ -63,7 +69,7 @@ export const GET = handle(async (req) => {
     byZone: sz.map((z) => {
       const zp = parishes.filter((p) => String(p.zone) === String(z._id));
       const zy = zp.map((p) => ystByParish.get(String(p._id))).filter(Boolean) as any[];
-      return { id: String(z._id), name: z.name, parishes: zp.length, submitted: zp.filter((p) => doneP.has(String(p._id))).length, requiredKobo: sum(zy, "requiredKobo"), confirmedKobo: sum(zy.filter((r) => r.status === "confirmed"), "confirmedKobo"), reportSubmitted: doneZ.has(String(z._id)) };
+      return { id: String(z._id), name: z.name, parishes: zp.length, submitted: zp.filter((p) => doneP.has(String(p._id))).length, requiredKobo: sum(zy, "requiredKobo"), confirmedKobo: confirmedOf(zy), reportSubmitted: doneZ.has(String(z._id)) };
     }),
   };
 });

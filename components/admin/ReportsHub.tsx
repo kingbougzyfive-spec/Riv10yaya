@@ -9,6 +9,7 @@ import { api } from "@/lib/fetcher";
 import { cn } from "@/lib/cn";
 import { formatNaira, MONTHS } from "@/lib/money";
 import { FIELDS } from "@/lib/report-config";
+import { COMPLIANCE_BADGE, FV_LABEL, REPORT_BADGE, REPORT_LABEL, type ReportStatus } from "@/lib/verification";
 import { ActivityFields, ContactSection, PeriodPicker, statusBadge, statusLabel, type Contact } from "./report-bits";
 
 const Bar = ({ a, b, label }: { a: number; b: number; label: string }) => (
@@ -21,7 +22,7 @@ const Bar = ({ a, b, label }: { a: number; b: number; label: string }) => (
 
 const Tel = ({ n }: { n?: string }) => (n ? <a href={`tel:${n}`} className="inline-flex items-center gap-1.5 font-semibold text-brand hover:underline"><Phone className="h-3.5 w-3.5" />{n}</a> : null);
 
-export function ReportsHub({ canSubmit }: { canSubmit: boolean }) {
+export function ReportsHub({ canSubmit, canReview }: { canSubmit: boolean; canReview?: boolean }) {
   const toast = useToast();
   const now = new Date();
   const [p, setP] = useState({ month: now.getMonth() + 1, year: now.getFullYear() });
@@ -45,16 +46,21 @@ export function ReportsHub({ canSubmit }: { canSubmit: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p, filterQs, toast]);
 
+  const [tab, setTab] = useState<"reports" | "compliance">("reports");
   return (
     <>
+      <div className="mb-5 grid max-w-md grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-white/5 p-1" role="tablist">
+        {([["reports", "Reports"], ["compliance", "Compliance"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cn("rounded-xl py-2 text-sm font-semibold transition", tab === k ? "bg-brand text-[#04130d]" : "text-white/60 hover:text-white")}>{l}</button>)}
+      </div>
+      {tab === "compliance" ? <ComplianceView month={p.month} year={p.year} onPeriod={(month, year) => setP({ month, year })} /> : <>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <PeriodPicker month={p.month} year={p.year} onChange={(month, year) => setP({ month, year })} />
         <select className="input !w-auto" aria-label="Report type" value={type} onChange={(e) => setType(e.target.value)}><option value="">All report types</option><option value="parish">Parish</option><option value="area">Area</option><option value="zone">Zonal</option></select>
         {org && org.zones.length > 1 && <select className="input !w-auto" aria-label="Zone" value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value, area: "", parish: "" })}><option value="">All zones</option>{org.zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}</select>}
         {org && areaOpts.length > 1 && <select className="input !w-auto" aria-label="Area" value={f.area} onChange={(e) => setF({ ...f, area: e.target.value, parish: "" })}><option value="">All areas</option>{areaOpts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>}
         {org && parishOpts.length > 1 && <select className="input !w-auto" aria-label="Parish" value={f.parish} onChange={(e) => setF({ ...f, parish: e.target.value })}><option value="">All parishes</option>{parishOpts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>}
-        <select className="input !w-auto" aria-label="Submission status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="">Any submission status</option><option value="submitted">Submitted</option><option value="revised">Revised</option></select>
-        <select className="input !w-auto" aria-label="Financial verification" value={f.fin} onChange={(e) => setF({ ...f, fin: e.target.value })}><option value="">Any financial status</option>{Object.entries(statusLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+        <select className="input !w-auto" aria-label="Submission status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="">Any report status</option>{(["submitted", "completed", "revision_requested", "incomplete"] as const).map((k) => <option key={k} value={k}>{REPORT_LABEL[k]}</option>)}</select>
+        <select className="input !w-auto" aria-label="Financial verification" value={f.fin} onChange={(e) => setF({ ...f, fin: e.target.value })}><option value="">Any financial status</option>{Object.entries(FV_LABEL).filter(([k]) => k !== "awaiting_evidence").map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
         {(type || f.zone || f.area || f.parish || f.status || f.fin) && <button className="btn btn-ghost btn-sm" onClick={() => { setType(""); setF({ zone: "", area: "", parish: "", status: "", fin: "" }); }}>Clear filters</button>}
         <div className="ml-auto flex gap-2">
           {([["xlsx", "Excel"], ["pdf", "PDF"], ["csv", "CSV"]] as const).map(([f, l]) => <a key={f} className="btn btn-ghost" href={`/api/reports/export?month=${p.month}&year=${p.year}${type ? `&type=${type}` : ""}&format=${f}`}><Download className="h-4 w-4" />{l}</a>)}
@@ -84,16 +90,18 @@ export function ReportsHub({ canSubmit }: { canSubmit: boolean }) {
         {rows?.map((r, i) => (
           <motion.button key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }} onClick={() => setOpen(r)} className="glass glass-hover flex flex-wrap items-center justify-between gap-3 p-4 text-left">
             <div className="min-w-0"><p className="truncate font-bold">{r.names.parish ?? r.names.area ?? r.names.zone}</p><p className="truncate text-xs text-white/45">{[r.names.zone, r.names.area].filter(Boolean).join(" → ")} · {MONTHS[r.month - 1]} {r.year}</p></div>
-            <div className="flex flex-wrap items-center gap-2"><span className="badge capitalize">{r.type}</span>{r.status === "revised" && <span className="badge badge-warn">Revised v{r.revision}</span>}{r.remittance && <span className={statusBadge[r.remittance.status]}>{statusLabel[r.remittance.status]}</span>}{r.contact && <span className="text-xs text-white/55">{r.contact.fullName}</span>}</div>
+            <div className="flex flex-wrap items-center gap-2"><span className="badge capitalize">{r.type}</span><span className={REPORT_BADGE[r.status as ReportStatus]}>{REPORT_LABEL[r.status as ReportStatus]}</span>{r.revision > 1 && <span className="badge">Revised v{r.revision}</span>}{r.remittance && <span className={statusBadge[r.remittance.status]}>{statusLabel[r.remittance.status]}</span>}{r.contact && <span className="text-xs text-white/55">{r.contact.fullName}</span>}</div>
           </motion.button>
         ))}
         {rows?.length === 0 && <div className="glass p-10 text-center text-white/45">No reports submitted for {MONTHS[p.month - 1]} {p.year} yet.</div>}
       </div>
 
+      </>}
+
       <Modal open={!!open} onClose={() => setOpen(null)} wide title={open ? `${open.names.parish ?? open.names.area ?? open.names.zone} · ${MONTHS[open.month - 1]} ${open.year}` : ""}>
         {open && (
           <div className="space-y-5 text-sm">
-            <div className="flex flex-wrap items-center gap-2 text-xs"><span className="badge">{open.reportId ?? "No report ID"}</span><span className={cn("badge", open.status === "revised" ? "badge-warn" : "badge-ok")}>{open.status === "revised" ? `Revised (version ${open.revision})` : "Submitted"}</span><span className="text-white/45">Submitted {new Date(open.submittedAt).toLocaleString("en-NG")}</span></div>
+            <div className="flex flex-wrap items-center gap-2 text-xs"><span className="badge">{open.reportId ?? "No report ID"}</span><span className={REPORT_BADGE[open.status as ReportStatus]}>{REPORT_LABEL[open.status as ReportStatus]}</span>{open.revision > 1 && <span className="badge">Version {open.revision}</span>}<span className="text-white/45">Submitted {new Date(open.submittedAt).toLocaleString("en-NG")}</span></div>
             <div className="grid gap-3 sm:grid-cols-3">{[["Zone", open.names.zone], ["Area", open.names.area ?? "—"], ["Parish", open.names.parish ?? "—"]].map(([k, v]) => <div key={k}><p className="label">{k}</p><b>{v}</b></div>)}</div>
             {open.contact ? (
               <div className="rounded-2xl border border-brand/30 bg-brand/10 p-4">
@@ -103,9 +111,11 @@ export function ReportsHub({ canSubmit }: { canSubmit: boolean }) {
                 <p className="mt-2 text-[11px] text-white/45">As entered when this report was submitted.</p>
               </div>
             ) : <p className="rounded-xl bg-white/5 p-3 text-xs text-white/50">Contact details are visible to authorised administrators only.</p>}
-            {open.remittance && <div className="rounded-xl bg-white/5 p-4"><p className="label">Youth Sunday remittance</p><p>Offering {formatNaira(open.remittance.offeringKobo)} · required <b>{formatNaira(open.remittance.requiredKobo)}</b> · <span className={statusBadge[open.remittance.status]}>{statusLabel[open.remittance.status]}</span></p></div>}
+            {open.remittance && <div className="rounded-xl bg-white/5 p-4"><p className="label">Youth Sunday remittance</p><p>Offering {formatNaira(open.remittance.offeringKobo)} · required <b>{formatNaira(open.remittance.requiredKobo)}</b> · confirmed <b>{formatNaira(open.remittance.confirmedKobo ?? 0)}</b>{open.remittance.outstandingKobo > 0 && <> · outstanding <b>{formatNaira(open.remittance.outstandingKobo)}</b></>} · <span className={statusBadge[open.remittance.status]}>{statusLabel[open.remittance.status]}</span></p></div>}
             {open.rollup && <div className="rounded-xl bg-white/5 p-4"><p className="label">Consolidation at submission</p><p className="text-white/70">{Object.entries(open.rollup).filter(([, v]) => typeof v === "number").map(([k, v]) => `${k.replace(/([A-Z])/g, " $1").toLowerCase()}: ${v}`).join(" · ")}</p></div>}
             <div className="space-y-3">{FIELDS[open.type as "parish"].map((f) => open.activity?.[f.key] !== undefined && open.activity?.[f.key] !== null && open.activity?.[f.key] !== "" ? <div key={f.key}><p className="label">{f.label}</p><p className="whitespace-pre-line text-white/80">{String(open.activity[f.key])}</p></div> : null)}</div>
+            {open.reviews?.length > 0 && <div className="rounded-xl bg-white/5 p-4"><p className="label">Review log</p><ul className="space-y-1.5 text-xs">{[...open.reviews].reverse().map((v: any, i: number) => <li key={i}><b>{v.action.replace("_", " ")}</b> · {v.byName} · {new Date(v.at).toLocaleString("en-NG")}{v.note && <span className="text-white/60"> — {v.note}</span>}</li>)}</ul></div>}
+            {canReview && <ReviewActions r={open} onDone={() => { setOpen(null); reload(); }} />}
             {open.history?.length > 0 && (
               <details className="rounded-xl bg-white/5 p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-white/60">Revision history ({open.history.length}, read-only)</summary>
                 <ul className="mt-3 space-y-3">{[...open.history].reverse().map((h: any, i: number) => (
@@ -149,5 +159,64 @@ function ReviseModal({ r, onClose, onDone }: { r: any; onClose: () => void; onDo
         <div className="flex gap-2"><button className="btn btn-primary" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save revision"}</button><button className="btn btn-ghost" onClick={onClose}>Cancel</button></div>
       </div>
     </Modal>
+  );
+}
+
+function ReviewActions({ r, onDone }: { r: any; onDone: () => void }) {
+  const toast = useToast();
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState("");
+  const go = async (action: string) => {
+    setBusy(action);
+    try { await api(`/api/reports/${r.id}/review`, { method: "POST", json: { action, note } }); toast.ok("Done. The administrator has been notified."); onDone(); }
+    catch (e: any) { toast.err(e.message); }
+    setBusy("");
+  };
+  return (
+    <div className="rounded-xl border border-white/10 p-4">
+      <p className="label">Review this report</p>
+      <p className="mb-2 text-xs text-white/50">This is about the activity report only. It doesn't change payment verification.</p>
+      <input className="input mb-3" aria-label="Note for the administrator" placeholder="Note (required when asking for changes)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} />
+      <div className="flex flex-wrap gap-2">
+        <button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => go("complete")}>Mark completed</button>
+        <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => go("request_revision")}>Request revision</button>
+        <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => go("mark_incomplete")}>Mark incomplete</button>
+      </div>
+    </div>
+  );
+}
+
+function ComplianceView({ month, year, onPeriod }: { month: number; year: number; onPeriod: (m: number, y: number) => void }) {
+  const toast = useToast();
+  const [d, setD] = useState<any>(null);
+  const [code, setCode] = useState("");
+  useEffect(() => {
+    setD(null);
+    api(`/api/compliance?month=${month}&year=${year}`).then(setD).catch((e) => { toast.err(e.message); setD({ rows: [], counts: {} }); });
+  }, [month, year, toast]);
+  const rows = (d?.rows ?? []).filter((r: any) => !code || r.compliance.code === code);
+  const labels: Record<string, string> = { fully_compliant: "Fully compliant", submitted_pending: "Report in, payment pending", submitted_discrepancy: "Report in, payment flagged", incomplete_activity: "Activity info missing", incomplete_financial: "Financial info missing", revision_requested: "Revision requested", not_submitted: "Not submitted" };
+  return (
+    <div className="space-y-4">
+      <PeriodPicker month={month} year={year} onChange={onPeriod} />
+      <p className="text-xs text-white/50">Fully compliant means the report is in <b>and</b> the remittance has been confirmed by finance. Pending, rejected or unverified payments are never counted as paid.</p>
+      {d && <div className="flex flex-wrap gap-2">
+        <button className={cn("badge", !code && "ring-1 ring-brand")} onClick={() => setCode("")}>All ({d.rows.length})</button>
+        {Object.entries(d.counts).map(([k, n]) => <button key={k} className={cn("badge", code === k && "ring-1 ring-brand")} onClick={() => setCode(code === k ? "" : k)}>{labels[k] ?? k} ({n as number})</button>)}
+      </div>}
+      {!d && <div className="skeleton h-48" />}
+      {d && (
+        <div className="glass overflow-x-auto p-0"><table className="w-full min-w-[760px] text-left text-sm"><thead className="text-xs uppercase tracking-wider text-white/45"><tr><th className="p-3">Parish</th><th className="p-3">Report</th><th className="p-3">Payment</th><th className="p-3">Required</th><th className="p-3">Confirmed</th><th className="p-3">Outstanding</th><th className="p-3">Overall</th></tr></thead><tbody>
+          {rows.map((r: any) => (
+            <tr key={r.id} className="border-t border-white/10"><td className="p-3"><b>{r.parish}</b><p className="text-xs text-white/45">{[r.zone, r.area].filter(Boolean).join(" → ")}</p></td>
+              <td className="p-3"><span className={REPORT_BADGE[r.reportStatus as ReportStatus]}>{REPORT_LABEL[r.reportStatus as ReportStatus]}</span></td>
+              <td className="p-3"><span className={statusBadge[r.fv]}>{r.fvLabel}</span></td>
+              <td className="p-3 tabular-nums">{formatNaira(r.requiredKobo)}</td><td className="p-3 tabular-nums">{formatNaira(r.confirmedKobo)}</td><td className="p-3 tabular-nums">{r.outstandingKobo ? formatNaira(r.outstandingKobo) : r.overpaidKobo ? `+${formatNaira(r.overpaidKobo)} over` : "—"}</td>
+              <td className="p-3"><span className={COMPLIANCE_BADGE[r.compliance.level as keyof typeof COMPLIANCE_BADGE]}>{r.compliance.label}</span>{r.compliance.detail && <p className="mt-1 text-[11px] text-white/45">{r.compliance.detail}</p>}</td></tr>
+          ))}
+          {rows.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-white/45">No parishes match.</td></tr>}
+        </tbody></table></div>
+      )}
+    </div>
   );
 }

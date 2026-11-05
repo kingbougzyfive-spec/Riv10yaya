@@ -1,4 +1,5 @@
 "use client";
+import { REPORT_BADGE, REPORT_LABEL, type ReportStatus } from "@/lib/verification";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Banknote, CheckCircle2, ClipboardList, Landmark, Loader2, Plus, Send, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,10 @@ export function ReportWizard() {
     try {
       const c = await api(`/api/reports/context?month=${period.month}&year=${period.year}`);
       setCtx(c);
+      if (c.draft) {
+        setAct((a) => (Object.keys(a).length ? a : Object.fromEntries(Object.entries(c.draft.activity ?? {}).map(([k, v]) => [k, String(v ?? "")]))));
+        setContact((p) => ({ fullName: p.fullName || c.draft.contact?.fullName || "", phone: p.phone || c.draft.contact?.phone || "", altPhone: p.altPhone || c.draft.contact?.altPhone || "" }));
+      }
       setContact((p) => ({ fullName: p.fullName || c.contact.fullName, phone: p.phone || c.contact.phone, altPhone: p.altPhone }));
       setStep(c.type === "parish" && c.remittance ? 2 : 1);
     } catch (e: any) { toast.err(e.message); setCtx({ error: e.message }); }
@@ -58,6 +63,15 @@ export function ReportWizard() {
       } });
       toast.ok("Remittance recorded. Now complete your activity report.");
       await load(); setStep(2);
+    } catch (e: any) { toast.err(e.message); }
+    setBusy(false);
+  }
+
+  async function saveDraft() {
+    setBusy(true);
+    try {
+      await api("/api/reports", { method: "PUT", json: { ...period, contact, activity: Object.fromEntries(Object.entries(act).map(([k, v]) => { const f = fields.find((x) => x.key === k); return [k, f?.kind === "int" ? (v.trim() === "" ? null : Number(v)) : v]; })) } });
+      toast.ok("Draft saved. You can finish it later. It isn't submitted yet.");
     } catch (e: any) { toast.err(e.message); }
     setBusy(false);
   }
@@ -96,7 +110,7 @@ export function ReportWizard() {
         <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="glass p-8 text-center">
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-400" />
           <p className="mt-3 text-lg font-bold">{typeLabel} report for {MONTHS[period.month - 1]} {period.year} has been submitted.</p>
-          <p className="mt-1 text-sm text-white/50">Submitted {new Date(ctx.submitted.at).toLocaleString("en-NG")}</p>
+          <p className="mt-1 text-sm text-white/50">Submitted {new Date(ctx.submitted.at).toLocaleString("en-NG")} · <span className={REPORT_BADGE[(ctx.submitted.status ?? "submitted") as ReportStatus]}>{REPORT_LABEL[(ctx.submitted.status ?? "submitted") as ReportStatus]}</span></p>
           {ctx.remittance && <p className="mt-3"><span className={statusBadge[ctx.remittance.status]}>{statusLabel[ctx.remittance.status]}</span></p>}
         </motion.div>
       ) : (
@@ -163,6 +177,8 @@ export function ReportWizard() {
                 <div className="glass p-5 sm:p-6"><h3 className="mb-4 font-bold">{typeLabel} monthly activity report</h3><ActivityFields fields={fields} values={act} onChange={(k, v) => setAct((a) => ({ ...a, [k]: v }))} /></div>
                 <ContactSection value={contact} onChange={setContact} />
                 <button className="btn btn-primary w-full py-3.5 text-base" disabled={busy} onClick={submitReport}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Submit {typeLabel.toLowerCase()} report</button>
+                <button className="btn btn-ghost w-full" disabled={busy} onClick={saveDraft}>Save as draft</button>
+                {ctx.draft && <p className="text-center text-xs text-white/40">A saved draft was loaded. Drafts are not counted as submitted.</p>}
               </motion.div>
             )}
           </AnimatePresence>

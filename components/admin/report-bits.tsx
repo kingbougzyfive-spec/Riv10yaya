@@ -1,4 +1,5 @@
 "use client";
+import { FV_BADGE, FV_LABEL } from "@/lib/verification";
 import { CheckCircle2, FileUp, Loader2, Phone, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
@@ -86,5 +87,6 @@ export function ContactSection({ value, onChange }: { value: Contact; onChange: 
   );
 }
 
-export const statusBadge: Record<string, string> = { submitted: "badge", confirmed: "badge badge-ok", rejected: "badge badge-bad", needs_evidence: "badge badge-warn", flagged: "badge badge-bad" };
-export const statusLabel: Record<string, string> = { submitted: "Awaiting review", confirmed: "Confirmed", rejected: "Rejected", needs_evidence: "More evidence needed", flagged: "Flagged" };
+// Payment status keys (stored and derived) share one set of labels. "submitted" is a freshly uploaded receipt.
+export const statusBadge: Record<string, string> = { ...FV_BADGE, submitted: "badge" };
+export const statusLabel: Record<string, string> = { ...FV_LABEL, submitted: "Receipt uploaded" };

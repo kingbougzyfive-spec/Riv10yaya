@@ -29,13 +29,15 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   const me = await resolveIdentity(user);
   const mine = me && me.type === r.type && me.zone === String(r.zone) && (me.area ?? null) === (r.area ? String(r.area) : null) && (me.parish ?? null) === (r.parish ? String(r.parish) : null);
   if (!mine) throw new ApiError(403, "You can only revise your own organisation's report.");
+  if (r.status === "draft") throw new ApiError(409, "This report hasn't been submitted yet.");
+  if (r.status === "completed") throw new ApiError(409, "This report is marked completed. Ask your reviewer to request a revision if it needs changing.");
   const activity = activitySchema([...FIELDS[r.type as "parish"]]).parse(body.activity);
 
   r.history.push({ revision: r.revision ?? 1, at: r.updatedAt ?? r.submittedAt, by: r.submittedBy, byName: r.contact?.fullName, contact: r.contact, activity: r.activity, note: body.note });
   r.contact = body.contact;
   r.activity = activity;
   r.revision = (r.revision ?? 1) + 1;
-  r.status = "revised";
+  r.status = "submitted"; // back in the reviewer's queue; revision > 1 shows it was revised
   r.submittedBy = user.id as any;
   if (r.type === "area") r.rollup = await areaRollup(String(r.area), r.month, r.year);
   if (r.type === "zone") r.rollup = await zoneRollup(String(r.zone), r.month, r.year);

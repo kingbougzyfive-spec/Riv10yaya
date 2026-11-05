@@ -22,7 +22,7 @@ export async function duplicateChecks(r: { _id: any; evidenceId?: any; reference
     const m = await Media.findById(r.evidenceId, { hash: 1 }).lean<any>();
     if (m?.hash) {
       const same = await Media.find({ hash: m.hash, _id: { $ne: r.evidenceId } }, { _id: 1 }).lean<any[]>();
-      if (same.length) out.file = await label(await Remittance.find({ evidenceId: { $in: same.map((x) => x._id) }, _id: { $ne: r._id } }, { parish: 1, month: 1, year: 1 }).limit(10).lean<any[]>());
+      if (same.length) { const ids = same.map((x) => x._id); out.file = await label(await Remittance.find({ $or: [{ evidenceId: { $in: ids } }, { "payments.evidenceId": { $in: ids } }], _id: { $ne: r._id } }, { parish: 1, month: 1, year: 1 }).limit(10).lean<any[]>()); }
       // The same file attached to two different records (even if the Media row is shared) also counts.
       const shared = await Remittance.find({ evidenceId: r.evidenceId, _id: { $ne: r._id } }, { parish: 1, month: 1, year: 1 }).limit(10).lean<any[]>();
       if (shared.length) out.file = [...out.file, ...(await label(shared))];
@@ -30,8 +30,8 @@ export async function duplicateChecks(r: { _id: any; evidenceId?: any; reference
   }
   const ref = norm(r.reference);
   if (ref.length >= 4) {
-    const cands = await Remittance.find({ _id: { $ne: r._id }, reference: { $exists: true, $ne: "" } }, { parish: 1, month: 1, year: 1, reference: 1 }).limit(5000).lean<any[]>();
-    const hit = cands.filter((c) => norm(c.reference) === ref);
+    const cands = await Remittance.find({ _id: { $ne: r._id }, $or: [{ reference: { $exists: true, $ne: "" } }, { "payments.reference": { $exists: true, $ne: "" } }] }, { parish: 1, month: 1, year: 1, reference: 1, "payments.reference": 1 }).limit(5000).lean<any[]>();
+    const hit = cands.filter((c) => norm(c.reference) === ref || (c.payments ?? []).some((x: any) => norm(x.reference) === ref));
     if (hit.length) out.reference = await label(hit.slice(0, 10));
   }
   return out;

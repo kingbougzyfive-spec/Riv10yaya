@@ -5,6 +5,7 @@ import { getFinance } from "@/lib/finance";
 import { PERMS } from "@/lib/rbac";
 import { areaRollup, zoneRollup } from "@/lib/rollup";
 import { resolveIdentity } from "@/lib/scope";
+import { obligationFv, totals } from "@/lib/verification";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +20,8 @@ export const GET = handle(async (req) => {
   if (!id) throw new ApiError(400, "Your account isn't linked to a zone, area or parish yet. Ask the Super Administrator to assign you.");
   const { Report, Remittance } = await getDb();
 
-  const existingReport = await Report.findOne({ type: id.type, zone: id.zone, area: id.area, parish: id.parish, month, year }, { _id: 1, submittedAt: 1 }).lean<any>();
-  const base = { type: id.type, names: id.names, month, year, contact: { fullName: user.name, phone: user.phone ?? "" }, submitted: existingReport ? { at: existingReport.submittedAt } : null };
+  const existingReport = await Report.findOne({ type: id.type, zone: id.zone, area: id.area, parish: id.parish, month, year }, { _id: 1, submittedAt: 1, status: 1, contact: 1, activity: 1 }).lean<any>();
+  const base = { type: id.type, names: id.names, month, year, contact: { fullName: user.name, phone: user.phone ?? "" }, submitted: existingReport && existingReport.status !== "draft" ? { at: existingReport.submittedAt, status: existingReport.status } : null, draft: existingReport?.status === "draft" ? { contact: existingReport.contact, activity: existingReport.activity } : null };
 
   if (id.type === "parish") {
     const [finance, yst, levies] = await Promise.all([
@@ -31,7 +32,7 @@ export const GET = handle(async (req) => {
     return {
       ...base,
       finance: { percentBp: finance.percentBp, bank: finance.bank },
-      remittance: yst ? { id: String(yst._id), status: yst.status, offeringKobo: yst.offeringKobo, requiredKobo: yst.requiredKobo, percentBp: yst.percentBp, amountKobo: yst.amountKobo, paidAt: yst.paidAt, reference: yst.reference } : null,
+      remittance: yst ? { id: String(yst._id), status: obligationFv(yst), outstandingKobo: totals(yst).outstandingKobo, confirmedKobo: totals(yst).confirmedKobo, offeringKobo: yst.offeringKobo, requiredKobo: yst.requiredKobo, percentBp: yst.percentBp, amountKobo: yst.amountKobo, paidAt: yst.paidAt, reference: yst.reference } : null,
       levies: levies.map((l) => ({ id: String(l._id), description: l.description, amountKobo: l.amountKobo, status: l.status })),
     };
   }

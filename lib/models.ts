@@ -126,7 +126,32 @@ const historyEntry = {
   action: String,
   note: String,
   evidenceId: { type: Schema.Types.ObjectId, ref: "Media" },
+  /** Finance decisions also record why, what bank reference was matched and what amount was seen or confirmed. */
+  reason: String,
+  reference: String,
+  amountKobo: Number,
+  paymentId: String,
 };
+
+const paymentSchema = new Schema(
+  {
+    amountKobo: { type: Number, required: true },
+    paidAt: { type: Date, required: true },
+    reference: String,
+    evidenceId: { type: Schema.Types.ObjectId, ref: "Media" },
+    remarks: String,
+    status: { type: String, default: "submitted" },
+    confirmedKobo: Number,
+    seenKobo: Number,
+    submittedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    reviewedAt: Date,
+    analysis: Schema.Types.Mixed,
+    checks: Schema.Types.Mixed,
+    history: [historyEntry],
+  },
+  { timestamps: true },
+);
 
 /** Money records. kind "yst" = Youth Sunday Thanksgiving 40% remittance; "levy" = any other obligation. Never mixed. */
 const remittanceSchema = new Schema(
@@ -146,8 +171,13 @@ const remittanceSchema = new Schema(
     reference: String,
     evidenceId: { type: Schema.Types.ObjectId, ref: "Media" },
     remarks: String,
-    status: { type: String, enum: ["submitted", "confirmed", "rejected", "needs_evidence", "flagged"], default: "submitted", index: true },
+    status: { type: String, enum: ["submitted", "awaiting_verification", "confirmed", "payment_not_found", "amount_mismatch", "rejected", "resubmission_required"], default: "submitted", index: true },
     confirmedKobo: Number, // what finance actually saw in the bank
+    seenKobo: Number, // amount finance found when it did not match (never counted as confirmed)
+    /** Additional payments toward the same obligation (part payments, top-ups). Each has its own evidence and verification. */
+    payments: [paymentSchema],
+    /** Manual financial adjustments. Signed kobo, a reason is mandatory, and they are never deleted. */
+    adjustments: [{ amountKobo: { type: Number, required: true }, reason: { type: String, required: true }, by: { type: Schema.Types.ObjectId, ref: "User" }, byName: String, at: { type: Date, default: Date.now } }],
     submittedBy: { type: Schema.Types.ObjectId, ref: "User" },
     reviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
     reviewedAt: Date,
@@ -176,7 +206,9 @@ const reportSchema = new Schema(
   {
     /** Human-readable unique report ID, e.g. RPT-P-7K3M9X. */
     reportId: { type: String, unique: true, sparse: true },
-    status: { type: String, enum: ["submitted", "revised"], default: "submitted", index: true },
+    status: { type: String, enum: ["draft", "submitted", "completed", "revision_requested", "incomplete"], default: "submitted", index: true },
+    /** Reviewer decisions (complete / request revision / mark incomplete). Append-only. */
+    reviews: [{ at: { type: Date, default: Date.now }, by: { type: Schema.Types.ObjectId, ref: "User" }, byName: String, role: String, action: String, note: String }],
     revision: { type: Number, default: 1 },
     /** Append-only: the previous version of the contact snapshot and answers each time a report is revised. */
     history: [reportRevision],
@@ -189,7 +221,7 @@ const reportSchema = new Schema(
     /** Names at the time of submission (ids remain the canonical identifiers). */
     names: { zone: String, area: String, parish: String },
     /** Historical snapshot: never overwritten when the administrator later edits their account. */
-    contact: { fullName: { type: String, required: true }, phone: { type: String, required: true }, altPhone: String },
+    contact: { fullName: String, phone: String, altPhone: String }, // required when submitting (validated by zod); a draft may be partial
     activity: Schema.Types.Mixed,
     rollup: Schema.Types.Mixed,
     remittance: { type: Schema.Types.ObjectId, ref: "Remittance" },
@@ -352,7 +384,20 @@ const pushSchema = new Schema(
   opts,
 );
 
-export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub"] as const;
+/** In-app notifications for administrators (payment flags, report reviews, parish responses). */
+const notificationSchema = new Schema(
+  {
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    title: { type: String, required: true },
+    body: String,
+    link: String,
+    readAt: Date,
+  },
+  opts,
+);
+notificationSchema.index({ user: 1, createdAt: -1 });
+
+export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number];
 
 const schemas: Record<ModelName, Schema> = {
@@ -375,6 +420,7 @@ const schemas: Record<ModelName, Schema> = {
   Department: departmentSchema,
   PasswordReset: resetSchema,
   PushSub: pushSchema,
+  Notification: notificationSchema,
 };
 
 export type Models = { [K in ModelName]: Model<any> };
