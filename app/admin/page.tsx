@@ -8,6 +8,7 @@ import { ROLE_LABELS } from "@/lib/roles";
 import { resolveIdentity } from "@/lib/scope";
 import { SeedButton } from "@/components/admin/SeedButton";
 import { MONTHS } from "@/lib/money";
+import { OverviewDashboard } from "@/components/admin/OverviewDashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           {!todo.done && <Link href="/admin/reports/new" className="btn btn-primary btn-sm">Start report</Link>}
         </div>
       )}
+      {can(user.role, "reports") && <OverviewDashboard />}
       {note && <p className="badge-warn mb-4 flex items-center gap-2 rounded-xl p-3 text-sm"><AlertTriangle className="h-4 w-4" />{note}</p>}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s, i) => (

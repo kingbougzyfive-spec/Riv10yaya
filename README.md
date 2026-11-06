@@ -96,3 +96,11 @@ Calculated live from Remittance and Parish records; nothing is hardcoded. Filter
 - Levy submissions now carry a category (levy or contribution) so the two are reported apart.
 - Scope: zonal, area and parish roles see only their own records; the server ignores any wider filter.
 Logic lives in `lib/finance-dash.ts` (pure) and is covered by a fixture test.
+
+## Organisation dashboards (admin home, `/api/overview`)
+One dashboard component, four levels, chosen by the signed-in role and drill-down:
+- **Parish:** expected remittance, amount paid and confirmed, financial verification status, monthly report status, attendance, previous reports, outstanding requirements (each links to the fix), notifications and contact details.
+- **Area:** parishes, reports submitted/outstanding, verification progress bar, confirmed and outstanding remittances, attendance, the area report status and a parish-by-parish table.
+- **Zone:** areas, parishes, directly attached parishes, area and parish reports submitted/outstanding, money, zonal activities (zone sessions plus the zonal report), attendance and zonal report status.
+- **Province:** all zones with the same measures; click a zone → area → parish.
+Access: the server derives the ancestry of any requested id from the database and refuses anything outside the user's assigned zone, area or parish. Money is read once per parish remittance; area, zone and province figures are sums of parishes (never of report roll-ups), so nothing is double counted. Logic: `lib/overview.ts` (pure, tested).
