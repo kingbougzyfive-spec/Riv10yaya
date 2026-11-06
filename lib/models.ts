@@ -18,6 +18,8 @@ const userSchema = new Schema(
     area: { type: Schema.Types.ObjectId, ref: "Area" },
     parish: { type: Schema.Types.ObjectId, ref: "Parish" },
     active: { type: Boolean, default: true },
+    /** Notification preferences (members manage their own). In-app notices are always on. */
+    prefs: { email: { type: Boolean, default: true }, sms: { type: Boolean, default: true }, push: { type: Boolean, default: true } },
     lastLoginAt: Date,
   },
   opts,
@@ -275,6 +277,8 @@ const registrationSchema = new Schema(
     status: { type: String, enum: ["registered", "cancelled"], default: "registered" },
     checkedInAt: Date,
     checkedInBy: { type: Schema.Types.ObjectId, ref: "User" },
+    /** Set when a signed-in member registered themselves. */
+    member: { type: Schema.Types.ObjectId, ref: "Member", index: true },
   },
   opts,
 );
@@ -282,18 +286,37 @@ registrationSchema.index({ event: 1, phoneKey: 1 }, { unique: true });
 
 const memberSchema = new Schema(
   {
-    memberId: { type: String, required: true, unique: true }, // e.g. YAYA-48392
+    memberId: { type: String, required: true, unique: true }, // e.g. YM-48392
     name: { type: String, required: true, trim: true },
     phone: { type: String, required: true },
     phoneKey: { type: String, required: true, unique: true },
+    /** Earlier phone keys, so attendance and registration history stays attached after a number changes. */
+    oldPhoneKeys: [String],
     email: String,
     zone: { type: Schema.Types.ObjectId, ref: "Zone", required: true, index: true },
     area: { type: Schema.Types.ObjectId, ref: "Area", default: null, index: true },
     parish: { type: Schema.Types.ObjectId, ref: "Parish", required: true, index: true },
-    active: { type: Boolean, default: true },
+    active: { type: Boolean, default: true }, // derived from status; kept for the attendance code
+    status: { type: String, enum: ["active", "inactive", "visitor", "transferred"], default: "active", index: true },
+    category: { type: String, default: "Youth", index: true },
+    dob: Date,
+    gender: { type: String, enum: ["male", "female", ""], default: "" },
+    joinedAt: { type: Date, default: Date.now },
+    departments: [{ type: Schema.Types.ObjectId, ref: "Department" }],
+    leadership: { title: String, level: { type: String, enum: ["parish", "area", "zone", "province", ""], default: "" }, since: Date },
+    /** Minors: guardian details and consent. verifiedAt is set by a parish administrator (or the admin who registered them). */
+    guardian: { name: String, phone: String, relationship: String, consentAt: Date, verifiedAt: Date, verifiedByName: String },
+    consent: { privacyAt: Date, by: { type: String, enum: ["self", "admin", ""], default: "" } },
+    volunteer: [{ title: String, event: { type: Schema.Types.ObjectId, ref: "Event" }, at: Date, hours: Number, note: String, byName: String, createdAt: { type: Date, default: Date.now } }],
+    /** Pastoral follow-up. Never shown to the member and never shared beyond authorised administrators. */
+    followUps: [{ kind: { type: String, enum: ["call", "visit", "message", "meeting", "other"], default: "call" }, note: String, outcome: String, nextAt: Date, done: { type: Boolean, default: false }, at: { type: Date, default: Date.now }, by: { type: Schema.Types.ObjectId, ref: "User" }, byName: String }],
+    /** Append-only record of changes to important information. */
+    changes: [{ at: { type: Date, default: Date.now }, by: { type: Schema.Types.ObjectId, ref: "User" }, byName: String, field: String, from: String, to: String, reason: String }],
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   opts,
 );
+
 
 const sessionSchema = new Schema(
   {

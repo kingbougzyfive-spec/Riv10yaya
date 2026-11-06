@@ -1,43 +1,76 @@
 import { z } from "zod";
 import { handle } from "@/lib/api";
-import { ApiError, requireApiUser } from "@/lib/auth";
+import { ApiError, requireApiUser, verifyPassword } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { phoneKey } from "@/lib/ids";
+import { phoneKey, validPhone } from "@/lib/ids";
+import { ageOn, isMinor } from "@/lib/members";
+import { deptNames, historyOf } from "@/lib/member-store";
 import { orgNames } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
 
-/** A member's own data only. Everything is keyed to the signed-in user's phone; there is no id parameter, so no one else's record can be requested. */
+/** A member's own data only. There is no id parameter anywhere, so no one else's record can even be requested. */
 async function mine() {
   const user = await requireApiUser(["member"]);
   const { Member } = await getDb();
-  const m = await Member.findOne({ phoneKey: phoneKey(user.phone ?? "") });
+  const m = await Member.findOne({ $or: [{ phoneKey: phoneKey(user.phone ?? "") }, { oldPhoneKeys: phoneKey(user.phone ?? "") }] });
   if (!m) throw new ApiError(404, "We couldn't find your member record. Please contact your parish administrator.");
   return { user, m };
 }
 
 export const GET = handle(async () => {
   const { user, m } = await mine();
-  const { Attendance, Registration, Event, AttendanceSession } = await getDb();
+  const { User } = await getDb();
   const n = await orgNames();
-  const [att, regs] = await Promise.all([Attendance.find({ phoneKey: m.phoneKey }).sort({ at: -1 }).limit(100).lean<any[]>(), Registration.find({ phoneKey: m.phoneKey, status: "registered" }).sort({ createdAt: -1 }).limit(50).lean<any[]>()]);
-  const [sessions, events] = await Promise.all([AttendanceSession.find({ _id: { $in: att.map((a) => a.session) } }, { title: 1, kind: 1 }).lean<any[]>(), Event.find({ _id: { $in: regs.map((r) => r.event) } }, { title: 1, startsAt: 1, venue: 1, status: 1 }).lean<any[]>()]);
-  const sMap = new Map<string, any>(sessions.map((s) => [String(s._id), s])), eMap = new Map<string, any>(events.map((e) => [String(e._id), e]));
+  const [h, depts, u] = await Promise.all([historyOf(m), deptNames(m.departments ?? []), User.findById(user.id, { prefs: 1 }).lean<any>()]);
+  const minor = isMinor(m.dob);
   return {
-    profile: { memberId: m.memberId, name: m.name, phone: m.phone, email: m.email ?? user.email, zone: n.zone.get(String(m.zone)), area: m.area ? n.area.get(String(m.area)) : "", parish: n.parish.get(String(m.parish)) },
-    attendance: att.map((a) => ({ id: String(a._id), title: sMap.get(String(a.session))?.title ?? "Session", at: a.at })),
-    events: regs.map((r) => { const e = eMap.get(String(r.event)); return { id: String(r._id), eventId: String(r.event), reference: r.reference, title: e?.title ?? "Event", startsAt: e?.startsAt, venue: e?.venue, status: e?.status, attended: !!r.checkedInAt }; }),
+    // Pastoral follow-up and the change log are deliberately never part of what a member can see.
+    profile: {
+      memberId: m.memberId, name: m.name, phone: m.phone, email: m.email ?? user.email, gender: m.gender, category: m.category, status: m.status, joinedAt: m.joinedAt ?? m.createdAt,
+      zone: n.zone.get(String(m.zone)), area: m.area ? n.area.get(String(m.area)) : "", parish: n.parish.get(String(m.parish)), departments: depts.map((d) => d.name),
+      leadership: m.leadership?.title ? { title: m.leadership.title, level: m.leadership.level } : null,
+      age: ageOn(m.dob), minor, guardian: minor && m.guardian ? { name: m.guardian.name, relationship: m.guardian.relationship, verified: !!m.guardian.verifiedAt } : null, dobMissing: !m.dob,
+    },
+    prefs: { email: u?.prefs?.email ?? true, sms: u?.prefs?.sms ?? true, push: u?.prefs?.push ?? true },
+    attendance: h.attendance.map((a) => ({ id: a.id, title: a.title, at: a.at })),
+    events: h.events.map((e) => ({ id: e.id, eventId: e.eventId, reference: e.reference, title: e.title, startsAt: e.startsAt, venue: e.venue, attended: e.attended })),
+    volunteer: (m.volunteer ?? []).map((v: any) => ({ id: String(v._id), title: v.title, at: v.at, hours: v.hours })).reverse(),
   };
 });
 
-const patch = z.object({ name: z.string().trim().min(2).max(100).optional(), email: z.string().trim().email().optional() });
+const patch = z.object({
+  name: z.string().trim().min(2).max(100).optional(),
+  email: z.string().trim().email().optional(),
+  phone: z.string().trim().refine(validPhone, "Enter a valid phone number").optional(),
+  currentPassword: z.string().max(100).optional(),
+  prefs: z.object({ email: z.boolean(), sms: z.boolean(), push: z.boolean() }).partial().optional(),
+});
 
+/** Only name, email, phone and notification preferences are member-editable. Parish, category, status and leadership are administrative. */
 export const PATCH = handle(async (req) => {
   const { user, m } = await mine();
   const i = patch.parse(await req.json());
   const { User } = await getDb();
-  if (i.name) { m.name = i.name; await User.updateOne({ _id: user.id }, { $set: { name: i.name } }); }
-  if (i.email) { m.email = i.email; await User.updateOne({ _id: user.id }, { $set: { email: i.email.toLowerCase() } }); }
+  const now = new Date();
+  const log = (field: string, from: string, to: string) => m.changes.push({ at: now, by: user.id, byName: `${user.name} (self)`, field, from, to, reason: "Member updated own profile" });
+  const set: any = {};
+  if (i.name && i.name !== m.name) { log("name", m.name, i.name); m.name = i.name; set.name = i.name; }
+  if (i.email && i.email.toLowerCase() !== (m.email ?? "").toLowerCase()) {
+    if (await User.exists({ email: i.email.toLowerCase(), _id: { $ne: user.id } })) throw new ApiError(409, "That email is already used by another account.");
+    log("email", m.email ?? "", i.email); m.email = i.email; set.email = i.email.toLowerCase();
+  }
+  if (i.phone && phoneKey(i.phone) !== m.phoneKey) {
+    // The phone number is how a person is recognised, so changing it needs the password.
+    const u = await User.findById(user.id).lean<any>();
+    if (!i.currentPassword || !u || !(await verifyPassword(i.currentPassword, u.passwordHash))) throw new ApiError(403, "Enter your current password to change your phone number.");
+    const key = phoneKey(i.phone);
+    if ((await User.exists({ phone: key, _id: { $ne: user.id } })) || (await (await getDb()).Member.exists({ phoneKey: key, _id: { $ne: m._id } }))) throw new ApiError(409, "That phone number is already in use.");
+    log("phone", m.phone, i.phone);
+    m.oldPhoneKeys = [...new Set([...(m.oldPhoneKeys ?? []), m.phoneKey])]; m.phone = i.phone; m.phoneKey = key; set.phone = key;
+  }
+  if (i.prefs) for (const k of ["email", "sms", "push"] as const) if (i.prefs[k] !== undefined) set[`prefs.${k}`] = i.prefs[k];
+  if (Object.keys(set).length) await User.updateOne({ _id: user.id }, { $set: set });
   await m.save();
   return { ok: true };
 });
