@@ -86,3 +86,13 @@ Termii-based SMS. With `TERMII_API_KEY` set, a text with the reference and ticke
 
 ## Not built yet (next phases)
 The remaining part of your spec after section 8.9.
+
+## Provincial financial dashboard (`/admin/finance/dashboard`)
+Calculated live from Remittance and Parish records; nothing is hardcoded. Filters: month (or whole year), year, zone, area, parish. Only confirmed money counts as received.
+- Cards (all clickable, each opens the underlying records with search and CSV/XLSX/PDF export): expected, confirmed, outstanding, pending verification, flagged, rejected, levies, contributions, partial payments, overpayments, parishes expected / submitted / yet to submit.
+- Charts (Recharts): monthly trend, zone comparison, submissions by month, levies and contributions by month.
+- Zone, area and parish tables (click a name to filter to it); parishes with no return show "Not submitted".
+- Reconciliation tab: declared money split by status that must sum to the declared total; required − confirmed = outstanding − overpaid; bank-confirmed vs declared; adjustments; variance list and payment ledger.
+- Levy submissions now carry a category (levy or contribution) so the two are reported apart.
+- Scope: zonal, area and parish roles see only their own records; the server ignores any wider filter.
+Logic lives in `lib/finance-dash.ts` (pure) and is covered by a fixture test.

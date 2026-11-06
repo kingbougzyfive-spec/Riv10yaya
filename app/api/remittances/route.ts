@@ -23,7 +23,7 @@ const submitSchema = periodSchema.extend({
   reference: z.string().trim().max(80).optional().default(""),
   evidenceId: oid,
   remarks: z.string().trim().max(1000).optional().default(""),
-  levies: z.array(z.object({ description: z.string().trim().min(2).max(160), amount: naira, paidAt: date, reference: z.string().trim().max(80).optional().default(""), evidenceId: oid.optional() })).max(10).default([]),
+  levies: z.array(z.object({ category: z.enum(["levy", "contribution"]).default("levy"), description: z.string().trim().min(2).max(160), amount: naira, paidAt: date, reference: z.string().trim().max(80).optional().default(""), evidenceId: oid.optional() })).max(10).default([]),
 });
 
 export const GET = handle(async (req) => {
@@ -92,7 +92,7 @@ export const POST = handle(async (req) => {
   yst.checks = await duplicateChecks(yst).catch(() => null);
   if (yst.checks) await yst.save();
   for (const l of i.levies) {
-    const lv = await Remittance.create({ ...base, kind: "levy", description: l.description, amountKobo: toKobo(l.amount), paidAt: new Date(l.paidAt), reference: l.reference, evidenceId: l.evidenceId, history: hist("Levy submitted") });
+    const lv = await Remittance.create({ ...base, kind: "levy", category: l.category, description: l.description, amountKobo: toKobo(l.amount), paidAt: new Date(l.paidAt), reference: l.reference, evidenceId: l.evidenceId, history: hist("Levy submitted") });
     lv.checks = await duplicateChecks(lv).catch(() => null);
     if (lv.checks) await lv.save();
   }

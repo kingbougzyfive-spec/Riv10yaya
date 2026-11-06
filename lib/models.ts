@@ -163,6 +163,8 @@ const remittanceSchema = new Schema(
     month: { type: Number, min: 1, max: 12, required: true },
     year: { type: Number, required: true },
     description: String, // levies
+    /** levy = an obligation set by the province; contribution = a voluntary gift. Reported separately. */
+    category: { type: String, enum: ["levy", "contribution"], default: "levy" },
     offeringKobo: Number, // yst: total offering collected
     percentBp: Number, // yst: percentage in force when submitted (snapshot)
     requiredKobo: Number, // yst: calculated obligation

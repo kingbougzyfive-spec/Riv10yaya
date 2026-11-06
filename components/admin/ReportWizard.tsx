@@ -25,7 +25,7 @@ export function ReportWizard() {
   const [contact, setContact] = useState<Contact>({ fullName: "", phone: "", altPhone: "" });
   const [act, setAct] = useState<Record<string, string>>({});
   const [fin, setFin] = useState({ offering: "", paidAt: today(), amountPaid: "", reference: "", evidenceId: "", remarks: "" });
-  const [levies, setLevies] = useState<{ description: string; amount: string; paidAt: string; reference: string; evidenceId: string }[]>([]);
+  const [levies, setLevies] = useState<{ category: string; description: string; amount: string; paidAt: string; reference: string; evidenceId: string }[]>([]);
 
   const load = useCallback(async () => {
     setCtx(null);
@@ -59,7 +59,7 @@ export function ReportWizard() {
       await api("/api/remittances", { method: "POST", json: {
         ...period, offering: Number(fin.offering), paidAt: fin.paidAt, reference: fin.reference, evidenceId: fin.evidenceId, remarks: fin.remarks,
         ...(fin.amountPaid ? { amountPaid: Number(fin.amountPaid) } : {}),
-        levies: levies.filter((l) => l.description || l.amount).map((l) => ({ description: l.description, amount: Number(l.amount), paidAt: l.paidAt, reference: l.reference, ...(l.evidenceId ? { evidenceId: l.evidenceId } : {}) })),
+        levies: levies.filter((l) => l.description || l.amount).map((l) => ({ category: l.category, description: l.description, amount: Number(l.amount), paidAt: l.paidAt, reference: l.reference, ...(l.evidenceId ? { evidenceId: l.evidenceId } : {}) })),
       } });
       toast.ok("Remittance recorded. Now complete your activity report.");
       await load(); setStep(2);
@@ -158,12 +158,13 @@ export function ReportWizard() {
                     {levies.map((l, i) => (
                       <div key={i} className="space-y-3 rounded-xl border border-white/10 bg-white/[.03] p-4">
                         <div className="flex items-center justify-between"><p className="text-sm font-semibold">Levy {i + 1}</p><button className="btn btn-danger btn-sm !p-1.5" onClick={() => setLevies(levies.filter((_, j) => j !== i))}><Trash2 className="h-3.5 w-3.5" /></button></div>
+                        <select className="input" value={l.category} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, category: e.target.value } : x))}><option value="levy">Levy (set by the province)</option><option value="contribution">Contribution (voluntary)</option></select>
                         <input className="input" placeholder="Description (e.g. Special provincial levy)" value={l.description} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
                         <div className="grid gap-3 sm:grid-cols-3"><input className="input" type="number" placeholder="Amount ₦" value={l.amount} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))} /><input className="input" type="date" max={today()} value={l.paidAt} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, paidAt: e.target.value } : x))} /><input className="input" placeholder="Reference" value={l.reference} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, reference: e.target.value } : x))} /></div>
                         <EvidenceUpload label="Evidence (if required)" value={l.evidenceId} onChange={(id) => setLevies(levies.map((x, j) => j === i ? { ...x, evidenceId: id } : x))} />
                       </div>
                     ))}
-                    <button className="btn btn-ghost w-full border-dashed" onClick={() => setLevies([...levies, { description: "", amount: "", paidAt: today(), reference: "", evidenceId: "" }])}><Plus className="h-4 w-4" />Add a levy or contribution</button>
+                    <button className="btn btn-ghost w-full border-dashed" onClick={() => setLevies([...levies, { category: "levy", description: "", amount: "", paidAt: today(), reference: "", evidenceId: "" }])}><Plus className="h-4 w-4" />Add a levy or contribution</button>
                   </div>
                   <button className="btn btn-primary w-full py-3.5 text-base" disabled={busy} onClick={submitFinance}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}Save finance & continue to activity report</button>
                   <p className="text-center text-xs text-white/40">You don't need to wait for finance approval to complete your activity report.</p>

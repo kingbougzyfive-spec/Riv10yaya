@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
+import { BarChart3, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -17,7 +17,8 @@ const ITEMS = [
   { href: "/admin/media", label: "Media Library", icon: ImageIcon, perm: "media" as const },
   { href: "/admin/organization", label: "Organisation", icon: Building2, perm: "orgView" as const },
   { href: "/admin/reports", label: "Monthly Reports", icon: ClipboardList, perm: "reports" as const },
-  { href: "/admin/finance", label: "Finance", icon: Banknote, perm: "finance" as const },
+  { href: "/admin/finance/dashboard", label: "Finance Dashboard", icon: BarChart3, perm: "finance" as const },
+  { href: "/admin/finance", label: "Finance Desk", icon: Banknote, perm: "finance" as const },
   { href: "/admin/events", label: "Events", icon: CalendarDays, perm: "attendanceView" as const },
   { href: "/admin/attendance", label: "QR Attendance", icon: QrCode, perm: "attendanceView" as const },
   { href: "/admin/members", label: "Members", icon: UserRound, perm: "members" as const },
@@ -38,7 +39,7 @@ export function AdminShell({ user, brand, children }: { user: { name: string; ro
   const Nav = (
     <nav className="flex flex-1 flex-col gap-1">
       {items.map((i) => {
-        const active = i.href === "/admin" ? path === "/admin" : path.startsWith(i.href);
+        const active = i.href === "/admin" || i.href === "/admin/finance" ? path === i.href : path.startsWith(i.href);
         return (
           <Link key={i.href} href={i.href} onClick={() => setOpen(false)} className={cn("relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/65 transition hover:text-white", active && "text-white")}>
             {active && <motion.span layoutId="admin-pill" className="absolute inset-0 rounded-xl border border-brand/30 bg-brand/15" transition={{ type: "spring", damping: 30, stiffness: 400 }} />}
