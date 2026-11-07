@@ -25,7 +25,7 @@ export function MembersManager({ role }: { role: string }) {
   const qs = useMemo(() => new URLSearchParams(Object.entries(fl).filter(([k, v]) => v !== "" && !(k === "page" && v === 1)).map(([k, v]) => [k, String(v)])).toString(), [fl]);
   const load = useCallback(() => api(`/api/members?${qs}`).then(setD).catch((e) => { toast.err(e.message); setD({ rows: [], total: 0, pages: 1, categories: [] }); }), [qs, toast]);
   useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t); }, [load]);
-  useEffect(() => { api("/api/public/org").then(setOrg).catch(() => {}); api("/api/public/departments").then((r) => setDepts(r.rows)).catch(() => {}); }, []);
+  useEffect(() => { api("/api/public/org").then(setOrg).catch(() => {}); api("/api/governance/departments").then((r) => setDepts(r.rows)).catch(() => {}); }, []);
   const set = (p: Partial<typeof fl>) => setFl((x) => ({ ...x, page: 1, ...p }));
   const areas = (org?.areas ?? []).filter((a: any) => !fl.zone || a.zone === fl.zone);
   const parishes = (org?.parishes ?? []).filter((p: any) => (!fl.zone || p.zone === fl.zone) && (!fl.area || p.area === fl.area));

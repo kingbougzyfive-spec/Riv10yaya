@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const GET = handle(async () => {
   await requireApiUser(PERMS.content);
   const { Department } = await getDb();
-  const rows = await Department.find().sort({ order: 1, name: 1 }).lean<any[]>();
+  const rows = await Department.find({ level: { $in: ["province", null] } }).sort({ order: 1, name: 1 }).lean<any[]>();
   return { rows: rows.map((r) => ({ id: String(r._id), name: r.name, description: r.description, headName: r.headName ?? "", imageId: r.imageId ? String(r.imageId) : "", order: r.order, active: r.active })) };
 });
 

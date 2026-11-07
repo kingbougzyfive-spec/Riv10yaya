@@ -98,6 +98,9 @@ const mediaSchema = new Schema(
     parish: { type: Schema.Types.ObjectId, ref: "Parish" },
     /** SHA-256 of the file bytes. Used to spot the same receipt being uploaded again. */
     hash: { type: String, index: true },
+    /** Governance documents (minutes, policies…) are private files tied to an organisational level. */
+    document: { type: Boolean, default: false },
+    docOrg: { level: String, zone: Schema.Types.ObjectId, area: Schema.Types.ObjectId, parish: Schema.Types.ObjectId },
   },
   opts,
 );
@@ -384,6 +387,12 @@ const departmentSchema = new Schema(
     imageId: { type: Schema.Types.ObjectId, ref: "Media" },
     order: { type: Number, default: 0 },
     active: { type: Boolean, default: true },
+    /** Provincial departments appear on the public site. Zone, area and parish departments are internal. */
+    level: { type: String, enum: ["province", "zone", "area", "parish"], default: "province", index: true },
+    zone: { type: Schema.Types.ObjectId, ref: "Zone", index: true },
+    area: { type: Schema.Types.ObjectId, ref: "Area", index: true },
+    parish: { type: Schema.Types.ObjectId, ref: "Parish", index: true },
+    responsibilities: [String],
   },
   opts,
 );
@@ -422,7 +431,116 @@ const notificationSchema = new Schema(
 );
 notificationSchema.index({ user: 1, createdAt: -1 });
 
-export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification"] as const;
+
+// ---------- Leadership, committees, tasks, meetings, documents (section 13) ----------
+/** Every governance record belongs to exactly one organisational level, with its full ancestry filled in from the database. */
+const orgFields = {
+  level: { type: String, enum: ["province", "zone", "area", "parish"], required: true, index: true },
+  zone: { type: Schema.Types.ObjectId, ref: "Zone", index: true },
+  area: { type: Schema.Types.ObjectId, ref: "Area", index: true },
+  parish: { type: Schema.Types.ObjectId, ref: "Parish", index: true },
+};
+const trail = [{ at: { type: Date, default: Date.now }, by: { type: Schema.Types.ObjectId, ref: "User" }, byName: String, action: String, note: String }];
+
+/** A person holding a position: provincial/zonal/area/parish leadership, or a department head/officer. */
+const appointmentSchema = new Schema(
+  {
+    ...orgFields,
+    position: { type: String, required: true, trim: true },
+    member: { type: Schema.Types.ObjectId, ref: "Member", index: true },
+    holderName: { type: String, required: true },
+    department: { type: Schema.Types.ObjectId, ref: "Department", index: true },
+    responsibilities: [String],
+    startsAt: { type: Date, default: Date.now },
+    endsAt: Date,
+    status: { type: String, enum: ["active", "ended"], default: "active", index: true },
+    endedAt: Date,
+    endedReason: String,
+    history: trail,
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+  },
+  opts,
+);
+
+const committeeSchema = new Schema(
+  {
+    ...orgFields,
+    name: { type: String, required: true, trim: true },
+    purpose: String,
+    responsibilities: [String],
+    status: { type: String, enum: ["active", "dissolved"], default: "active", index: true },
+    formedAt: { type: Date, default: Date.now },
+    dissolvedAt: Date,
+    members: [{ member: { type: Schema.Types.ObjectId, ref: "Member" }, name: String, role: { type: String, enum: ["chair", "vice_chair", "secretary", "treasurer", "member"], default: "member" }, since: { type: Date, default: Date.now }, until: Date, active: { type: Boolean, default: true } }],
+    history: trail,
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+  },
+  opts,
+);
+
+const taskSchema = new Schema(
+  {
+    ...orgFields,
+    title: { type: String, required: true, trim: true },
+    description: String,
+    assignee: { type: Schema.Types.ObjectId, ref: "Member", index: true },
+    assigneeName: String,
+    committee: { type: Schema.Types.ObjectId, ref: "Committee", index: true },
+    department: { type: Schema.Types.ObjectId, ref: "Department", index: true },
+    meeting: { type: Schema.Types.ObjectId, ref: "Meeting", index: true },
+    dueAt: { type: Date, index: true },
+    priority: { type: String, enum: ["low", "normal", "high"], default: "normal" },
+    status: { type: String, enum: ["open", "in_progress", "done", "cancelled"], default: "open", index: true },
+    completedAt: Date,
+    updates: [{ at: { type: Date, default: Date.now }, by: { type: Schema.Types.ObjectId, ref: "User" }, byName: String, status: String, note: String }],
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    createdByName: String,
+  },
+  opts,
+);
+
+const meetingSchema = new Schema(
+  {
+    ...orgFields,
+    title: { type: String, required: true, trim: true },
+    bodyKind: { type: String, enum: ["committee", "department", "leadership", "other"], default: "other" },
+    committee: { type: Schema.Types.ObjectId, ref: "Committee", index: true },
+    department: { type: Schema.Types.ObjectId, ref: "Department", index: true },
+    scheduledAt: { type: Date, required: true, index: true },
+    venue: String,
+    agenda: String,
+    status: { type: String, enum: ["scheduled", "held", "cancelled"], default: "scheduled", index: true },
+    attendance: [{ member: { type: Schema.Types.ObjectId, ref: "Member" }, name: String, status: { type: String, enum: ["present", "absent", "apology"], default: "absent" } }],
+    minutes: String,
+    minutesBy: String,
+    minutesAt: Date,
+    decisions: [{ text: String, at: { type: Date, default: Date.now }, byName: String }],
+    actions: [{ text: String, assignee: { type: Schema.Types.ObjectId, ref: "Member" }, assigneeName: String, dueAt: Date, task: { type: Schema.Types.ObjectId, ref: "Task" } }],
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+  },
+  opts,
+);
+
+const documentSchema = new Schema(
+  {
+    ...orgFields,
+    title: { type: String, required: true, trim: true },
+    description: String,
+    category: { type: String, enum: ["minutes", "policy", "report", "letter", "other"], default: "other" },
+    committee: { type: Schema.Types.ObjectId, ref: "Committee", index: true },
+    department: { type: Schema.Types.ObjectId, ref: "Department", index: true },
+    meeting: { type: Schema.Types.ObjectId, ref: "Meeting", index: true },
+    media: { type: Schema.Types.ObjectId, ref: "Media", required: true },
+    fileName: String,
+    mime: String,
+    size: Number,
+    uploadedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    uploadedByName: String,
+  },
+  opts,
+);
+
+export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "Appointment", "Committee", "Task", "Meeting", "GovDocument"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number];
 
 const schemas: Record<ModelName, Schema> = {
@@ -446,6 +564,11 @@ const schemas: Record<ModelName, Schema> = {
   PasswordReset: resetSchema,
   PushSub: pushSchema,
   Notification: notificationSchema,
+  Appointment: appointmentSchema,
+  Committee: committeeSchema,
+  Task: taskSchema,
+  Meeting: meetingSchema,
+  GovDocument: documentSchema,
 };
 
 export type Models = { [K in ModelName]: Model<any> };

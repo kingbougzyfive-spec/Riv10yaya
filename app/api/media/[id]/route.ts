@@ -1,6 +1,7 @@
 import { handle, audit } from "@/lib/api";
 import { ApiError, getUser, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { canView } from "@/lib/governance";
 import { PERMS } from "@/lib/rbac";
 import mongoose from "mongoose";
 
@@ -14,6 +15,15 @@ export const GET = handle<Ctx>(async (_req, ctx) => {
   const { Media } = await getDb();
   const m = await Media.findById(id).lean<any>();
   if (!m) throw new ApiError(404, "Not found");
+  if (m.document) {
+    // Governance documents follow organisational permissions: you must be an administrator of that level or above it.
+    const u = await getUser();
+    if (!u) throw new ApiError(401, "Please sign in.");
+    if (!canView(u, { level: m.docOrg?.level ?? "province", zone: m.docOrg?.zone ? String(m.docOrg.zone) : null, area: m.docOrg?.area ? String(m.docOrg.area) : null, parish: m.docOrg?.parish ? String(m.docOrg.parish) : null })) throw new ApiError(403, "You don't have access to this document.");
+    const buf: Buffer = Buffer.isBuffer(m.data) ? m.data : Buffer.from(m.data.buffer);
+    const inline = m.mime === "application/pdf" || m.mime.startsWith("image/");
+    return new Response(new Uint8Array(buf), { headers: { "Content-Type": m.mime, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "sandbox", "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(m.name)}` } });
+  }
   if (m.private) {
     // Payment evidence: owning parish, the uploader, or provincial finance/oversight staff only.
     const u = await getUser();
