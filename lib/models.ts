@@ -467,6 +467,25 @@ const notificationLogSchema = new Schema(
 notificationLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 86400, partialFilterExpression: { origin: "system" } });
 
 
+/** One record per tab per synchronisation attempt. Kept 180 days. */
+const sheetSyncLogSchema = new Schema(
+  {
+    run: { type: String, index: true },
+    tabKey: { type: String, index: true },
+    tab: String,
+    trigger: { type: String, enum: ["manual", "auto", "retry"], default: "manual" },
+    status: { type: String, enum: ["ok", "failed", "skipped"], required: true, index: true },
+    rows: Number,
+    ms: Number,
+    error: String,
+    note: String,
+    by: { type: Schema.Types.ObjectId, ref: "User" },
+    byName: String,
+  },
+  opts,
+);
+sheetSyncLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 180 * 86400 });
+
 // ---------- Leadership, committees, tasks, meetings, documents (section 13) ----------
 /** Every governance record belongs to exactly one organisational level, with its full ancestry filled in from the database. */
 const orgFields = {
@@ -576,7 +595,7 @@ const documentSchema = new Schema(
   opts,
 );
 
-export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument"] as const;
+export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "SheetSyncLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number];
 
 const schemas: Record<ModelName, Schema> = {
@@ -601,6 +620,7 @@ const schemas: Record<ModelName, Schema> = {
   PushSub: pushSchema,
   Notification: notificationSchema,
   NotificationLog: notificationLogSchema,
+  SheetSyncLog: sheetSyncLogSchema,
   Appointment: appointmentSchema,
   Committee: committeeSchema,
   Task: taskSchema,

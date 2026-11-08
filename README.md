@@ -134,3 +134,17 @@ Every notification goes through one pipeline (`lib/notifier.ts` → `dispatch`):
 - **Automatic reminders** run daily at 06:00 UTC (07:00 Lagos) via `vercel.json` → `/api/cron/reminders`. Set `CRON_SECRET` (Vercel sends it as a bearer token). Re-running the same day never duplicates notices. Configure deadline day, lead days, event/meeting windows and the outstanding-remittance interval on the Reminders tab.
 - **Assumption**: a report for month M is due on day N (default 10) of month M+1.
 - Vercel Hobby allows daily cron only. Needed env: `CRON_SECRET`, `VAPID_*` (push), `RESEND_API_KEY` + `MAIL_FROM` (email).
+
+## Google Sheets integration
+
+Admin → Integrations → **Google Sheets** (`/admin/integrations/sheets`). MongoDB stays the source of truth; the spreadsheet is a **one-way, read-only copy**. Nothing in the code reads cells back, so edits in the sheet can never change a record, and approved financial records are never written from Sheets.
+
+- **Setup:** create a Google service account, enable the Sheets API, set `GOOGLE_SERVICE_ACCOUNT_JSON`, share the spreadsheet with the service account email as Editor (give everyone else Viewer), then paste the spreadsheet link on the settings page (or set `GOOGLE_SHEET_ID`). The connection is verified before any data is built; if the account can't open the sheet, nothing is sent.
+- **14 tabs:** Master Parish Register, Monthly Parish Submissions, Confirmed Payments, Outstanding Payments, Pending Verification, Additional Levies, Additional Contributions, Parish Attendance, Area / Zonal / Provincial Summary, Event Registrations, Event Attendance, Monthly Activity Reports. Each can be switched off or renamed. A "Sync Info" tab explains the copy.
+- **No duplicates, idempotent:** column A is the database ID; each sync replaces a whole tab with the current snapshot, so repeats and retries can't add rows. Unchanged tabs are skipped (content hash). Rows are written as RAW text, so nothing is evaluated as a formula.
+- **Money:** "Confirmed" lists only finance-confirmed payments plus audited adjustments. Pending, needs-action and rejected payments are in Pending Verification and never counted as received. Levies, contributions and Youth Sunday money are separate. Summaries use the same rules as the finance dashboard.
+- **Privacy:** no phone/email of members or registrants is sent; under-18 registrant names are withheld.
+- **Logs and retry:** every attempt per tab is logged (kept 180 days) with errors; failed tabs show their error and can be retried individually or all at once. Transient Google errors (rate limits, outages) are retried automatically within a run.
+- **Who:** super and provincial admins configure and sync everything; finance admins can sync only the finance tabs. Actions are audited.
+- **Automatic:** switch on "Sync automatically" for a daily run (`/api/cron/sheets`, 05:30 UTC) that also retries failures. Needs `CRON_SECRET`. A manual sync is limited to one run at a time.
+- The old three-tab sync was replaced by this one.

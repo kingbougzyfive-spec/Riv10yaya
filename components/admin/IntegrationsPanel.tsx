@@ -14,7 +14,6 @@ export function IntegrationsPanel({ role }: { role: string }) {
   const load = () => api("/api/integrations").then(setS).catch((e) => toast.err(e.message));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
-  const sync = async (d: string) => { setBusy(d); try { const r = await api("/api/integrations", { method: "POST", json: { dataset: d } }); toast.ok(`Synced ${r.rows} rows to the “${r.tab}” tab`); } catch (e: any) { toast.err(e.message); } setBusy(""); };
   if (!s) return <div className="grid gap-4 md:grid-cols-2">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-40" />)}</div>;
   const Card = ({ icon: I, title, st, children, steps }: { icon: any; title: string; st: any; children?: React.ReactNode; steps: string[] }) => (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass p-5">
@@ -26,11 +25,8 @@ export function IntegrationsPanel({ role }: { role: string }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card icon={Sheet} title="Google Sheets" st={s.sheets} steps={["In Google Cloud, create a service account and download its JSON key.", "Enable the Google Sheets API for that project.", "Create a Google Sheet and share it (Editor) with the service account's email.", "Set GOOGLE_SERVICE_ACCOUNT_JSON (the JSON, or base64 of it) and GOOGLE_SHEET_ID (from the sheet URL)."]}>
-        <p className="mt-2 text-xs text-white/50">A reporting copy. MongoDB remains the source of truth. Each sync replaces the tab, so it never duplicates rows.</p>
-        {s.sheets.active && <>
-          <p className="mt-2 text-xs text-white/45">Share the sheet with <b className="break-all text-white/70">{s.sheets.serviceEmail}</b></p>
-          <div className="mt-3 flex flex-wrap gap-2">{([["reports", "Reports"], ["remittances", "Finance"], ["attendance", "Attendance"]] as const).filter(([k]) => k !== "remittances" || ["super_admin", "finance_admin"].includes(role)).map(([k, l]) => <button key={k} className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => sync(k)}>{busy === k ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}Sync {l}</button>)}</div>
-        </>}
+        <p className="mt-2 text-xs text-white/50">A read-only reporting copy for provincial leadership. MongoDB remains the source of truth.</p>
+        <a href="/admin/integrations/sheets" className="btn btn-primary btn-sm mt-3 inline-flex">Open Google Sheets settings</a>
       </Card>
       <Card icon={Mail} title="Email (Resend)" st={s.email} steps={["Create a Resend account and verify your sending domain.", "Create an API key.", "Set RESEND_API_KEY and MAIL_FROM (e.g. YAYA <no-reply@yourdomain.org>)."]}><p className="mt-2 text-xs text-white/50">Used for registration confirmations and password reset links.</p></Card>
       <Card icon={Bot} title="AI receipt reading" st={s.ai} steps={["Create an API key in the Anthropic Console.", "Set ANTHROPIC_API_KEY (and optionally ANTHROPIC_MODEL)."]}><p className="mt-2 text-xs text-white/50">Finance can ask for an advisory reading of a payment receipt (amount, date, reference). It never confirms or rejects a payment by itself.</p></Card>

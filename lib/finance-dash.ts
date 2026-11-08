@@ -38,12 +38,12 @@ export function parishesInScope(parishes: any[], f: Filter) {
     && (!f.zone || id(p.zone) === f.zone) && (!f.area || id(p.area) === f.area) && (!f.parish || id(p._id) === f.parish));
 }
 
-type Agg = {
+export type Agg = {
   expected: number; confirmed: number; outstanding: number; overpaid: number; declared: number;
   pending: number; flagged: number; rejected: number; levies: number; leviesConfirmed: number; contributions: number; contributionsConfirmed: number;
   partialCount: number; partialConfirmed: number; overCount: number; submitted: number; parishes: number;
 };
-const blank = (): Agg => ({ expected: 0, confirmed: 0, outstanding: 0, overpaid: 0, declared: 0, pending: 0, flagged: 0, rejected: 0, levies: 0, leviesConfirmed: 0, contributions: 0, contributionsConfirmed: 0, partialCount: 0, partialConfirmed: 0, overCount: 0, submitted: 0, parishes: 0 });
+export const blank = (): Agg => ({ expected: 0, confirmed: 0, outstanding: 0, overpaid: 0, declared: 0, pending: 0, flagged: 0, rejected: 0, levies: 0, leviesConfirmed: 0, contributions: 0, contributionsConfirmed: 0, partialCount: 0, partialConfirmed: 0, overCount: 0, submitted: 0, parishes: 0 });
 
 /** Fold one remittance into an aggregate. */
 export function addRow(a: Agg, r: any) {
