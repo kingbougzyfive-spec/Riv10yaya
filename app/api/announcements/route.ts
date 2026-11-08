@@ -3,7 +3,7 @@ import { handle, audit } from "@/lib/api";
 import { requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
-import { sendPush } from "@/lib/push";
+import { announceEveryone } from "@/lib/announce";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,6 @@ export const POST = handle(async (req) => {
   const { notify, ...fields } = i;
   const doc = await Announcement.create({ ...fields, imageId: i.imageId || undefined, publishedAt: i.status === "published" ? new Date() : undefined, createdBy: user.id });
   await audit(user, "announcement.create", i.title, undefined, req);
-  if (notify && i.status === "published") await sendPush({ title: i.title, body: i.body, url: "/announcements" });
+  if (notify && i.status === "published") await announceEveryone(i.title, i.body, { id: user.id, name: user.name });
   return { id: String(doc._id) };
 });

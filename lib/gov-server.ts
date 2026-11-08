@@ -67,7 +67,7 @@ export async function pickMember(user: SessionUser, org: Org, memberId: string) 
 }
 
 /** Tell the member (if they have a sign-in) about something assigned to them. */
-export async function notifyMember(m: any, n: { title: string; body?: string; link?: string }) {
+export async function notifyMember(m: any, n: { title: string; body?: string; link?: string; event?: string }) {
   try {
     const { User } = await getDb();
     const us = await User.find({ role: "member", phone: { $in: keysOf(m) }, active: true }, { _id: 1 }).lean<any[]>();

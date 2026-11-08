@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { ApiError } from "./auth";
 import { getDb } from "./db";
 import { appUrl, newRegId, phoneKey, registrationRef } from "./ids";
-import { sendMail } from "./mail";
+import { dispatch } from "./notifier";
 import { sendSms, smsConfigured } from "./sms";
 
 export type RegInput = { eventId: string; name: string; phone: string; email?: string; parish?: string; answers: Record<string, string>; member?: string };
@@ -30,7 +30,12 @@ export async function registerForEvent(i: RegInput) {
   const key = phoneKey(i.phone);
   if (await Registration.exists({ event: i.eventId, phoneKey: key })) throw new ApiError(409, "This phone number is already registered for the event. Check your confirmation message.");
   const doc = await Registration.create({ event: i.eventId, regId: newRegId(), reference: registrationRef(), name: i.name, phone: i.phone, phoneKey: key, email: i.email || undefined, ...org, answers: i.answers, ...(i.member ? { member: i.member } : {}) });
-  if (i.email) await sendMail({ to: i.email, subject: `You're registered: ${ev.title}`, html: `<p>Hello ${i.name},</p><p>You're registered for <b>${ev.title}</b>.</p><p>Your reference: <b>${doc.reference}</b></p><p>Show your QR ticket at the entrance.</p>` }).catch(() => {});
+  // Confirmation through the central pipeline: in-app (and email/push by preference) for someone with an account, email otherwise.
+  const { User } = await getDb();
+  const acct = await User.findOne({ role: "member", phone: key, active: true }, { _id: 1 }).lean<any>();
+  const note = { event: "event_registered", title: `You're registered: ${ev.title}`, body: `Your reference is ${doc.reference}. Show your QR ticket at the entrance.`, link: `/events/${i.eventId}/ticket/${doc.reference}` };
+  if (acct) await dispatch({ ...note, userIds: [String(acct._id)] });
+  else if (i.email) await dispatch({ ...note, external: [{ email: i.email, name: i.name }] });
   if (smsConfigured()) await sendSms(i.phone, `You are registered for ${ev.title}. Ref: ${doc.reference}. Your ticket: ${appUrl()}/events/${i.eventId}/ticket/${doc.reference}`).catch(() => {});
   return { reference: doc.reference, regId: doc.regId, title: ev.title };
 }

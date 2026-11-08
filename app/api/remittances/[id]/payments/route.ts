@@ -39,6 +39,6 @@ export const POST = handle<Ctx>(async (req, ctx) => {
   pay.checks = await duplicateChecks({ _id: pay._id, evidenceId: pay.evidenceId, reference: pay.reference }).catch(() => null);
   await r.save();
   await audit(user, "remittance.add_payment", String(r._id), { amountKobo: pay.amountKobo }, req);
-  await notifyUsers(await financeTeam(), { title: "Additional payment submitted", body: `A parish added a payment of ₦${i.amountPaid.toLocaleString("en-NG")} toward its remittance.`, link: "/admin/finance" });
+  await notifyUsers(await financeTeam(), { title: "Additional payment submitted", body: `A parish added a payment of ₦${i.amountPaid.toLocaleString("en-NG")} toward its remittance.`, link: "/admin/finance", event: "payment_uploaded" });
   return { ok: true, paymentId: String(pay._id) };
 });

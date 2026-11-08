@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { financeTeam, notifyUsers } from "@/lib/notify";
 import { handle, audit } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
 import { aiConfigured, readReceipt } from "@/lib/ai-receipt";
@@ -44,5 +45,6 @@ export const POST = handle<Ctx>(async (req, ctx) => {
   r.markModified("analysis");
   await r.save();
   await audit(user, "remittance.ai_read", String(r._id), { amountMatches, flags: flags.map((f) => f.code) }, req);
+  await notifyUsers((await financeTeam()).filter((x) => x !== user.id), { title: `AI examination complete: ${flags.length ? `${flags.length} point(s) to check` : "nothing unusual"}`, body: "The AI reading is advisory. A person still confirms the payment.", link: "/admin/finance", event: "ai_examined" });
   return { analysis: p.analysis };
 });

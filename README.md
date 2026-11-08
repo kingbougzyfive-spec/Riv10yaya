@@ -123,3 +123,14 @@ Tabs: Leadership, Departments, Committees, Tasks, Meetings, Documents.
 - **Tasks:** assign to a member, deadline, priority, progress notes, reassign, overdue tracking and completion rate; assignees with an account are notified.
 - **Meetings:** schedule for a committee, department or level; attendance (pre-filled from committee members, opens once the meeting starts), minutes, decisions and action points. An action point becomes a tracked task.
 - **Documents:** PDF, Word, Excel, PowerPoint, text, PNG or JPG up to 6 MB, tied to a level, committee or meeting. File contents are checked against their type, stored privately, and served only to administrators of that level or above (not by link sharing).
+
+## Notifications and communication
+
+Every notification goes through one pipeline (`lib/notifier.ts` → `dispatch`): an in-app notice is always created, then email and Web Push follow each person's own settings. Every send writes a delivery log with per-channel totals and a failure list; failed email/push can be retried from **Communications → Delivery log**.
+
+- **Categories**: reports and payments are *locked* (can't be muted, but the global email/push switches still apply). Announcements, events, tasks and general can be muted by each user in **Account** / **My page**.
+- **Push** permission is only requested when the user taps the enable button.
+- **Sending** (`/admin/communications`): everyone (provincial only), zones, areas, parishes, departments, event registrants, selected members. Each target is checked against the sender's scope; a dry run shows the head-count first. Under-18s are never bulk-emailed.
+- **Automatic reminders** run daily at 06:00 UTC (07:00 Lagos) via `vercel.json` → `/api/cron/reminders`. Set `CRON_SECRET` (Vercel sends it as a bearer token). Re-running the same day never duplicates notices. Configure deadline day, lead days, event/meeting windows and the outstanding-remittance interval on the Reminders tab.
+- **Assumption**: a report for month M is due on day N (default 10) of month M+1.
+- Vercel Hobby allows daily cron only. Needed env: `CRON_SECRET`, `VAPID_*` (push), `RESEND_API_KEY` + `MAIL_FROM` (email).

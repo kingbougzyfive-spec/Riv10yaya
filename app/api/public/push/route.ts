@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { handle } from "@/lib/api";
 import { ApiError } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { throttle } from "@/lib/ids";
 import { pushConfigured, pushPublicKey } from "@/lib/push";
@@ -18,7 +19,9 @@ export const POST = handle(async (req) => {
   if (!throttle(`push:${ip(req)}`, 10, 10 * 60_000)) throw new ApiError(429, "Too many attempts. Please try again later.");
   const i = sub.parse(await req.json());
   const { PushSub } = await getDb();
-  await PushSub.updateOne({ endpoint: i.endpoint }, { $set: { p256dh: i.keys.p256dh, auth: i.keys.auth, ua: (req.headers.get("user-agent") || "").slice(0, 200) } }, { upsert: true });
+  // If the person is signed in, tie the device to them so messages meant for them can reach it (and nobody else's).
+  const me = await getUser();
+  await PushSub.updateOne({ endpoint: i.endpoint }, { $set: { p256dh: i.keys.p256dh, auth: i.keys.auth, ua: (req.headers.get("user-agent") || "").slice(0, 200), ...(me ? { user: me.id } : {}) } }, { upsert: true });
   return { ok: true };
 });
 

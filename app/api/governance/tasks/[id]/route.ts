@@ -28,7 +28,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   if (i.assignee && i.assignee !== String(t.assignee ?? "")) {
     const m = await pickMember(user, orgOf(t), i.assignee);
     t.assignee = m._id; t.assigneeName = m.name; notes.push(`assigned to ${m.name}`);
-    await notifyMember(m, { title: `New task: ${t.title}`, link: "/me" });
+    await notifyMember(m, { title: `New task: ${t.title}`, link: "/me", event: "task_assigned" });
   }
   if (i.status && i.status !== t.status) {
     if (t.status === "cancelled" || (t.status === "done" && i.status !== "open")) throw new ApiError(409, "A finished task can only be reopened.");

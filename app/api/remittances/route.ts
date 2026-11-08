@@ -1,3 +1,4 @@
+import { financeTeam, notifyUsers } from "@/lib/notify";
 import { z } from "zod";
 import mongoose from "mongoose";
 import { handle, audit } from "@/lib/api";
@@ -96,6 +97,7 @@ export const POST = handle(async (req) => {
     lv.checks = await duplicateChecks(lv).catch(() => null);
     if (lv.checks) await lv.save();
   }
+  await notifyUsers((await financeTeam()).filter((x) => x !== user.id), { title: `Payment evidence uploaded: ${id.names.parish} · ${i.month}/${i.year}`, body: `${i.levies.length ? `Includes ${i.levies.length} levy/contribution item(s). ` : ""}Waiting for verification.`, link: "/admin/finance", event: "payment_uploaded" });
   await audit(user, "remittance.submit", `${id.names.parish} ${i.month}/${i.year}`, { offeringKobo, requiredKobo, percentBp }, req);
   return { id: String(yst._id), requiredKobo, percentBp };
 });

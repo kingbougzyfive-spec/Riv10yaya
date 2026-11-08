@@ -3,7 +3,7 @@ import { handle, audit } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
-import { sendPush } from "@/lib/push";
+import { announceEveryone } from "@/lib/announce";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -22,7 +22,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   a.set({ ...fields, imageId: i.imageId || undefined });
   await a.save();
   await audit(user, "announcement.update", a.title, { status: a.status }, req);
-  if (firstPublish && notify) await sendPush({ title: a.title, body: a.body, url: "/announcements" });
+  if (firstPublish && notify) await announceEveryone(a.title, a.body, { id: user.id, name: user.name });
   return { ok: true };
 });
 

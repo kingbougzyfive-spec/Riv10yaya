@@ -21,6 +21,7 @@ export const PERMS = {
   content: ["super_admin", "provincial_admin"],
   integrations: ["super_admin", "provincial_admin", "finance_admin"],
   database: ["super_admin"],
+  comms: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "event_admin"],
   governance: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "auditor"],
   governanceManage: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin"],
   audit: ["super_admin", "auditor"],

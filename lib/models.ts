@@ -19,7 +19,7 @@ const userSchema = new Schema(
     parish: { type: Schema.Types.ObjectId, ref: "Parish" },
     active: { type: Boolean, default: true },
     /** Notification preferences (members manage their own). In-app notices are always on. */
-    prefs: { email: { type: Boolean, default: true }, sms: { type: Boolean, default: true }, push: { type: Boolean, default: true } },
+    prefs: { email: { type: Boolean, default: true }, sms: { type: Boolean, default: true }, push: { type: Boolean, default: true }, /** categories the person has switched off (only optional ones can be) */ mute: [String] },
     lastLoginAt: Date,
   },
   opts,
@@ -282,6 +282,8 @@ const registrationSchema = new Schema(
     checkedInBy: { type: Schema.Types.ObjectId, ref: "User" },
     /** Set when a signed-in member registered themselves. */
     member: { type: Schema.Types.ObjectId, ref: "Member", index: true },
+    reminderAt: Date,
+    cancelNotifiedAt: Date,
   },
   opts,
 );
@@ -414,6 +416,8 @@ const pushSchema = new Schema(
     p256dh: { type: String, required: true },
     auth: { type: String, required: true },
     ua: { type: String, default: "" },
+    /** Set when the person was signed in while subscribing, which is what makes targeted push possible. */
+    user: { type: Schema.Types.ObjectId, ref: "User", index: true },
   },
   opts,
 );
@@ -426,10 +430,41 @@ const notificationSchema = new Schema(
     body: String,
     link: String,
     readAt: Date,
+    /** Which event produced it, its category (drives preferences) and the send it belongs to. */
+    event: String,
+    category: { type: String, default: "general" },
+    batch: { type: Schema.Types.ObjectId, ref: "NotificationLog", index: true },
+    /** Stops a reminder being sent twice to the same person. */
+    dedupe: { type: String, index: true },
+    /** What happened on each outside channel for this person. In-app always exists. */
+    delivery: { email: String, push: String },
   },
   opts,
 );
 notificationSchema.index({ user: 1, createdAt: -1 });
+
+/** One record per send (a broadcast or a system event): who it was for, what was delivered, and what failed. */
+const notificationLogSchema = new Schema(
+  {
+    origin: { type: String, enum: ["manual", "system"], default: "system", index: true },
+    event: String,
+    category: String,
+    title: { type: String, required: true },
+    body: String,
+    link: String,
+    audience: { type: { type: String }, labels: [String] },
+    channels: { email: Boolean, push: Boolean },
+    sentBy: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    sentByName: String,
+    totals: { recipients: Number, inApp: Number, emailSent: Number, emailFailed: Number, emailSkipped: Number, pushSent: Number, pushFailed: Number, pushNoDevice: Number, pushSkipped: Number, externalSent: Number, externalFailed: Number },
+    /** Individual failures (capped), so an administrator can see who missed out and retry. */
+    failures: [{ channel: String, user: { type: Schema.Types.ObjectId, ref: "User" }, name: String, to: String, error: String, retried: { type: Boolean, default: false } }],
+    status: { type: String, enum: ["done", "partial", "failed"], default: "done" },
+  },
+  opts,
+);
+// System logs are housekeeping; keep them for 90 days. Manual broadcasts are kept.
+notificationLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 86400, partialFilterExpression: { origin: "system" } });
 
 
 // ---------- Leadership, committees, tasks, meetings, documents (section 13) ----------
@@ -510,6 +545,7 @@ const meetingSchema = new Schema(
     venue: String,
     agenda: String,
     status: { type: String, enum: ["scheduled", "held", "cancelled"], default: "scheduled", index: true },
+    reminderAt: Date,
     attendance: [{ member: { type: Schema.Types.ObjectId, ref: "Member" }, name: String, status: { type: String, enum: ["present", "absent", "apology"], default: "absent" } }],
     minutes: String,
     minutesBy: String,
@@ -540,7 +576,7 @@ const documentSchema = new Schema(
   opts,
 );
 
-export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "Appointment", "Committee", "Task", "Meeting", "GovDocument"] as const;
+export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number];
 
 const schemas: Record<ModelName, Schema> = {
@@ -564,6 +600,7 @@ const schemas: Record<ModelName, Schema> = {
   PasswordReset: resetSchema,
   PushSub: pushSchema,
   Notification: notificationSchema,
+  NotificationLog: notificationLogSchema,
   Appointment: appointmentSchema,
   Committee: committeeSchema,
   Task: taskSchema,

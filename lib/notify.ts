@@ -1,22 +1,11 @@
 import { getDb } from "./db";
-import { mailConfigured, sendMail } from "./mail";
-import { appUrl } from "./ids";
+import { dispatch } from "./notifier";
 
-export type Note = { title: string; body?: string; link?: string };
+export type Note = { title: string; body?: string; link?: string; event?: string; dedupe?: string };
 
-/** Creates in-app notifications and, when email is configured, an email too. Never throws: a failed notice must not undo the action that caused it. */
+/** Tells people something through the central pipeline (in-app, then email and push as each person allows). Never throws. */
 export async function notifyUsers(userIds: string[], n: Note) {
-  try {
-    const ids = [...new Set(userIds.map(String))];
-    if (!ids.length) return;
-    const { Notification, User } = await getDb();
-    await Notification.insertMany(ids.map((user) => ({ user, title: n.title, body: n.body ?? "", link: n.link })));
-    if (mailConfigured()) {
-      const us = await User.find({ _id: { $in: ids }, active: true, email: { $exists: true, $ne: "" } }, { email: 1, name: 1 }).limit(50).lean<any[]>();
-      const link = n.link ? `${appUrl()}${n.link}` : appUrl();
-      await Promise.all(us.map((u) => sendMail({ to: u.email, subject: n.title, html: `<p>Hello ${u.name},</p><p>${n.body ?? ""}</p><p><a href="${link}">Open in the platform</a></p>` }).catch(() => false)));
-    }
-  } catch { /* swallow */ }
+  await dispatch({ userIds, title: n.title, body: n.body, link: n.link, event: n.event, dedupe: n.dedupe, origin: "system" });
 }
 
 /** The administrators responsible for a parish: its own, its area's and its zone's. */

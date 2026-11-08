@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { QrCode } from "@/components/Qr";
+import { NotificationSettings } from "@/components/NotificationSettings";
 import { ChangePassword } from "@/components/ChangePassword";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -36,7 +37,6 @@ export function MemberPortal() {
   const p = d.profile;
   const phoneChanged = f.phone.replace(/\D/g, "") !== (p.phone ?? "").replace(/\D/g, "");
   const save = async () => { setBusy(true); try { await api("/api/me", { method: "PATCH", json: { name: f.name, email: f.email, ...(phoneChanged ? { phone: f.phone, currentPassword: f.currentPassword } : {}) } }); toast.ok("Profile updated"); load(); } catch (e: any) { toast.err(e.message); } setBusy(false); };
-  const pref = async (k: "email" | "sms" | "push", v: boolean) => { setD({ ...d, prefs: { ...d.prefs, [k]: v } }); try { await api("/api/me", { method: "PATCH", json: { prefs: { [k]: v } } }); } catch (e: any) { toast.err(e.message); load(); } };
   const doReg = async () => { setBusy(true); try { const r = await api("/api/me/register", { method: "POST", json: { eventId: reg.id, answers: ans } }); toast.ok(`You're registered for ${r.title}`); setReg(null); setAns({}); load(); } catch (e: any) { toast.err(e.message); } setBusy(false); };
   const read = async () => { await api("/api/notifications", { method: "PATCH", json: { all: true } }).catch(() => {}); api("/api/notifications").then(setNotes).catch(() => {}); };
 
@@ -73,11 +73,10 @@ export function MemberPortal() {
           <button className="btn btn-primary mt-4" disabled={busy} onClick={save}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}Save</button>
         </div>
 
+        <NotificationSettings />
         <div className="glass p-5">
           <div className="mb-3 flex items-center justify-between"><p className="flex items-center gap-2 font-bold"><Bell className="h-4 w-4 text-accent" />Notifications{notes?.unread > 0 && <span className="badge badge-warn">{notes.unread} new</span>}</p>{notes?.unread > 0 && <button className="btn btn-ghost btn-sm" onClick={read}>Mark all read</button>}</div>
           <ul className="space-y-1.5 text-sm">{notes?.rows.slice(0, 6).map((n: any) => <li key={n.id}><Link href={n.link || "#"} className={`block rounded-lg px-3 py-2 ${n.read ? "bg-white/5" : "bg-brand/10"}`}><b>{n.title}</b>{n.body && <span className="block text-xs text-white/55">{n.body}</span>}</Link></li>)}{!notes?.rows.length && <li className="text-white/45">No notifications yet.</li>}</ul>
-          <div className="mt-4 border-t border-white/10 pt-3"><p className="mb-2 text-sm font-semibold">How should we reach you?</p><p className="mb-2 text-xs text-white/50">In-app notices are always on. Choose the extras you want.</p>
-            <div className="flex flex-wrap gap-4 text-sm">{([["email", "Email"], ["sms", "SMS"], ["push", "Push on this device"]] as const).map(([k, l]) => <label key={k} className="flex items-center gap-2"><input type="checkbox" checked={d.prefs[k]} onChange={(e) => pref(k, e.target.checked)} />{l}</label>)}</div></div>
         </div>
 
         <div className="glass p-5">

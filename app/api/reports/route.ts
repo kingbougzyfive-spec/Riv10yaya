@@ -5,6 +5,8 @@ import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 import { activitySchema, contactSchema, FIELDS, periodSchema } from "@/lib/report-config";
 import { areaRollup, zoneRollup } from "@/lib/rollup";
+import { MONTHS } from "@/lib/money";
+import { adminsOf, notifyUsers } from "@/lib/notify";
 import { reportRef } from "@/lib/ids";
 import mongoose from "mongoose";
 import { obligationFv, totals } from "@/lib/verification";
@@ -79,6 +81,12 @@ export const POST = handle(async (req) => {
   doc.set({ status: "submitted", revision: 1, names: id.names, contact: body.contact, activity, rollup, remittance, submittedBy: user.id, submittedAt: new Date() });
   await doc.save();
   await audit(user, `report.submit.${id.type}`, `${id.names.parish ?? id.names.area ?? id.names.zone} ${body.month}/${body.year}`, undefined, req);
+  // Tell the level above (and the provincial office for zone reports); the submitter gets a receipt.
+  const who = id.names.parish ?? id.names.area ?? id.names.zone;
+  const above = id.type === "parish" ? await adminsOf({ area: id.area, zone: id.zone }) : id.type === "area" ? await adminsOf({ zone: id.zone }) : (await (await getDb()).User.find({ role: "provincial_admin", active: true }, { _id: 1 }).lean<any[]>()).map((u) => String(u._id));
+  const when = `${MONTHS[body.month - 1]} ${body.year}`;
+  await notifyUsers(above.filter((x) => x !== user.id), { title: `Report submitted: ${who} · ${when}`, body: `${doc.reportId} is ready for review.`, link: "/admin/reports", event: "report_submitted" });
+  await notifyUsers([user.id], { title: `Your report was submitted · ${when}`, body: `Reference ${doc.reportId}. You'll be told if anything needs revising.`, link: "/admin/reports", event: "report_submitted" });
   return { id: String(doc._id), reportId: doc.reportId };
 });
 

@@ -42,6 +42,7 @@ export const POST = handle<Ctx>(async (req, ctx) => {
     title: `${REPORT_LABEL[status]}: ${who} · ${MONTHS[r.month - 1]} ${r.year}`,
     body: i.note || "Your report was reviewed.",
     link: "/admin/reports",
+    event: status === "revision_requested" ? "report_revision" : status === "incomplete" ? "report_incomplete" : "report_completed",
   });
   return { ok: true, status };
 });

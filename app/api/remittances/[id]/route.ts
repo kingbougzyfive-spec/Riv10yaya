@@ -52,7 +52,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
     p.history.push(entry({ action: "responded", note: i.note, evidenceId: i.evidenceId }));
     p.status = "awaiting_verification"; // the original receipt and every earlier submission stay on record
     await r.save();
-    await notifyUsers(await financeTeam(), { title: `Parish responded: ${where}`, body: i.note || "New evidence was uploaded.", link: "/admin/finance" });
+    await notifyUsers(await financeTeam(), { title: `Parish responded: ${where}`, body: i.note || "New evidence was uploaded.", link: "/admin/finance", event: "payment_uploaded" });
     await audit(user, "remittance.respond", String(r._id), undefined, req);
     return { ok: true, status: p.status, fv: obligationFv(r.toObject()) };
   }
@@ -73,7 +73,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
     r.history.push(entry({ action: "adjusted", reason: i.reason, note: i.note, amountKobo, reference: i.bankReference || undefined, evidenceId: i.evidenceId }));
     await r.save();
     await audit(user, "remittance.adjust", String(r._id), { amountKobo, reason: i.reason }, req);
-    await notifyUsers(await owners(), { title: `Payment record adjusted: ${where}`, body: `${amountKobo > 0 ? "+" : ""}${money(amountKobo)}. Reason: ${i.reason}`, link: "/admin/finance" });
+    await notifyUsers(await owners(), { title: `Payment record adjusted: ${where}`, body: `${amountKobo > 0 ? "+" : ""}${money(amountKobo)}. Reason: ${i.reason}`, link: "/admin/finance", event: "payment_adjusted" });
     return { ok: true, status: p.status, fv: obligationFv(r.toObject()) };
   }
 
@@ -109,10 +109,11 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
       title: `${head} (${where})`,
       body: `${i.reason} Please reply with more transaction details or upload additional evidence. Your monthly report is not affected.`,
       link: "/admin/finance",
+      event: ({ payment_not_found: "payment_not_found", amount_mismatch: "amount_mismatch", rejected: "evidence_rejected", resubmission_required: "evidence_requested" } as Record<string, string>)[p.status] ?? "payment_not_found",
     });
   } else if (p.status === "confirmed") {
     const t = totals(r.toObject());
-    await notifyUsers(await adminsOf({ parish: r.parish }), { title: `Payment confirmed: ${where}`, body: t.satisfied ? "Your remittance is fully confirmed." : `${money(t.outstandingKobo)} is still outstanding.`, link: "/admin/finance" });
+    await notifyUsers(await adminsOf({ parish: r.parish }), { title: `Payment confirmed: ${where}`, body: t.satisfied ? "Your remittance is fully confirmed." : `${money(t.outstandingKobo)} is still outstanding.`, link: "/admin/finance", event: "payment_confirmed" });
   }
   return { ok: true, status: p.status, fv: obligationFv(r.toObject()) };
 });
