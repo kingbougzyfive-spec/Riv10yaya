@@ -42,6 +42,8 @@ function Compose({ me, onSent }: { me: Me; onSent: () => void }) {
   const [busy, setBusy] = useState(false);
   useEffect(() => { api("/api/governance/departments").then((r) => setDeps(r.rows)).catch(() => {}); api("/api/public/events").then((r) => setEvs(r.rows ?? r.events ?? [])).catch(() => {}); }, []);
   useEffect(() => { setPrev(null); }, [aud, ch]);
+  // A draft handed over from the AI assistant: loaded once, then removed. The sender still reviews and presses Send.
+  useEffect(() => { try { const raw = sessionStorage.getItem("comms-prefill"); if (raw) { sessionStorage.removeItem("comms-prefill"); const d = JSON.parse(raw); setF((x) => ({ ...x, title: String(d.title || "").slice(0, 120), body: String(d.body || "").slice(0, 2000) })); } } catch { /* ignore */ } }, []);
   const zones = (org?.zones ?? []).filter((z: any) => !me.zone || z.id === me.zone);
   const areas = (org?.areas ?? []).filter((a: any) => (!me.zone || a.zone === me.zone) && (!me.area || a.id === me.area));
   const parishes = (org?.parishes ?? []).filter((p: any) => (!me.zone || p.zone === me.zone) && (!me.area || p.area === me.area) && (!me.parish || p.id === me.parish));

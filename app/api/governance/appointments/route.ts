@@ -9,7 +9,7 @@ import { canManage } from "@/lib/governance";
 
 export const dynamic = "force-dynamic";
 
-export const shape = (a: any, n: any, user: any) => ({
+const shape = (a: any, n: any, user: any) => ({
   id: String(a._id), ...orgOut(a, n), position: a.position, holderName: a.holderName, memberId: a.member ? String(a.member) : null, departmentId: a.department ? String(a.department) : null,
   responsibilities: a.responsibilities ?? [], startsAt: a.startsAt, endsAt: a.endsAt, status: a.status, endedAt: a.endedAt, endedReason: a.endedReason, canManage: canManage(user, orgOf(a)),
   history: (a.history ?? []).map((h: any) => ({ at: h.at, byName: h.byName, action: h.action, note: h.note })),

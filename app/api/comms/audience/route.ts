@@ -1,12 +1,10 @@
-import { z } from "zod";
 import { handle } from "@/lib/api";
 import { requireApiUser } from "@/lib/auth";
-import { AUDIENCE_TYPES, resolveAudience } from "@/lib/audience";
+import { resolveAudience } from "@/lib/audience";
 import { PERMS } from "@/lib/rbac";
+import { audienceSchema } from "@/lib/comms-shape";
 
 export const dynamic = "force-dynamic";
-
-export const audienceSchema = z.object({ type: z.enum(AUDIENCE_TYPES), ids: z.array(z.string()).max(200).optional(), eventId: z.string().optional() });
 
 /** Dry run: how many people would receive this, before anything is sent. */
 export const POST = handle(async (req) => {

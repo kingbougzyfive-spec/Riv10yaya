@@ -5,7 +5,7 @@ import { resolveAudience } from "@/lib/audience";
 import { throttle } from "@/lib/ids";
 import { dispatch } from "@/lib/notifier";
 import { PERMS } from "@/lib/rbac";
-import { audienceSchema } from "../audience/route";
+import { audienceSchema } from "@/lib/comms-shape";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;

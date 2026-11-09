@@ -22,6 +22,12 @@ export const PERMS = {
   integrations: ["super_admin", "provincial_admin", "finance_admin"],
   database: ["super_admin"],
   comms: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "event_admin"],
+  /** Ask questions about records: only roles with a defined organisational scope, and answers are cut to that scope. */
+  assistant: ["super_admin", "finance_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "auditor"],
+  /** Draft announcements and notices (the human still reviews and sends). Same people who can use Communications. */
+  aiWrite: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "event_admin"],
+  /** Anyone who may use either half of the assistant (for the menu and the page). */
+  aiAny: ["area_admin", "auditor", "event_admin", "finance_admin", "parish_admin", "provincial_admin", "super_admin", "zonal_admin"],
   governance: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "auditor"],
   governanceManage: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin"],
   audit: ["super_admin", "auditor"],

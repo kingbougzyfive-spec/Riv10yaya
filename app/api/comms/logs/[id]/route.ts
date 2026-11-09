@@ -7,7 +7,7 @@ import { sendMailResult } from "@/lib/mail";
 import { appUrl } from "@/lib/ids";
 import { pushToSubs } from "@/lib/push";
 import { PERMS } from "@/lib/rbac";
-import { shapeLog } from "../route";
+import { shapeLog } from "@/lib/comms-shape";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };

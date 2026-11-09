@@ -148,3 +148,14 @@ Admin → Integrations → **Google Sheets** (`/admin/integrations/sheets`). Mon
 - **Who:** super and provincial admins configure and sync everything; finance admins can sync only the finance tabs. Actions are audited.
 - **Automatic:** switch on "Sync automatically" for a daily run (`/api/cron/sheets`, 05:30 UTC) that also retries failures. Needs `CRON_SECRET`. A manual sync is limited to one run at a time.
 - The old three-tab sync was replaced by this one.
+
+## AI assistant and intelligent reporting
+
+Admin → **AI Assistant** (`/admin/assistant`). Needs `ANTHROPIC_API_KEY` (optional `ANTHROPIC_MODEL`); without it the page says so and everything else works.
+
+- **Ask:** answers questions about records using nine read-only tools (submission status and rates by zone/area, finance summary, confirmed-during-month, outstanding remittances, possible duplicate references, incomplete reports, activity-report summary, attendance comparison, parishes needing follow-up). The model never touches the database: tools run on the server, and every query is cut to the signed-in person's scope (`recordScope`) before anything is returned. A zone or area the person can't see simply isn't found.
+- **Accuracy:** all figures are computed by the same rules as the dashboards (only CONFIRMED money is "received"; pending, needs-action and rejected are always separate). Each answer shows chips with the data used, the reporting period and the scope, built by the server, not written by the model. "Confirmed this month" is answered both ways (confirmed by finance during the month vs. for that month's reporting period).
+- **Safety:** there is no tool that creates, edits, approves, rejects or sends anything, so the assistant cannot approve payments, change obligations or override a decision; it points people to the Finance Desk, Reports or Communications instead. Duplicate-reference results are worded as prompts for a human check, never accusations (a notice is added if the answer drifts). Report excerpts are passed as untrusted data. Member records and contact details are never available to it.
+- **Write:** drafts announcements, invitations, meeting notices, reminders, administrative messages and report summaries (from real report data). It never invents dates, venues or amounts (it leaves `[placeholders]`, which the page highlights). "Use in Communications" hands the draft to the Communications page, where a person chooses the audience and sends.
+- **Accountability:** every request is logged (who, the question, the tools used, the answer; kept 180 days). Provincial admins see everyone's history; others see their own. Limited to 40 requests per person per hour.
+- **Housekeeping:** route files now export only HTTP handlers (Next.js requirement); shared helpers moved to `lib/gov-shape.ts`, `lib/comms-shape.ts`, `lib/ai-limits.ts`.

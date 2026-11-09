@@ -6,13 +6,9 @@ import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 import { dateStr, listFilter, loadGov, names, notifyMember, orgInput, orgOf, orgOut, resolveOrg } from "@/lib/gov-server";
 import { attendanceStats, canManage } from "@/lib/governance";
+import { shapeMeeting } from "@/lib/gov-shape";
 
 export const dynamic = "force-dynamic";
-
-export const shapeMeeting = (m: any, n: any, user: any) => ({
-  id: String(m._id), title: m.title, bodyKind: m.bodyKind, committeeId: m.committee ? String(m.committee) : null, departmentId: m.department ? String(m.department) : null, ...orgOut(m, n),
-  scheduledAt: m.scheduledAt, venue: m.venue ?? "", agenda: m.agenda ?? "", status: m.status, attendance: attendanceStats(m.attendance ?? []), hasMinutes: !!m.minutes, decisions: (m.decisions ?? []).length, canManage: canManage(user, orgOf(m)),
-});
 
 export const GET = handle(async (req) => {
   const user = await requireApiUser(PERMS.governance);

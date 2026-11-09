@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, Landmark, Send, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
+import { BarChart3, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -24,6 +24,7 @@ const ITEMS = [
   { href: "/admin/members", label: "Members", icon: UserRound, perm: "members" as const },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone, perm: "content" as const },
   { href: "/admin/communications", label: "Communications", icon: Send, perm: "comms" as const },
+  { href: "/admin/assistant", label: "AI Assistant", icon: Sparkles, perm: "aiAny" as const },
   { href: "/admin/governance", label: "Leadership & Committees", icon: Landmark, perm: "governance" as const },
   { href: "/admin/departments", label: "Public Departments", icon: Network, perm: "content" as const },
   { href: "/admin/users", label: "Users & Roles", icon: Users, perm: "users" as const },

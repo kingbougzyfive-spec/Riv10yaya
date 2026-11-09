@@ -5,8 +5,7 @@ import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 import { dateStr, loadGov, names, notifyMember, orgOf, pickMember } from "@/lib/gov-server";
 import { attendanceStats } from "@/lib/governance";
-import { shapeMeeting } from "../route";
-import { shapeTask } from "../../tasks/route";
+import { shapeMeeting, shapeTask } from "@/lib/gov-shape";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };

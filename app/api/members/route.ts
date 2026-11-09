@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const eighteenAgo = () => { const d = new Date(); d.setFullYear(d.getFullYear() - 18); return d; };
 
-export async function listMembers(req: Request, user: any, scope: any, limit: number) {
+async function listMembers(req: Request, user: any, scope: any, limit: number) {
   const q = new URL(req.url).searchParams;
   const f: any = { ...scope };
   for (const k of ["zone", "area", "parish"]) if (q.get(k) && mongoose.isValidObjectId(q.get(k))) f[k] = q.get(k);
@@ -65,7 +65,7 @@ export const GET = handle(async (req) => {
 });
 
 const dateStr = z.string().refine((v) => !Number.isNaN(Date.parse(v)), "Enter a valid date");
-export const createSchema = z.object({
+const createSchema = z.object({
   name: z.string().trim().min(2).max(100),
   phone: z.string().trim().refine(validPhone, "Enter a valid phone number"),
   email: z.string().trim().email().optional().or(z.literal("")),

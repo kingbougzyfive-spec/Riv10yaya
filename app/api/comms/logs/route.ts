@@ -3,10 +3,9 @@ import { requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { isProvincialAdmin } from "@/lib/governance";
 import { PERMS } from "@/lib/rbac";
+import { shapeLog } from "@/lib/comms-shape";
 
 export const dynamic = "force-dynamic";
-
-export const shapeLog = (l: any) => ({ id: String(l._id), at: l.createdAt, origin: l.origin, event: l.event, category: l.category, title: l.title, audience: l.audience, channels: l.channels, sentByName: l.sentByName, totals: l.totals, status: l.status, failures: (l.failures ?? []).filter((f: any) => !f.retried).length });
 
 /** Delivery log. Senders see their own sends; provincial administrators see everything, including system events. */
 export const GET = handle(async (req) => {

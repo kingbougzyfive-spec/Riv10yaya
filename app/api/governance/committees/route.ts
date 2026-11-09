@@ -5,10 +5,9 @@ import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 import { listFilter, names, orgInput, orgOf, orgOut, resolveOrg } from "@/lib/gov-server";
 import { canManage } from "@/lib/governance";
+import { memberRows } from "@/lib/gov-shape";
 
 export const dynamic = "force-dynamic";
-
-export const memberRows = (c: any) => (c.members ?? []).map((m: any) => ({ id: String(m._id), memberId: m.member ? String(m.member) : null, name: m.name, role: m.role, since: m.since, until: m.until, active: m.active }));
 
 export const GET = handle(async (req) => {
   const user = await requireApiUser(PERMS.governance);

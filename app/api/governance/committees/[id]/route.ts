@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 import { loadGov, names, notifyMember, orgOf, orgOut, pickMember } from "@/lib/gov-server";
 import { canManage, COMMITTEE_ROLES, taskStats } from "@/lib/governance";
-import { memberRows } from "../route";
+import { memberRows } from "@/lib/gov-shape";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
