@@ -27,6 +27,8 @@ export const PERMS = {
   /** Draft announcements and notices (the human still reviews and sends). Same people who can use Communications. */
   aiWrite: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "event_admin"],
   /** Anyone who may use either half of the assistant (for the menu and the page). */
+  /** Anyone who may open the Reports & Exports page; each report type still checks its own roles. */
+  exportAny: ["area_admin", "auditor", "event_admin", "finance_admin", "parish_admin", "provincial_admin", "super_admin", "zonal_admin"],
   aiAny: ["area_admin", "auditor", "event_admin", "finance_admin", "parish_admin", "provincial_admin", "super_admin", "zonal_admin"],
   governance: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "auditor"],
   governanceManage: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin"],

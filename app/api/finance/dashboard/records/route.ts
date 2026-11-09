@@ -18,7 +18,7 @@ export const GET = handle(async (req) => {
   const fmt = u.searchParams.get("format");
   if (!fmt) return { metric, rows };
   return tableResponse(asFormat(fmt), {
-    name: `finance-${metric}-${input.filter.year}${input.filter.month ? "-" + input.filter.month : ""}`, title: metric,
+    name: `finance-${metric}-${input.filter.year}${input.filter.month ? "-" + input.filter.month : ""}`, title: `Finance records: ${metric}`, period: `${input.filter.month ? MONTHS[input.filter.month - 1] + " " : "Full year "}${input.filter.year}`, verification: "Confirmed means verified by finance. Pending, needs-action and rejected amounts are not received money.",
     head: ["Parish", "Zone", "Area", "Type", "Period", "Detail", "Amount (NGN)", "Confirmed (NGN)", "Status", "Reference", "Date", "Note"],
     rows: rows.map((r) => [r.parish, r.zone, r.area, r.kind, r.period, r.label, naira(r.amountKobo), naira(r.confirmedKobo), r.status, r.reference, r.at.slice(0, 10), r.note]),
   });

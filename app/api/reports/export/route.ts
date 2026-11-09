@@ -32,5 +32,5 @@ export const GET = handle(async (req) => {
       JSON.stringify({ ...r.activity, ...(r.rollup ? { consolidation: r.rollup } : {}) })];
   });
   const label = `${q.get("month") ? MONTHS[Number(q.get("month")) - 1] + " " : ""}${q.get("year") ?? "All periods"}`;
-  return tableResponse(asFormat(q.get("format")), { name: `reports-${q.get("year") ?? "all"}-${q.get("month") ?? "all"}`, title: `Monthly reports: ${label}`, head, rows: body, pdfOmit: ["Activity (JSON)", "Level"] });
+  return tableResponse(asFormat(q.get("format")), { name: `reports-${q.get("year") ?? "all"}-${q.get("month") ?? "all"}`, title: `Monthly reports: ${label}`, head, rows: body, pdfOmit: ["Activity (JSON)", "Level"], period: label, verification: "Payment columns show only money confirmed by finance as received." });
 });

@@ -3,7 +3,7 @@ import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 import { orgNames } from "@/lib/names";
-import { recordScope } from "@/lib/scope";
+import { clampScope, recordScope } from "@/lib/scope";
 import { asFormat, tableResponse } from "@/lib/export";
 
 export const dynamic = "force-dynamic";
@@ -11,13 +11,12 @@ export const dynamic = "force-dynamic";
 /** Registration list with search, org filters and CSV export (opens in Excel). Scoped: zonal/area/parish admins see only their own people. */
 export const GET = handle(async (req) => {
   const user = await requireApiUser(PERMS.attendanceView);
-  const scope = await recordScope(user);
+  const scope = user.role === "event_admin" ? {} : await recordScope(user); // event administrators manage every event's registrations
   if (scope === null) throw new ApiError(403, "No access.");
   const q = new URL(req.url).searchParams;
   const eventId = q.get("eventId");
   if (!eventId) throw new ApiError(400, "Choose an event.");
-  const f: any = { ...scope, event: eventId, status: "registered" };
-  for (const k of ["zone", "area", "parish"]) if (q.get(k)) f[k] = q.get(k);
+  const f: any = { ...clampScope(scope, q), event: eventId, status: "registered" };
   const s = q.get("q")?.trim();
   if (s) { const rx = new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"); f.$or = [{ name: rx }, { phone: rx }, { reference: rx }]; }
   const { Registration, Event } = await getDb();

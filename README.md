@@ -159,3 +159,15 @@ Admin → **AI Assistant** (`/admin/assistant`). Needs `ANTHROPIC_API_KEY` (opti
 - **Write:** drafts announcements, invitations, meeting notices, reminders, administrative messages and report summaries (from real report data). It never invents dates, venues or amounts (it leaves `[placeholders]`, which the page highlights). "Use in Communications" hands the draft to the Communications page, where a person chooses the audience and sends.
 - **Accountability:** every request is logged (who, the question, the tools used, the answer; kept 180 days). Provincial admins see everyone's history; others see their own. Limited to 40 requests per person per hour.
 - **Housekeeping:** route files now export only HTTP handlers (Next.js requirement); shared helpers moved to `lib/gov-shape.ts`, `lib/comms-shape.ts`, `lib/ai-limits.ts`.
+
+## Analytics and report exports
+
+Admin → **Reports & Exports** (`/admin/exports`). One endpoint, `GET /api/exports/[type]`, builds every official report; without `format` it returns a preview so filters can be checked before downloading.
+
+- **Reports:** parish / area / zonal monthly reports, provincial consolidated, financial reconciliation, confirmed payments, outstanding payments, attendance, event registrations, members, leadership.
+- **Formats:** PDF (letterhead, meta panel, key figures, wrapped tables, repeating headers, page X of Y, confidential footer), Excel (one styled sheet per table, ₦ number formats, frozen headers, filters, print set-up with repeating header rows and page-number footers) and CSV (plain data, formula-looking text neutralised). Long narrative sections (activity answers) are PDF; the full answers grid is Excel.
+- **Every export states:** organisation, reporting period, date generated (Lagos), prepared by (name and role), records covered, filters applied, and financial verification status. Monthly reports include each report's administrator name and phone **only for roles allowed to see contacts** (provincial, finance, zonal, area; parish admins for their own parish). Other roles get the report without them.
+- **Money:** confirmed (finance-verified) is kept apart from pending, needs-action and rejected. Reconciliation shows four arithmetic checks and any variance records.
+- **Confidentiality:** each report type checks the caller's role; every query is cut to their scope and a zone/area/parish filter can only narrow it (`clampScope`; this also closed a gap where the members and registrations lists let a scoped admin widen their view by passing another id). Under-18 members' contact details are protected as on screen. Registration and member exports are marked confidential. Every download is audited.
+- The older on-screen export buttons (reports, members, registrations, finance records) now use the same official layout.
+- Excel needs `exceljs` and PDF needs `pdf-lib` (both already in `package.json`).
