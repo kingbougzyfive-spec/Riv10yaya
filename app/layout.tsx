@@ -5,6 +5,9 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { SwRegister } from "@/components/SwRegister";
 import { getSite } from "@/lib/cms";
 import { themeVars } from "@/lib/site-types";
+import { SPLASH } from "@/lib/splash";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { UpdateToast } from "@/components/pwa/UpdateToast";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { site } = await getSite();
@@ -12,7 +15,9 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: site.brand.name, template: `%s · ${site.brand.shortName || site.brand.name}` },
     description: site.hero.subtitle || site.brand.tagline,
     applicationName: site.brand.name,
-    appleWebApp: { capable: true, title: site.brand.shortName || site.brand.name, statusBarStyle: "black-translucent" },
+    appleWebApp: { capable: true, title: site.brand.shortName || site.brand.name, statusBarStyle: "black-translucent", startupImage: SPLASH.map((s) => ({ url: s.src, media: s.media })) },
+    formatDetection: { telephone: false },
+    other: { "mobile-web-app-capable": "yes" },
     icons: { icon: "/icons/icon.svg", apple: "/icons/apple-touch-icon.png" },
   };
 }
@@ -31,6 +36,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Aurora />
         <ToastProvider>{children}</ToastProvider>
         <SwRegister />
+        <OfflineBanner />
+        <UpdateToast />
       </body>
     </html>
   );

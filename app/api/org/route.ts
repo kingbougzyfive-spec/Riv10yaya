@@ -5,6 +5,9 @@ import { ApiError, requireApiUser, type SessionUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
 
+/** Plain copy of an organisation record for the audit trail (no transfer history, which can be long). */
+const snap = (d: any) => { if (!d) return null; const o = JSON.parse(JSON.stringify(d.toObject ? d.toObject() : d)); delete o.transfers; delete o.__v; return o; };
+
 export const dynamic = "force-dynamic";
 
 const oid = z.string().refine((v) => mongoose.isValidObjectId(v), "Invalid id");
@@ -98,6 +101,7 @@ export const PATCH = handle(async (req) => {
 
   if (p.type === "zone") {
     const zone = await Zone.findById(p.id);
+    const zBefore = snap(zone);
     if (!zone) throw new ApiError(404, "Zone not found.");
     if (p.hasAreas !== undefined && p.hasAreas !== zone.hasAreas) {
       if (!p.hasAreas && (await Area.countDocuments({ zone: zone._id })) > 0)
@@ -110,21 +114,23 @@ export const PATCH = handle(async (req) => {
     if (p.active !== undefined) zone.active = p.active;
     if (p.description !== undefined) zone.description = p.description;
     await zone.save();
-    await audit(user, "org.zone.update", zone.name, p, req);
+    await audit(user, "org.zone.update", zone.name, { entity: "zone", entityId: p.id, before: zBefore, after: snap(zone), reason: (p as any).reason }, req);
     return { ok: true };
   }
 
   if (p.type === "area") {
     const area = await Area.findById(p.id);
+    const aBefore = snap(area);
     if (!area) throw new ApiError(404, "Area not found.");
     if (p.name) { area.name = p.name; area.nameKey = keyOf(p.name); }
     if (p.active !== undefined) area.active = p.active;
     await area.save();
-    await audit(user, "org.area.update", area.name, p, req);
+    await audit(user, "org.area.update", area.name, { entity: "area", entityId: p.id, before: aBefore, after: snap(area), reason: (p as any).reason }, req);
     return { ok: true };
   }
 
   const parish = await Parish.findById(p.id);
+  const pBefore = snap(parish);
   if (!parish) throw new ApiError(404, "Parish not found.");
   if (p.name) { parish.name = p.name; parish.nameKey = keyOf(p.name); }
   if (p.active !== undefined) parish.active = p.active;
@@ -138,11 +144,11 @@ export const PATCH = handle(async (req) => {
       parish.transfers.push({ by: user.id, fromZone: parish.zone, fromArea: parish.area, toZone: p.zone, toArea: newArea, reason: p.reason });
       parish.zone = p.zone as any;
       parish.area = newArea as any;
-      await audit(user, "org.parish.transfer", parish.name, { to: { zone: p.zone, area: newArea }, reason: p.reason }, req);
+      await audit(user, "org.parish.transfer", parish.name, { entity: "parish", entityId: p.id, before: { zone: pBefore.zone, area: pBefore.area ?? null }, after: { zone: p.zone, area: newArea }, reason: p.reason }, req);
     }
   }
   await parish.save();
-  await audit(user, "org.parish.update", parish.name, undefined, req);
+  await audit(user, "org.parish.update", parish.name, { entity: "parish", entityId: p.id, before: pBefore, after: snap(parish) }, req);
   return { ok: true };
 });
 
@@ -153,6 +159,7 @@ export const DELETE = handle(async (req) => {
   const id = url.searchParams.get("id") || "";
   if (!mongoose.isValidObjectId(id)) throw new ApiError(400, "Invalid id.");
   const { Zone, Area, Parish, User } = await getDb();
+  const gone = snap(type === "zone" ? await Zone.findById(id) : type === "area" ? await Area.findById(id) : await Parish.findById(id));
   if (type === "zone") {
     if ((await Area.countDocuments({ zone: id })) + (await Parish.countDocuments({ zone: id })) > 0)
       throw new ApiError(409, "This zone still has areas or parishes. Deactivate it instead, or move them first.");
@@ -164,6 +171,6 @@ export const DELETE = handle(async (req) => {
     if ((await User.countDocuments({ parish: id })) > 0) throw new ApiError(409, "Users are assigned to this parish. Reassign them first, or deactivate the parish.");
     await Parish.findByIdAndDelete(id);
   } else throw new ApiError(400, "Unknown type.");
-  await audit(user, `org.${type}.delete`, id, undefined, req);
+  await audit(user, `org.${type}.delete`, id, { entity: String(type), entityId: id, before: gone }, req);
   return { ok: true };
 });

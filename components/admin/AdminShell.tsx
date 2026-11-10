@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, FileDown, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
+import { BarChart3, FileDown, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, ShieldCheck, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
 import { api } from "@/lib/fetcher";
+import { signOutEverywhereLocal } from "@/lib/session-client";
 import { can } from "@/lib/rbac";
 import { ROLE_LABELS, type Role } from "@/lib/roles";
 
@@ -32,6 +33,7 @@ const ITEMS = [
   { href: "/admin/database", label: "Database", icon: Database, perm: "database" as const },
   { href: "/admin/integrations", label: "Integrations", icon: Plug, perm: "integrations" as const },
   { href: "/admin/audit", label: "Audit Log", icon: History, perm: "audit" as const },
+  { href: "/admin/security", label: "Security", icon: ShieldCheck, perm: "database" as const },
 ];
 
 export function AdminShell({ user, brand, children }: { user: { name: string; role: Role }; brand: string; children: ReactNode }) {
@@ -54,7 +56,7 @@ export function AdminShell({ user, brand, children }: { user: { name: string; ro
       <div className="mt-auto space-y-1 pt-4">
         <Link href="/admin/account" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-white/5 hover:text-white"><KeyRound className="h-4 w-4" />My account</Link>
         <Link href="/" target="_blank" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-white/5 hover:text-white"><ExternalLink className="h-4 w-4" />View website</Link>
-        <button onClick={async () => { await api("/api/auth/logout", { method: "POST" }); router.push("/login"); router.refresh(); }} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-red-500/10 hover:text-red-300"><LogOut className="h-4 w-4" />Sign out</button>
+        <button onClick={async () => { await signOutEverywhereLocal(); router.push("/login"); router.refresh(); }} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-red-500/10 hover:text-red-300"><LogOut className="h-4 w-4" />Sign out</button>
       </div>
     </nav>
   );

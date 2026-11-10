@@ -10,6 +10,7 @@ import { ChangePassword } from "@/components/ChangePassword";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
+import { signOutEverywhereLocal } from "@/lib/session-client";
 
 const fmt = (v?: string) => (v ? new Date(v).toLocaleDateString("en-NG", { dateStyle: "medium" }) : "");
 
@@ -55,7 +56,7 @@ export function MemberPortal() {
           {p.departments.length > 0 && <div className="flex justify-between gap-3"><dt className="text-white/50">Departments</dt><dd className="text-right">{p.departments.join(", ")}</dd></div>}
           {p.leadership && <div className="flex justify-between"><dt className="text-white/50">Role</dt><dd>{p.leadership.title}</dd></div>}
         </dl>
-        <button className="btn btn-ghost btn-sm" onClick={async () => { await api("/api/auth/logout", { method: "POST" }); router.push("/"); router.refresh(); }}><LogOut className="h-3.5 w-3.5" />Sign out</button>
+        <button className="btn btn-ghost btn-sm" onClick={async () => { await signOutEverywhereLocal(); router.push("/"); router.refresh(); }}><LogOut className="h-3.5 w-3.5" />Sign out</button>
       </motion.div>
 
       <div className="space-y-5">

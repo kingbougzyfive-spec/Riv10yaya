@@ -2,10 +2,11 @@ import { handle, audit } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
+import { readUpload } from "@/lib/upload";
+import { HOUR, rateLimit } from "@/lib/ratelimit";
 
 export const dynamic = "force-dynamic";
 const MAX = 4 * 1024 * 1024;
-const ALLOWED = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"];
 
 export const GET = handle(async () => {
   await requireApiUser(PERMS.media);
@@ -16,19 +17,11 @@ export const GET = handle(async () => {
 
 export const POST = handle(async (req) => {
   const user = await requireApiUser(PERMS.media);
-  const form = await req.formData();
-  const file = form.get("file");
-  if (!(file instanceof File)) throw new ApiError(400, "Choose an image to upload.");
-  if (!ALLOWED.includes(file.type)) throw new ApiError(415, "Upload a PNG, JPG, WebP, GIF or SVG image.");
-  if (file.size > MAX) throw new ApiError(413, "That image is over 4 MB. Please use a smaller one.");
+  await rateLimit(`media:${user.id}`, 60, HOUR, "You've uploaded a lot of images in the last hour. Please wait a little.");
+  // SVG is not accepted: it can carry scripts. PNG, JPG, WebP and GIF are checked by their real file signature.
+  const up = await readUpload((await req.formData()).get("file"), ["png", "jpeg", "webp", "gif"], MAX);
   const { Media } = await getDb();
-  const doc = await Media.create({
-    name: file.name.slice(0, 120),
-    mime: file.type,
-    size: file.size,
-    data: Buffer.from(await file.arrayBuffer()),
-    uploadedBy: user.id,
-  });
-  await audit(user, "media.upload", file.name, undefined, req);
+  const doc = await Media.create({ name: up.name, mime: up.mime, size: up.data.length, data: up.data, hash: up.hash, uploadedBy: user.id });
+  await audit(user, "media.upload", up.name, { entity: "media", entityId: String(doc._id), after: { sha256: up.hash, bytes: up.data.length, type: up.mime } }, req);
   return { id: String(doc._id), name: doc.name };
 });

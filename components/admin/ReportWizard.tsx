@@ -118,7 +118,7 @@ export function ReportWizard() {
           {ctx.type === "parish" && (
             <div className="glass grid grid-cols-2 gap-1 p-1">
               {[{ n: 1, l: "1 · Finance", i: Banknote }, { n: 2, l: "2 · Activity report", i: ClipboardList }].map((s) => (
-                <button key={s.n} disabled={s.n === 2 && !ctx.remittance} onClick={() => setStep(s.n as 1 | 2)} className={cn("relative rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40", step === s.n ? "text-[#04130d]" : "text-white/60")}>
+                <button data-needs-online key={s.n} disabled={s.n === 2 && !ctx.remittance} onClick={() => setStep(s.n as 1 | 2)} className={cn("relative rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40", step === s.n ? "text-[#04130d]" : "text-white/60")}>
                   {step === s.n && <motion.span layoutId="wiz" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative flex items-center justify-center gap-2"><s.i className="h-4 w-4" />{s.l}</span>
                 </button>
               ))}
@@ -166,7 +166,7 @@ export function ReportWizard() {
                     ))}
                     <button className="btn btn-ghost w-full border-dashed" onClick={() => setLevies([...levies, { category: "levy", description: "", amount: "", paidAt: today(), reference: "", evidenceId: "" }])}><Plus className="h-4 w-4" />Add a levy or contribution</button>
                   </div>
-                  <button className="btn btn-primary w-full py-3.5 text-base" disabled={busy} onClick={submitFinance}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}Save finance & continue to activity report</button>
+                  <button data-needs-online className="btn btn-primary w-full py-3.5 text-base" disabled={busy} onClick={submitFinance}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}Save finance & continue to activity report</button>
                   <p className="text-center text-xs text-white/40">You don't need to wait for finance approval to complete your activity report.</p>
                 </>)}
               </motion.div>
@@ -177,8 +177,8 @@ export function ReportWizard() {
                 {ctx.rollup && <Rollup type={ctx.type} r={ctx.rollup} />}
                 <div className="glass p-5 sm:p-6"><h3 className="mb-4 font-bold">{typeLabel} monthly activity report</h3><ActivityFields fields={fields} values={act} onChange={(k, v) => setAct((a) => ({ ...a, [k]: v }))} /></div>
                 <ContactSection value={contact} onChange={setContact} />
-                <button className="btn btn-primary w-full py-3.5 text-base" disabled={busy} onClick={submitReport}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Submit {typeLabel.toLowerCase()} report</button>
-                <button className="btn btn-ghost w-full" disabled={busy} onClick={saveDraft}>Save as draft</button>
+                <button data-needs-online className="btn btn-primary w-full py-3.5 text-base" disabled={busy} onClick={submitReport}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Submit {typeLabel.toLowerCase()} report</button>
+                <button data-needs-online className="btn btn-ghost w-full" disabled={busy} onClick={saveDraft}>Save as draft</button>
                 {ctx.draft && <p className="text-center text-xs text-white/40">A saved draft was loaded. Drafts are not counted as submitted.</p>}
               </motion.div>
             )}

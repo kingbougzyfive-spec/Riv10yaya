@@ -21,6 +21,7 @@ export const PUT = handle(async (req) => {
   const user = await requireApiUser(PERMS.finance);
   const i = schema.parse(await req.json());
   const cur = await getFinance();
+  const beforeSnap = { percentBp: cur.percentBp, bank: { ...cur.bank } };
   const at = new Date().toISOString();
   if (i.percent !== undefined) {
     if (!can(user.role, "percentEdit")) throw new ApiError(403, "Only provincial administrators can change the remittance percentage.");
@@ -36,6 +37,6 @@ export const PUT = handle(async (req) => {
   }
   cur.history = cur.history.slice(0, 100);
   await saveFinance(cur);
-  await audit(user, "finance.settings", "finance", { percent: i.percent, bank: !!i.bank }, req);
+  await audit(user, "finance.settings", "finance", { entity: "finance_settings", before: beforeSnap, after: { percentBp: cur.percentBp, bank: { ...cur.bank } } }, req);
   return { ok: true };
 });

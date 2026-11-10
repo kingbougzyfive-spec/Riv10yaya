@@ -48,8 +48,11 @@ export const DELETE = handle<Ctx>(async (req, ctx) => {
   const user = await requireApiUser(PERMS.media);
   const { id } = await ctx.params;
   const { Media } = await getDb();
-  const m = await Media.findByIdAndDelete(id);
-  if (!m) throw new ApiError(404, "Not found");
-  await audit(user, "media.delete", m.name, undefined, req);
+  const cur = await Media.findById(id, { data: 0 }).lean<any>();
+  if (!cur) throw new ApiError(404, "Not found");
+  // Payment evidence and governance documents are permanent records, not site images.
+  if (cur.private || cur.document) throw new ApiError(409, "This file is a permanent record and cannot be deleted.");
+  await Media.deleteOne({ _id: id });
+  await audit(user, "media.delete", cur.name, { entity: "media", entityId: id, before: { name: cur.name, type: cur.mime, bytes: cur.size, sha256: cur.hash ?? null } }, req);
   return { ok: true };
 });

@@ -19,7 +19,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const r = await api("/api/auth/login", { method: "POST", json: { email, password } });
-      router.push(r.role === "member" ? "/me" : "/admin");
+      router.push(r.mustChange ? (r.role === "member" ? "/me?force=1" : "/admin/account?force=1") : r.role === "member" ? "/me" : "/admin");
       router.refresh();
     } catch (err: any) {
       toast.err(err.message);

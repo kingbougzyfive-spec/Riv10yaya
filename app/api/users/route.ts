@@ -5,6 +5,7 @@ import { ApiError, hashPassword, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { ROLES } from "@/lib/models";
 import { PERMS } from "@/lib/rbac";
+import { passwordField, passwordProblem } from "@/lib/password";
 
 export const dynamic = "force-dynamic";
 const oid = z.string().refine((v) => mongoose.isValidObjectId(v), "Invalid id");
@@ -19,7 +20,7 @@ const base = z.object({
   area: oid.optional().or(z.literal("")),
   parish: oid.optional().or(z.literal("")),
 });
-const createSchema = base.extend({ password: z.string().min(10, "Use at least 10 characters").max(100) });
+const createSchema = base.extend({ password: passwordField });
 const patchSchema = z.object({
   id: oid,
   name: z.string().trim().min(2).max(80).optional(),
@@ -29,7 +30,7 @@ const patchSchema = z.object({
   area: oid.optional().or(z.literal("")),
   parish: oid.optional().or(z.literal("")),
   active: z.boolean().optional(),
-  password: z.string().min(10).max(100).optional(),
+  password: passwordField.optional(),
 });
 
 function needScope(role: string, v: { zone?: string; area?: string; parish?: string }) {
@@ -64,8 +65,9 @@ export const POST = handle(async (req) => {
     name: i.name, email: i.email, phone: i.phone || undefined, role: i.role,
     zone: clean(i.zone), area: clean(i.area), parish: clean(i.parish),
     passwordHash: await hashPassword(i.password),
+    mustChangePassword: true, // an admin-chosen password is temporary: the person replaces it at first sign-in
   });
-  await audit(actor, "user.create", i.email, { role: i.role }, req);
+  await audit(actor, "user.create", i.email, { entity: "user", entityId: String(u._id), after: { name: i.name, email: i.email, phone: i.phone || null, role: i.role, zone: clean(i.zone) ?? null, area: clean(i.area) ?? null, parish: clean(i.parish) ?? null, active: true } }, req);
   return { id: String(u._id) };
 });
 
@@ -82,6 +84,8 @@ export const PATCH = handle(async (req) => {
       throw new ApiError(409, "You need at least one active Super Administrator.");
   }
   if (i.id === actor.id && i.active === false) throw new ApiError(409, "You can't deactivate your own account.");
+  const before = { name: u.name, phone: u.phone ?? null, role: u.role, zone: u.zone ? String(u.zone) : null, area: u.area ? String(u.area) : null, parish: u.parish ? String(u.parish) : null, active: u.active };
+  if (i.password) { const pm = passwordProblem(i.password, { email: u.email, name: u.name }); if (pm) throw new ApiError(422, pm); }
   if (i.name) u.name = i.name;
   if (i.phone !== undefined) u.phone = i.phone || undefined;
   if (i.role) u.role = i.role;
@@ -90,8 +94,17 @@ export const PATCH = handle(async (req) => {
   if (i.parish !== undefined) u.parish = clean(i.parish) as any;
   needScope(u.role, { zone: u.zone && String(u.zone), area: u.area && String(u.area), parish: u.parish && String(u.parish) });
   if (i.active !== undefined) u.active = i.active;
-  if (i.password) u.passwordHash = await hashPassword(i.password);
+  if (i.password) { u.passwordHash = await hashPassword(i.password); u.mustChangePassword = true; u.passwordChangedAt = new Date(); }
+  const after = { name: u.name, phone: u.phone ?? null, role: u.role, zone: u.zone ? String(u.zone) : null, area: u.area ? String(u.area) : null, parish: u.parish ? String(u.parish) : null, active: u.active };
+  // Anything that changes what a person may do, or who they are, ends their existing sessions.
+  if (i.password || before.role !== after.role || before.active !== after.active || before.zone !== after.zone || before.area !== after.area || before.parish !== after.parish) u.sessionVersion = (u.sessionVersion ?? 0) + 1;
   await u.save();
-  await audit(actor, "user.update", u.email, { role: u.role, active: u.active, passwordReset: !!i.password }, req);
+  const diff = (k: keyof typeof before) => before[k] !== after[k];
+  const e = { entity: "user", entityId: String(u._id) };
+  if (diff("role")) await audit(actor, "user.role_change", u.email, { ...e, before: { role: before.role }, after: { role: after.role } }, req);
+  if (diff("active")) await audit(actor, after.active ? "user.reactivate" : "user.deactivate", u.email, { ...e, before: { active: before.active }, after: { active: after.active } }, req);
+  if (diff("zone") || diff("area") || diff("parish")) await audit(actor, "user.scope_change", u.email, { ...e, before: { zone: before.zone, area: before.area, parish: before.parish }, after: { zone: after.zone, area: after.area, parish: after.parish } }, req);
+  if (diff("name") || diff("phone")) await audit(actor, "user.contact_change", u.email, { ...e, before: { name: before.name, phone: before.phone }, after: { name: after.name, phone: after.phone } }, req);
+  if (i.password) await audit(actor, "user.password_reset_by_admin", u.email, { ...e, reason: "Password set by a Super Administrator; the person must replace it at next sign-in" }, req);
   return { ok: true };
 });

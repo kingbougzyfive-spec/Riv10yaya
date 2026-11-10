@@ -21,6 +21,13 @@ const userSchema = new Schema(
     /** Notification preferences (members manage their own). In-app notices are always on. */
     prefs: { email: { type: Boolean, default: true }, sms: { type: Boolean, default: true }, push: { type: Boolean, default: true }, /** categories the person has switched off (only optional ones can be) */ mute: [String] },
     lastLoginAt: Date,
+    /** Bumped on password change/reset, role change and deactivation so older sessions stop working. */
+    sessionVersion: { type: Number, default: 0 },
+    /** Temporary password in use: the person must choose their own before doing anything else. */
+    mustChangePassword: { type: Boolean, default: false },
+    passwordChangedAt: Date,
+    /** Created from BOOTSTRAP_ADMIN_* environment variables. */
+    bootstrap: { type: Boolean, default: false },
   },
   opts,
 );
@@ -109,13 +116,28 @@ const auditSchema = new Schema(
   {
     actor: { type: Schema.Types.ObjectId, ref: "User" },
     actorName: String,
+    actorRole: String,
+    actorEmail: String,
     action: { type: String, required: true, index: true },
+    /** Human label of the affected record (an email, a parish name, a reference). */
     target: String,
+    /** Kind and id of the affected record, e.g. "remittance" / "66f...". */
+    entity: String,
+    entityId: String,
+    /** Previous and new values for changes. Never contains passwords or secrets. */
+    before: Schema.Types.Mixed,
+    after: Schema.Types.Mixed,
+    reason: String,
     detail: Schema.Types.Mixed,
     ip: String,
+    userAgent: String,
+    requestId: String,
   },
   opts,
 );
+auditSchema.index({ createdAt: -1 });
+auditSchema.index({ entity: 1, entityId: 1, createdAt: -1 });
+auditSchema.index({ actor: 1, createdAt: -1 });
 
 /** Mirror of the connection list (URIs encrypted) so a fresh server can recover it. */
 const systemConfigSchema = new Schema(
@@ -615,8 +637,33 @@ const documentSchema = new Schema(
   opts,
 );
 
+
+/** Short-lived counters for rate limiting (shared across serverless instances). */
+const rateLimitSchema = new Schema({ key: { type: String, required: true, unique: true }, count: { type: Number, default: 0 }, expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } } });
+
+/** Server errors with a request id the person can quote. Message and stack only; never request bodies. */
+const errorLogSchema = new Schema(
+  { requestId: { type: String, index: true }, method: String, path: String, status: Number, message: String, stack: String, user: { type: Schema.Types.ObjectId, ref: "User" }, ip: String },
+  opts,
+);
+errorLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 86400 });
+
+/** Audit rows are append-only: the app can never edit or remove them. */
+const refuse = (what: string) => function () { throw new Error(`${what} cannot be changed or deleted.`); };
+for (const op of ["updateOne", "updateMany", "findOneAndUpdate", "findOneAndReplace", "replaceOne", "deleteOne", "deleteMany", "findOneAndDelete"] as const) {
+  auditSchema.pre(op as any, refuse("Audit records"));
+}
+auditSchema.pre("save", function (this: any, next: any) { if (!this.isNew) throw new Error("Audit records cannot be changed or deleted."); next(); });
+/** Financial records are never hard-deleted. Corrections go through history entries. */
+for (const op of ["deleteOne", "deleteMany", "findOneAndDelete"] as const) {
+  remittanceSchema.pre(op as any, refuse("Financial records"));
+  reportSchema.pre(op as any, refuse("Submitted reports"));
+}
+
 export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "SheetSyncLog", "AiLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument"] as const;
-export type ModelName = (typeof SYNC_COLLECTIONS)[number];
+/** Collections that stay on the running database only (not copied to backup databases). */
+export const LOCAL_ONLY = ["RateLimit", "ErrorLog"] as const;
+export type ModelName = (typeof SYNC_COLLECTIONS)[number] | (typeof LOCAL_ONLY)[number];
 
 const schemas: Record<ModelName, Schema> = {
   User: userSchema,
@@ -647,13 +694,15 @@ const schemas: Record<ModelName, Schema> = {
   Task: taskSchema,
   Meeting: meetingSchema,
   GovDocument: documentSchema,
+  RateLimit: rateLimitSchema,
+  ErrorLog: errorLogSchema,
 };
 
 export type Models = { [K in ModelName]: Model<any> };
 
 export function bindModels(conn: Connection): Models {
   const out = {} as Models;
-  for (const name of SYNC_COLLECTIONS) {
+  for (const name of [...SYNC_COLLECTIONS, ...LOCAL_ONLY] as ModelName[]) {
     out[name] = (conn.models[name] as Model<any>) || conn.model(name, schemas[name]);
   }
   return out;

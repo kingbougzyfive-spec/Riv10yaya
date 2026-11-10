@@ -1,4 +1,5 @@
 "use client";
+import { enqueue } from "@/lib/outbox";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,7 +22,11 @@ export function NotificationBell({ className = "" }: { className?: string }) {
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
-  const markAll = async () => { await api("/api/notifications", { method: "PATCH", json: { all: true } }).catch(() => {}); load(); };
+  const markAll = async () => {
+    try { await api("/api/notifications", { method: "PATCH", json: { all: true } }); }
+    catch (e: any) { if (e?.offline) await enqueue({ kind: "notification-read", method: "PATCH", url: "/api/notifications", body: { all: true } }); }
+    load();
+  };
   return (
     <div ref={box} className={`relative ${className}`}>
       <button type="button" className="btn btn-ghost btn-sm relative !p-2" aria-label={`Notifications${d?.unread ? `, ${d.unread} unread` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>

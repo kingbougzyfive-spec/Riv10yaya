@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
 
-export function ChangePassword() {
+export function ChangePassword({ forced = false }: { forced?: boolean }) {
   const toast = useToast();
   const [f, setF] = useState({ current: "", next: "", again: "" });
   const [busy, setBusy] = useState(false);
@@ -12,7 +12,7 @@ export function ChangePassword() {
     e.preventDefault();
     if (f.next !== f.again) return toast.err("The new passwords don't match.");
     setBusy(true);
-    try { await api("/api/auth/password", { method: "POST", json: { current: f.current, next: f.next } }); toast.ok("Password changed"); setF({ current: "", next: "", again: "" }); }
+    try { await api("/api/auth/password", { method: "POST", json: { current: f.current, next: f.next } }); toast.ok(forced ? "Password changed. Taking you in…" : "Password changed. Other devices were signed out."); setF({ current: "", next: "", again: "" }); if (forced) setTimeout(() => { window.location.href = "/admin"; }, 900); }
     catch (er: any) { toast.err(er.message); }
     setBusy(false);
   }

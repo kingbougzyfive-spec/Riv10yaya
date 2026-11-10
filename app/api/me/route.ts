@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { handle } from "@/lib/api";
+import { handle, audit } from "@/lib/api";
 import { ApiError, requireApiUser, verifyPassword } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { phoneKey, validPhone } from "@/lib/ids";
@@ -53,7 +53,8 @@ export const PATCH = handle(async (req) => {
   const i = patch.parse(await req.json());
   const { User } = await getDb();
   const now = new Date();
-  const log = (field: string, from: string, to: string) => m.changes.push({ at: now, by: user.id, byName: `${user.name} (self)`, field, from, to, reason: "Member updated own profile" });
+  const changed: Record<string, { from: string; to: string }> = {};
+  const log = (field: string, from: string, to: string) => { changed[field] = { from, to }; m.changes.push({ at: now, by: user.id, byName: `${user.name} (self)`, field, from, to, reason: "Member updated own profile" }); };
   const set: any = {};
   if (i.name && i.name !== m.name) { log("name", m.name, i.name); m.name = i.name; set.name = i.name; }
   if (i.email && i.email.toLowerCase() !== (m.email ?? "").toLowerCase()) {
@@ -72,5 +73,6 @@ export const PATCH = handle(async (req) => {
   if (i.prefs) for (const k of ["email", "sms", "push"] as const) if (i.prefs[k] !== undefined) set[`prefs.${k}`] = i.prefs[k];
   if (Object.keys(set).length) await User.updateOne({ _id: user.id }, { $set: set });
   await m.save();
+  if (Object.keys(changed).length) await audit(user, "member.self_update", m.memberId, { entity: "member", entityId: String(m._id), before: Object.fromEntries(Object.entries(changed).map(([k, v]) => [k, v.from])), after: Object.fromEntries(Object.entries(changed).map(([k, v]) => [k, v.to])), reason: "Member updated own profile" }, req);
   return { ok: true };
 });

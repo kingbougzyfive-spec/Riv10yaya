@@ -17,10 +17,13 @@ export default function SetupPage() {
   const [tested, setTested] = useState<null | { ok: boolean; latencyMs?: number; error?: string }>(null);
   const [busy, setBusy] = useState(false);
   const [admin, setAdmin] = useState({ name: "", email: "", password: "" });
+  const [needsToken, setNeedsToken] = useState(false);
+  const [token, setToken] = useState("");
 
   useEffect(() => {
     api("/api/setup").then((s) => {
-      if (s.hasDb && s.hasUsers) router.replace("/login");
+      setNeedsToken(!!s.needsToken);
+      if ((s.hasDb && s.hasUsers) || (s.hasDb && s.bootstrap && !s.dbError)) router.replace("/login");
       else if (s.hasDb && !s.dbError) setStep(1);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -28,20 +31,20 @@ export default function SetupPage() {
 
   async function test() {
     setBusy(true);
-    try { setTested(await api("/api/setup", { method: "POST", json: { action: "connect", uri, label, test: true } })); }
+    try { setTested(await api("/api/setup", { method: "POST", json: { action: "connect", uri, label, test: true, token } })); }
     catch (e: any) { toast.err(e.message); }
     setBusy(false);
   }
   async function connect() {
     setBusy(true);
-    try { await api("/api/setup", { method: "POST", json: { action: "connect", uri, label } }); toast.ok("Database connected"); setStep(1); }
+    try { await api("/api/setup", { method: "POST", json: { action: "connect", uri, label, token } }); toast.ok("Database connected"); setStep(1); }
     catch (e: any) { toast.err(e.message); }
     setBusy(false);
   }
   async function createAdmin(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    try { await api("/api/setup", { method: "POST", json: { action: "create_admin", ...admin } }); setStep(2); setTimeout(() => { router.push("/admin"); router.refresh(); }, 1400); }
+    try { await api("/api/setup", { method: "POST", json: { action: "create_admin", ...admin, token } }); setStep(2); setTimeout(() => { router.push("/admin"); router.refresh(); }, 1400); }
     catch (e: any) { toast.err(e.message); setBusy(false); }
   }
 
@@ -59,6 +62,9 @@ export default function SetupPage() {
         ))}
       </div>
       <AnimatePresence mode="wait">
+        {needsToken && step < 2 && (
+          <div className="mb-4"><label className="label">Setup code</label><input className="input" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="From your SETUP_TOKEN setting" /></div>
+        )}
         {step === 0 && (
           <motion.div key="s0" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-4">
             <div><label className="label">Connection name</label><input className="input" value={label} onChange={(e) => setLabel(e.target.value)} /></div>

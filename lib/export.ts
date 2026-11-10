@@ -1,3 +1,5 @@
+import { audit } from "@/lib/api";
+import { HOUR, rateLimit } from "@/lib/ratelimit";
 import { getSite } from "./cms";
 import { getUser } from "./auth";
 import { csvText } from "./export/csv";
@@ -14,6 +16,8 @@ const isMoney = (h: string) => /\(NGN\)|amount|₦/i.test(h);
 
 export async function tableResponse(format: Format, t: Table): Promise<Response> {
   const [user, { site }] = await Promise.all([getUser(), getSite()]);
+  if (user) await rateLimit(`export:${user.id}`, 60, HOUR, "You've downloaded a lot of reports in the last hour. Please wait a little.");
+  await audit(user, "export.download", t.name, { entity: "export", after: { format, title: t.title, rows: t.rows.length, period: t.period ?? null, scope: t.scope ?? null } });
   const omit = format === "pdf" ? new Set(t.pdfOmit ?? []) : new Set<string>();
   const keep = t.head.map((h, i) => (omit.has(h) ? -1 : i)).filter((i) => i >= 0);
   const money = (i: number) => isMoney(t.head[i]) && t.rows.every((r) => r[i] === null || r[i] === undefined || r[i] === "" || Number.isFinite(Number(r[i])));

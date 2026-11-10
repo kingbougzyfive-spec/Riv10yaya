@@ -98,3 +98,6 @@ html[data-theme="light"] .text-brand { color: color-mix(in srgb, rgb(var(--brand
 html[data-theme="light"] .glass { box-shadow: 0 8px 28px rgb(15 23 42 / .08), inset 0 1px 0 rgb(255 255 255 / .6); }
 
 @keyframes heroProg { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Offline: actions that need the server (payments, reports, approvals) dim and stop responding. */
+html[data-offline="1"] [data-needs-online] { opacity: .45; pointer-events: none; cursor: not-allowed; }

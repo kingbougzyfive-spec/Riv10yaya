@@ -1,3 +1,26 @@
+const isProd = process.env.NODE_ENV === "production";
+
+// Content Security Policy. Next.js hydration uses inline scripts, so 'unsafe-inline' is needed for scripts
+// (a nonce-based policy would force every page to render dynamically and is a later hardening step).
+// Nothing is loaded from other sites, and framing, plugins and form posts elsewhere are refused.
+const csp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'" + (isProd ? "" : " 'unsafe-eval'"),
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "frame-src 'none'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  ...(isProd ? ["upgrade-insecure-requests"] : []),
+].join("; ");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ["mongoose"],
@@ -6,12 +29,25 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/(.*)", headers: [
-      { key: "X-Content-Type-Options", value: "nosniff" },
-      { key: "X-Frame-Options", value: "SAMEORIGIN" },
-      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-      { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=()" },
-    ] }];
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Content-Security-Policy", value: csp },
+          ...(isProd ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }] : []),
+        ],
+      },
+      // Private data is never kept by browsers or proxies. (/api/media sets its own caching: public images are cacheable, files are not.)
+      { source: "/api/:path((?!media/).*)", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
+      { source: "/admin/:path*", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
+      { source: "/me", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache" }, { key: "Service-Worker-Allowed", value: "/" }] },
+    ];
   },
 };
 export default nextConfig;

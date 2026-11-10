@@ -72,12 +72,12 @@ function Settings({ s, onSaved }: { s: any; onSaved: () => void }) {
         <div className="space-y-3">
           {([["bankName", "Bank"], ["accountName", "Account name"], ["accountNumber", "Account number (10 digits)"]] as const).map(([k, l]) => <div key={k}><label className="label">{l}</label><input className="input" disabled={!s.canEditBank} value={bank[k]} onChange={(e) => setBank({ ...bank, [k]: e.target.value })} /></div>)}
           <div><label className="label">Payment instructions</label><textarea className="input" rows={2} disabled={!s.canEditBank} value={bank.instructions} onChange={(e) => setBank({ ...bank, instructions: e.target.value })} /></div>
-          {s.canEditBank ? <button className="btn btn-primary" disabled={!!busy} onClick={() => save("bank")}>{busy === "bank" && <Loader2 className="h-4 w-4 animate-spin" />}Save bank details</button> : <p className="hint">Only finance administrators can change these.</p>}
+          {s.canEditBank ? <button data-needs-online className="btn btn-primary" disabled={!!busy} onClick={() => save("bank")}>{busy === "bank" && <Loader2 className="h-4 w-4 animate-spin" />}Save bank details</button> : <p className="hint">Only finance administrators can change these.</p>}
         </div>
       </div>
       <div className="glass p-5">
         <p className="mb-3 flex items-center gap-2 font-bold"><Percent className="h-4 w-4 text-accent" />Remittance percentage</p>
-        <div className="flex items-end gap-3"><div className="flex-1"><label className="label">Percent of Youth Sunday Thanksgiving</label><input className="input text-lg font-bold" type="number" step="0.01" min={0.01} max={100} disabled={!s.canEditPercent} value={pct} onChange={(e) => setPct(e.target.value)} /></div>{s.canEditPercent && <button className="btn btn-primary" disabled={!!busy} onClick={() => save("percent")}>{busy === "percent" && <Loader2 className="h-4 w-4 animate-spin" />}Update</button>}</div>
+        <div className="flex items-end gap-3"><div className="flex-1"><label className="label">Percent of Youth Sunday Thanksgiving</label><input className="input text-lg font-bold" type="number" step="0.01" min={0.01} max={100} disabled={!s.canEditPercent} value={pct} onChange={(e) => setPct(e.target.value)} /></div>{s.canEditPercent && <button data-needs-online className="btn btn-primary" disabled={!!busy} onClick={() => save("percent")}>{busy === "percent" && <Loader2 className="h-4 w-4 animate-spin" />}Update</button>}</div>
         <p className="hint">Applies to new submissions only. Each record keeps the percentage in force when it was submitted.</p>
         {s.history.length > 0 && <div className="mt-4 max-h-40 space-y-1.5 overflow-y-auto text-xs text-white/55">{s.history.map((h: any, i: number) => <p key={i}>{new Date(h.at).toLocaleDateString("en-NG")} · {h.byName} changed {h.field}: {h.from} → <b className="text-white/80">{h.to}</b></p>)}</div>}
       </div>
@@ -135,7 +135,7 @@ function PaymentCard({ r, pay, canReview, isParish, act, busy }: { r: any; pay: 
   const readAi = async () => { setAiBusy(true); try { const x = await api(`/api/remittances/${r.id}/analyze${pay.id ? `?paymentId=${pay.id}` : ""}`, { method: "POST" }); setAi(x.analysis); } catch (e: any) { toast.err(e.message); } setAiBusy(false); };
   const base = { paymentId: pay.id };
   const decide = (action: string) => act({ ...base, action, reason: f.reason, note: f.note, bankReference: f.ref, ...(f.ev ? { evidenceId: f.ev } : {}), ...(action === "confirm" ? { confirmedAmount: Number(f.amount) } : {}), ...(action === "amount_mismatch" && f.seen ? { seenAmount: Number(f.seen) } : {}) }, `${key}-${action}`);
-  const B = ({ a, l, cls }: { a: string; l: string; cls: string }) => <button className={cn("btn btn-sm", cls)} disabled={!!busy} onClick={() => decide(a)}>{busy === `${key}-${a}` && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{l}</button>;
+  const B = ({ a, l, cls }: { a: string; l: string; cls: string }) => <button data-needs-online className={cn("btn btn-sm", cls)} disabled={!!busy} onClick={() => decide(a)}>{busy === `${key}-${a}` && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{l}</button>;
   return (
     <section className="space-y-4 rounded-2xl border border-white/10 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold">{pay.label}</p><span className={statusBadge[fv]}>{statusLabel[fv]}</span></div>
@@ -160,7 +160,7 @@ function PaymentCard({ r, pay, canReview, isParish, act, busy }: { r: any; pay: 
 
       {canReview && pay.evidenceId && (
         <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/60"><Bot className="h-4 w-4 text-accent" />AI receipt reading <span className="badge">advisory</span></p><button className="btn btn-ghost btn-sm" disabled={aiBusy} onClick={readAi}>{aiBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{ai ? "Read again" : "Read receipt"}</button></div>
+          <div className="flex flex-wrap items-center justify-between gap-2"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/60"><Bot className="h-4 w-4 text-accent" />AI receipt reading <span className="badge">advisory</span></p><button data-needs-online className="btn btn-ghost btn-sm" disabled={aiBusy} onClick={readAi}>{aiBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{ai ? "Read again" : "Read receipt"}</button></div>
           {ai && (<div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
             <p>Amount on receipt: <b>{ai.amountNaira != null ? formatNaira(Math.round(ai.amountNaira * 100)) : "couldn't read"}</b> {ai.amountMatches === true && <span className="badge badge-ok">matches declared</span>}{ai.amountMatches === false && <span className="badge badge-bad">differs from declared {formatNaira(Math.round(ai.declaredNaira * 100))}</span>}</p>
             <p>Date: <b>{ai.date ?? "—"}</b> · Time: <b>{ai.time ?? "—"}</b></p>
@@ -205,7 +205,7 @@ function PaymentCard({ r, pay, canReview, isParish, act, busy }: { r: any; pay: 
       )}
       {isParish && problem && (
         <div className="space-y-3 border-t border-white/10 pt-4"><p className="font-bold">Respond to finance</p><textarea className="input" rows={3} placeholder="Add transaction details or explain…" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /><EvidenceUpload label="Additional evidence (optional). Your original receipt stays on file." value={f.ev} onChange={(id) => setF({ ...f, ev: id })} />
-          <button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => act({ ...base, action: "respond", note: f.note, ...(f.ev ? { evidenceId: f.ev } : {}) }, `${key}-respond`)}>{busy === `${key}-respond` && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Send response</button></div>
+          <button data-needs-online className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => act({ ...base, action: "respond", note: f.note, ...(f.ev ? { evidenceId: f.ev } : {}) }, `${key}-respond`)}>{busy === `${key}-respond` && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Send response</button></div>
       )}
     </section>
   );
@@ -219,7 +219,7 @@ function Adjust({ act, busy }: { act: (b: Record<string, unknown>, k: string) =>
         <p className="text-xs text-white/50">Use only for corrections that can't be recorded as a payment (for example a verified offline payment or a credit carried forward). A reason is mandatory and the entry can never be removed.</p>
         <div className="grid gap-3 sm:grid-cols-3"><div><label className="label">Amount (₦, negative to reduce)</label><input className="input" type="number" step="0.01" value={a.amount} onChange={(e) => setA({ ...a, amount: e.target.value })} /></div><div className="sm:col-span-2"><label className="label">Reason (required)</label><input className="input" value={a.reason} onChange={(e) => setA({ ...a, reason: e.target.value })} /></div></div>
         <EvidenceUpload label="Supporting evidence (optional)" value={a.ev} onChange={(id) => setA({ ...a, ev: id })} />
-        <button className="btn btn-ghost btn-sm" disabled={!!busy || !a.amount || a.reason.length < 5} onClick={() => act({ action: "adjust", adjustAmount: Number(a.amount), reason: a.reason, ...(a.ev ? { evidenceId: a.ev } : {}) }, "adjust")}>{busy === "adjust" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Record adjustment</button>
+        <button data-needs-online className="btn btn-ghost btn-sm" disabled={!!busy || !a.amount || a.reason.length < 5} onClick={() => act({ action: "adjust", adjustAmount: Number(a.amount), reason: a.reason, ...(a.ev ? { evidenceId: a.ev } : {}) }, "adjust")}>{busy === "adjust" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Record adjustment</button>
       </div>
     </details>
   );
@@ -243,7 +243,7 @@ function AddPayment({ r, onDone }: { r: any; onDone: () => void }) {
         <div className="grid gap-3 sm:grid-cols-3"><div><label className="label">Amount paid (₦)</label><input className="input" type="number" step="0.01" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></div><div><label className="label">Date of payment</label><input className="input" type="date" value={f.paidAt} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setF({ ...f, paidAt: e.target.value })} /></div><div><label className="label">Reference</label><input className="input" value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} /></div></div>
         <EvidenceUpload value={f.evidenceId} onChange={(id) => setF({ ...f, evidenceId: id })} />
         <input className="input" placeholder="Remarks (optional)" value={f.remarks} onChange={(e) => setF({ ...f, remarks: e.target.value })} />
-        <button className="btn btn-primary btn-sm" disabled={busy} onClick={save}>{busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Submit payment</button>
+        <button data-needs-online className="btn btn-primary btn-sm" disabled={busy} onClick={save}>{busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Submit payment</button>
       </div>
     </details>
   );

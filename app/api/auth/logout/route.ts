@@ -1,7 +1,9 @@
-import { handle } from "@/lib/api";
-import { destroySession } from "@/lib/auth";
+import { handle, audit } from "@/lib/api";
+import { destroySession, getUser } from "@/lib/auth";
 
-export const POST = handle(async () => {
+export const POST = handle(async (req) => {
+  const u = await getUser();
   await destroySession();
+  if (u) await audit(u, "auth.logout", u.email, undefined, req);
   return { ok: true };
 });

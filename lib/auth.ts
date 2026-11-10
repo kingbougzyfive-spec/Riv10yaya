@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
@@ -14,17 +14,15 @@ function secret() {
   return new TextEncoder().encode(s);
 }
 
-export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-  }
-}
+import { ApiError } from "./errors";
+export { ApiError };
 
 export const hashPassword = (p: string) => bcrypt.hash(p, 11);
 export const verifyPassword = (p: string, h: string) => bcrypt.compare(p, h);
 
-export async function createSession(userId: string, role: Role) {
-  const token = await new SignJWT({ uid: userId, role })
+/** `sv` is the person's sessionVersion; bumping it in the database signs every older session out. */
+export async function createSession(userId: string, role: Role, sv = 0) {
+  const token = await new SignJWT({ uid: userId, role, sv })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
@@ -53,7 +51,15 @@ export type SessionUser = {
   zone?: string;
   area?: string;
   parish?: string;
+  /** Using a temporary password: only the change-password screen is allowed until it is replaced. */
+  mustChange?: boolean;
 };
+
+/** Signs the person out everywhere (all existing sessions stop working at their next request). */
+export async function revokeSessions(userId: string) {
+  const { User } = await getDb();
+  await User.updateOne({ _id: userId }, { $inc: { sessionVersion: 1 } });
+}
 
 /** Resolves the signed-in user from the cookie and re-checks the database (role changes apply immediately). */
 export async function getUser(): Promise<SessionUser | null> {
@@ -65,6 +71,7 @@ export async function getUser(): Promise<SessionUser | null> {
     const { User } = await getDb();
     const u = await User.findById(payload.uid).lean<any>();
     if (!u || !u.active) return null;
+    if (Number(payload.sv ?? 0) !== Number(u.sessionVersion ?? 0)) return null;
     return {
       id: String(u._id),
       name: u.name,
@@ -74,6 +81,7 @@ export async function getUser(): Promise<SessionUser | null> {
       zone: u.zone ? String(u.zone) : undefined,
       area: u.area ? String(u.area) : undefined,
       parish: u.parish ? String(u.parish) : undefined,
+      mustChange: !!u.mustChangePassword,
     };
   } catch {
     return null;
@@ -81,9 +89,10 @@ export async function getUser(): Promise<SessionUser | null> {
 }
 
 /** For route handlers: throws 401/403 JSON errors. Authorization is enforced here, on the server. */
-export async function requireApiUser(roles?: readonly Role[]): Promise<SessionUser> {
+export async function requireApiUser(roles?: readonly Role[], opts?: { allowMustChange?: boolean }): Promise<SessionUser> {
   const user = await getUser();
   if (!user) throw new ApiError(401, "Please sign in.");
+  if (user.mustChange && !opts?.allowMustChange) throw new ApiError(403, "Please choose a new password first (Account page).");
   if (roles && !roles.includes(user.role)) throw new ApiError(403, "You don't have permission to do that.");
   return user;
 }
@@ -92,6 +101,11 @@ export async function requireApiUser(roles?: readonly Role[]): Promise<SessionUs
 export async function requirePageUser(roles?: readonly Role[]): Promise<SessionUser> {
   const user = await getUser();
   if (!user) redirect("/login");
+  if (user.mustChange) {
+    const target = user.role === "member" ? "/me" : "/admin/account";
+    const here = (await headers()).get("x-path") || "";
+    if (here !== target) redirect(`${target}?force=1`);
+  }
   if (roles && !roles.includes(user.role)) redirect("/admin?denied=1");
   return user;
 }
