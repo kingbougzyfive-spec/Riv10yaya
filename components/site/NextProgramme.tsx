@@ -3,7 +3,7 @@ import { ArrowRight, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export type NextEvent = { id: string; title: string; startsAt: string; registrationOpen: boolean } | null;
+export type NextEvent = { id: string; title: string; startsAt: string; registrationOpen: boolean; slug?: string | null } | null;
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /** The next published event with a live countdown. Renders nothing when there is none. */
@@ -30,7 +30,7 @@ export function NextProgramme({ event }: { event: NextEvent }) {
           </div>
         )}
         {left !== null && left <= 0 && <span className="badge badge-ok">Happening now</span>}
-        <Link href={`/events/${event.id}`} className="btn btn-primary">{event.registrationOpen ? "Register now" : "View details"}<ArrowRight className="h-4 w-4" /></Link>
+        <Link href={`/events/${event.slug || event.id}`} className="btn btn-primary">{event.registrationOpen ? "Register now" : "View details"}<ArrowRight className="h-4 w-4" /></Link>
       </div>
     </section>
   );

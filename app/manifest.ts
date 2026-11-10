@@ -23,7 +23,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     shortcuts: [
       { name: "Events", short_name: "Events", url: "/events?source=shortcut", icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }] },
       { name: "Announcements", short_name: "News", url: "/announcements?source=shortcut", icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }] },
-      { name: "My account", short_name: "Me", url: "/me?source=shortcut", icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }] },
+      { name: "My account", short_name: "Me", url: "/member?source=shortcut", icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }] },
     ],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

@@ -14,7 +14,8 @@ import { ActivityFields, ContactSection, EvidenceUpload, PeriodPicker, statusBad
 type Ctx = any;
 const today = () => new Date().toISOString().slice(0, 10);
 
-export function ReportWizard() {
+/** `mode` lets the parish portal show the two halves on their own pages: the remittance (finance) or the activity report. */
+export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittance", reportHref = "/portal/monthly-report" }: { mode?: "all" | "remittance" | "report"; remittanceHref?: string; reportHref?: string }) {
   const toast = useToast();
   const router = useRouter();
   const now = new Date();
@@ -46,6 +47,8 @@ export function ReportWizard() {
   if (ctx.error) return <div className="glass p-8 text-center text-white/60">{ctx.error}</div>;
 
   const fields: FieldDef[] = [...FIELDS[ctx.type as "parish" | "area" | "zone"]];
+  const cur = mode === "remittance" ? 1 : mode === "report" ? 2 : step;
+  const needRemittance = mode === "report" && ctx.type === "parish" && !ctx.remittance;
   const typeLabel = ({ parish: "Parish", area: "Area", zone: "Zonal" } as Record<string, string>)[ctx.type];
   const offeringKobo = toKobo(fin.offering || 0);
   const pct = (ctx.finance?.percentBp ?? 4000) / 100;
@@ -61,7 +64,7 @@ export function ReportWizard() {
         ...(fin.amountPaid ? { amountPaid: Number(fin.amountPaid) } : {}),
         levies: levies.filter((l) => l.description || l.amount).map((l) => ({ category: l.category, description: l.description, amount: Number(l.amount), paidAt: l.paidAt, reference: l.reference, ...(l.evidenceId ? { evidenceId: l.evidenceId } : {}) })),
       } });
-      toast.ok("Remittance recorded. Now complete your activity report.");
+      toast.ok(mode === "remittance" ? "Remittance recorded. Finance will now verify your payment." : "Remittance recorded. Now complete your activity report.");
       await load(); setStep(2);
     } catch (e: any) { toast.err(e.message); }
     setBusy(false);
@@ -115,18 +118,19 @@ export function ReportWizard() {
         </motion.div>
       ) : (
         <>
-          {ctx.type === "parish" && (
+          {needRemittance && <div className="glass p-6 text-center text-sm"><p className="font-bold">Record this month's remittance first</p><p className="mt-1 text-white/60">Your activity report opens once the Youth Sunday remittance has been recorded.</p><a className="btn btn-primary mt-4" href={remittanceHref}>Go to remittance</a></div>}
+          {ctx.type === "parish" && mode === "all" && (
             <div className="glass grid grid-cols-2 gap-1 p-1">
               {[{ n: 1, l: "1 · Finance", i: Banknote }, { n: 2, l: "2 · Activity report", i: ClipboardList }].map((s) => (
                 <button data-needs-online key={s.n} disabled={s.n === 2 && !ctx.remittance} onClick={() => setStep(s.n as 1 | 2)} className={cn("relative rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40", step === s.n ? "text-[#04130d]" : "text-white/60")}>
-                  {step === s.n && <motion.span layoutId="wiz" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative flex items-center justify-center gap-2"><s.i className="h-4 w-4" />{s.l}</span>
+                  {cur === s.n && <motion.span layoutId="wiz" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative flex items-center justify-center gap-2"><s.i className="h-4 w-4" />{s.l}</span>
                 </button>
               ))}
             </div>
           )}
 
           <AnimatePresence mode="wait">
-            {ctx.type === "parish" && step === 1 && (
+            {ctx.type === "parish" && cur === 1 && (
               <motion.div key="fin" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
                 {ctx.remittance ? (
                   <div className="glass p-6"><p className="font-bold">Finance already recorded for this month</p><p className="mt-2 text-sm text-white/60">Required remittance {formatNaira(ctx.remittance.requiredKobo)} · <span className={statusBadge[ctx.remittance.status]}>{statusLabel[ctx.remittance.status]}</span></p><button className="btn btn-primary mt-4" onClick={() => setStep(2)}>Continue to activity report<ArrowRight className="h-4 w-4" /></button></div>
@@ -172,7 +176,7 @@ export function ReportWizard() {
               </motion.div>
             )}
 
-            {(ctx.type !== "parish" || step === 2) && (
+            {!needRemittance && (ctx.type !== "parish" || cur === 2) && (
               <motion.div key="act" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
                 {ctx.rollup && <Rollup type={ctx.type} r={ctx.rollup} />}
                 <div className="glass p-5 sm:p-6"><h3 className="mb-4 font-bold">{typeLabel} monthly activity report</h3><ActivityFields fields={fields} values={act} onChange={(k, v) => setAct((a) => ({ ...a, [k]: v }))} /></div>

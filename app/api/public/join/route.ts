@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 import { handle, audit } from "@/lib/api";
 import { ApiError, createSession, hashPassword } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { memberId, phoneKey, throttle, validPhone } from "@/lib/ids";
+import { memberId, phoneKey, validPhone } from "@/lib/ids";
+import { HOUR, MIN, rateLimit } from "@/lib/ratelimit";
 import { isMinor } from "@/lib/members";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ const schema = z.object({
 /** Member self sign-up. Always creates a plain "member" account; admin roles can only be granted by the Super Admin. */
 export const POST = handle(async (req) => {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (!throttle(`join:${ip}`, 5, 10 * 60_000)) throw new ApiError(429, "Too many attempts. Please try again later.");
+  await rateLimit(`join:${ip}`, 5, 10 * MIN, "Too many attempts. Please try again later.");
   const i = schema.parse(await req.json());
   const { Member, Parish, User } = await getDb();
   const p = await Parish.findOne({ _id: i.parish, active: true }, { zone: 1, area: 1 }).lean<any>();

@@ -155,7 +155,7 @@ function Write({ disabled, canReport }: { disabled: boolean; canReport: boolean 
           {!!d.used?.length && <div className="flex flex-wrap gap-1.5">{d.used.map((u, j) => <span key={j} className="badge text-[11px]">{u.label} · {u.period} · {u.scope}</span>)}</div>}
           <div className="flex flex-wrap gap-2">
             <button className="btn btn-ghost" onClick={() => navigator.clipboard?.writeText(`${d.title}\n\n${d.body}`).then(() => toast.ok("Copied")).catch(() => {})}><Copy className="h-4 w-4" />Copy</button>
-            <button className="btn btn-primary" onClick={() => { try { sessionStorage.setItem("comms-prefill", JSON.stringify({ title: d.title, body: d.body })); } catch { /* ignore */ } router.push("/admin/communications"); }}><Send className="h-4 w-4" />Use in Communications</button>
+            <button className="btn btn-primary" onClick={() => { try { sessionStorage.setItem("comms-prefill", JSON.stringify({ title: d.title, body: d.body })); } catch { /* ignore */ } router.push("/admin/notifications"); }}><Send className="h-4 w-4" />Use in Communications</button>
           </div>
           <p className="text-xs text-white/45">AI-written draft. Check every detail before it goes out; you choose the audience and press Send yourself.</p>
         </>}

@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { handle } from "@/lib/api";
 import { ApiError } from "@/lib/auth";
-import { throttle, validPhone } from "@/lib/ids";
+import { validPhone } from "@/lib/ids";
+import { HOUR, MIN, rateLimit } from "@/lib/ratelimit";
+import { findEventByKey } from "@/lib/event-key";
+import { getDb } from "@/lib/db";
 import { registerForEvent } from "@/lib/register-event";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +20,11 @@ const schema = z.object({
 
 export const POST = handle<Ctx>(async (req, ctx) => {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (!throttle(`reg:${ip}`, 10)) throw new ApiError(429, "Too many attempts. Please wait a minute.");
+  await rateLimit(`reg:${ip}`, 10, MIN, "Too many attempts. Please wait a minute.");
   const { id } = await ctx.params;
   const i = schema.parse(await req.json());
-  const r = await registerForEvent({ eventId: id, name: i.name, phone: i.phone, email: i.email, parish: i.parish, answers: i.answers });
+  const ev = await findEventByKey((await getDb()).Event, id);
+  if (!ev) throw new ApiError(404, "Event not found.");
+  const r = await registerForEvent({ eventId: String(ev._id), name: i.name, phone: i.phone, email: i.email, parish: i.parish, answers: i.answers });
   return { reference: r.reference, regId: r.regId };
 });

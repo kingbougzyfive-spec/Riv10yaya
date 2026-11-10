@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { passwordProblem } from "@/lib/password";
+import { syncRbacCatalog } from "@/lib/rbac-catalog";
 import { MIN, clientIp, rateLimit } from "@/lib/ratelimit";
 import { handle, audit } from "@/lib/api";
 import { ApiError, createSession, hashPassword } from "@/lib/auth";
@@ -67,7 +68,8 @@ export const POST = handle(async (req) => {
 
   if (body.action === "create_admin") {
     const input = adminSchema.parse(body);
-    const { User } = await getDb();
+    const db0 = await getDb();
+    const { User } = db0;
     if ((await User.estimatedDocumentCount()) > 0) throw new ApiError(403, "Setup is already complete.");
     if (process.env.BOOTSTRAP_ADMIN_EMAIL && process.env.BOOTSTRAP_ADMIN_PASSWORD) throw new ApiError(403, "This deployment uses a bootstrap administrator. Sign in with it instead.");
     const problem = passwordProblem(input.password, { email: input.email, name: input.name });
@@ -78,6 +80,7 @@ export const POST = handle(async (req) => {
       passwordHash: await hashPassword(input.password),
       role: "super_admin",
     });
+    await syncRbacCatalog(db0).catch(() => {});
     await createSession(String(user._id), "super_admin", 0);
     await audit({ id: String(user._id), name: user.name, email: user.email, role: "super_admin" }, "setup.super_admin_created", user.email, undefined, req);
     return { ok: true };

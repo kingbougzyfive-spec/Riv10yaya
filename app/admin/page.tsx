@@ -1,5 +1,6 @@
 import { Building2, Database, Layers, MapPin, Palette, ImageIcon, Users, AlertTriangle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/admin/AdminShell";
 import { requirePageUser } from "@/lib/auth";
 import { connectionViews, failoverNote, getDb } from "@/lib/db";
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   const user = await requirePageUser(PERMS.adminArea);
+  if (user.role === "parish_admin") redirect("/portal"); // parish administrators work from their own portal
   const sp = await searchParams;
   const { Zone, Area, Parish, User, Media, Audit } = await getDb();
   const [zones, areas, parishes, users, media, recent] = await Promise.all([
@@ -44,7 +46,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const actions = [
     { href: "/admin/site", label: "Edit website", desc: "Logo, text, colours, photos", icon: Palette, perm: "siteEdit" as const },
     { href: "/admin/media", label: "Upload images", desc: "Logos, flyers, gallery", icon: ImageIcon, perm: "media" as const },
-    { href: "/admin/organization", label: "Zones & parishes", desc: "Build the hierarchy", icon: Building2, perm: "orgView" as const },
+    { href: "/admin/organizations", label: "Zones & parishes", desc: "Build the hierarchy", icon: Building2, perm: "orgView" as const },
     { href: "/admin/database", label: "Databases", desc: "Add URIs, set failover", icon: Database, perm: "database" as const },
   ].filter((a) => can(user.role, a.perm));
 

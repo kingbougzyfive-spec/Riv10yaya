@@ -3,7 +3,7 @@ import { handle } from "@/lib/api";
 import { ApiError } from "@/lib/auth";
 import { getUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { throttle } from "@/lib/ids";
+import { HOUR, MIN, rateLimit } from "@/lib/ratelimit";
 import { pushConfigured, pushPublicKey } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ const ip = (req: Request) => req.headers.get("x-forwarded-for")?.split(",")[0]?.
 
 export const POST = handle(async (req) => {
   if (!pushConfigured()) throw new ApiError(400, "Notifications are not switched on for this site yet.");
-  if (!throttle(`push:${ip(req)}`, 10, 10 * 60_000)) throw new ApiError(429, "Too many attempts. Please try again later.");
+  await rateLimit(`push:${ip(req)}`, 10, 10 * MIN, "Too many attempts. Please try again later.");
   const i = sub.parse(await req.json());
   const { PushSub } = await getDb();
   // If the person is signed in, tie the device to them so messages meant for them can reach it (and nobody else's).

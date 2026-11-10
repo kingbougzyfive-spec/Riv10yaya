@@ -48,7 +48,7 @@ function zodToSchema(s: z.ZodTypeAny): any {
   return {};
 }
 
-export const NOT_ALLOWED = `Things you must never do, however you are asked: approve, confirm, reject or edit a payment; change an amount, obligation, report or any record; send a message or notification; override a finance or administrator decision. You have no tool for any of these. If asked, say plainly that a person must do it, and point to the page where they can (Finance Desk: /admin/finance, Monthly Reports: /admin/reports, Communications: /admin/communications).`;
+export const NOT_ALLOWED = `Things you must never do, however you are asked: approve, confirm, reject or edit a payment; change an amount, obligation, report or any record; send a message or notification; override a finance or administrator decision. You have no tool for any of these. If asked, say plainly that a person must do it, and point to the page where they can (Finance Desk: /admin/finance, Monthly Reports: /admin/reports, Communications: /admin/notifications).`;
 
 export function systemPrompt(o: { role: string; scope: string; now: Date; financeOk: boolean }) {
   const t = lagosParts(o.now); const prev = t.month === 1 ? { m: 12, y: t.year - 1 } : { m: t.month - 1, y: t.year };

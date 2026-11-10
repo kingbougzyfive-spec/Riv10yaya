@@ -16,6 +16,6 @@ async function nextEvent() {
   try {
     const { Event } = await getDb();
     const e = await Event.findOne({ status: "published", startsAt: { $gte: new Date() } }).sort({ startsAt: 1 }).lean<any>();
-    return e ? { id: String(e._id), title: e.title as string, startsAt: new Date(e.startsAt).toISOString(), registrationOpen: !!e.registrationOpen } : null;
+    return e ? { id: String(e._id), title: e.title as string, startsAt: new Date(e.startsAt).toISOString(), registrationOpen: !!e.registrationOpen, slug: (e.slug as string | undefined) ?? null } : null;
   } catch { return null; }
 }

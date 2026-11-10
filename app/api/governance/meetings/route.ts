@@ -44,7 +44,7 @@ export const POST = handle(async (req) => {
   if (committee) {
     const { Member } = await getDb();
     const ms = await Member.find({ _id: { $in: committee.members.filter((x: any) => x.active && x.member).map((x: any) => x.member) } }).limit(100);
-    await Promise.all(ms.map((mem: any) => notifyMember(mem, { title: `Meeting: ${i.title}`, body: `${when.toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}${i.venue ? ` · ${i.venue}` : ""}`, link: "/me", event: "meeting_reminder" })));
+    await Promise.all(ms.map((mem: any) => notifyMember(mem, { title: `Meeting: ${i.title}`, body: `${when.toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}${i.venue ? ` · ${i.venue}` : ""}`, link: "/member", event: "meeting_reminder" })));
   }
   void Committee;
   await audit(user, "meeting.create", i.title, { kind }, req);

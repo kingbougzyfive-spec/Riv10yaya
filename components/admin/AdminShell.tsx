@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, FileDown, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, ShieldCheck, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
+import { ListChecks, Scale, Settings, UsersRound, CalendarClock, FileText, Wallet, Ticket, BarChart3, FileDown, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, ShieldCheck, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -14,38 +14,49 @@ import { ROLE_LABELS, type Role } from "@/lib/roles";
 
 const ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, perm: "adminArea" as const },
+  { href: "/admin/organizations", label: "Organisations", icon: Building2, perm: "orgView" as const },
+  { href: "/admin/users", label: "Users & Roles", icon: Users, perm: "users" as const },
+  { href: "/admin/members", label: "Members", icon: UserRound, perm: "members" as const },
+  { href: "/admin/events", label: "Events", icon: CalendarDays, perm: "attendanceView" as const },
+  { href: "/admin/registrations", label: "Registrations", icon: Ticket, perm: "attendanceView" as const },
+  { href: "/admin/attendance", label: "QR Attendance", icon: QrCode, perm: "attendanceView" as const },
+  { href: "/admin/remittances", label: "Remittances", icon: Wallet, perm: "finance" as const },
+  { href: "/admin/finance", label: "Finance Desk", icon: Banknote, perm: "finance" as const },
+  { href: "/admin/reconciliation", label: "Reconciliation", icon: Scale, perm: "finance" as const },
+  { href: "/admin/reports", label: "Monthly Reports", icon: ClipboardList, perm: "reports" as const },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3, perm: "finance" as const },
+  { href: "/admin/exports", label: "Reports & Exports", icon: FileDown, perm: "exportAny" as const },
+  { href: "/admin/leadership", label: "Leadership", icon: Landmark, perm: "governance" as const },
+  { href: "/admin/departments", label: "Departments", icon: Network, perm: "content" as const },
+  { href: "/admin/committees", label: "Committees", icon: UsersRound, perm: "governance" as const },
+  { href: "/admin/tasks", label: "Tasks", icon: ListChecks, perm: "governance" as const },
+  { href: "/admin/meetings", label: "Meetings", icon: CalendarClock, perm: "governance" as const },
+  { href: "/admin/documents", label: "Documents", icon: FileText, perm: "governance" as const },
+  { href: "/admin/announcements", label: "Announcements", icon: Megaphone, perm: "content" as const },
+  { href: "/admin/notifications", label: "Notifications", icon: Send, perm: "comms" as const },
+  { href: "/admin/ai-assistant", label: "AI Assistant", icon: Sparkles, perm: "aiAny" as const },
   { href: "/admin/site", label: "Site Editor", icon: Palette, perm: "siteEdit" as const },
   { href: "/admin/media", label: "Media Library", icon: ImageIcon, perm: "media" as const },
-  { href: "/admin/organization", label: "Organisation", icon: Building2, perm: "orgView" as const },
-  { href: "/admin/reports", label: "Monthly Reports", icon: ClipboardList, perm: "reports" as const },
-  { href: "/admin/finance/dashboard", label: "Finance Dashboard", icon: BarChart3, perm: "finance" as const },
-  { href: "/admin/finance", label: "Finance Desk", icon: Banknote, perm: "finance" as const },
-  { href: "/admin/events", label: "Events", icon: CalendarDays, perm: "attendanceView" as const },
-  { href: "/admin/attendance", label: "QR Attendance", icon: QrCode, perm: "attendanceView" as const },
-  { href: "/admin/members", label: "Members", icon: UserRound, perm: "members" as const },
-  { href: "/admin/announcements", label: "Announcements", icon: Megaphone, perm: "content" as const },
-  { href: "/admin/communications", label: "Communications", icon: Send, perm: "comms" as const },
-  { href: "/admin/exports", label: "Reports & Exports", icon: FileDown, perm: "exportAny" as const },
-  { href: "/admin/assistant", label: "AI Assistant", icon: Sparkles, perm: "aiAny" as const },
-  { href: "/admin/governance", label: "Leadership & Committees", icon: Landmark, perm: "governance" as const },
-  { href: "/admin/departments", label: "Public Departments", icon: Network, perm: "content" as const },
-  { href: "/admin/users", label: "Users & Roles", icon: Users, perm: "users" as const },
-  { href: "/admin/database", label: "Database", icon: Database, perm: "database" as const },
   { href: "/admin/integrations", label: "Integrations", icon: Plug, perm: "integrations" as const },
-  { href: "/admin/audit", label: "Audit Log", icon: History, perm: "audit" as const },
+  { href: "/admin/database", label: "Database", icon: Database, perm: "database" as const },
+  { href: "/admin/settings", label: "Settings", icon: Settings, perm: "adminArea" as const },
   { href: "/admin/security", label: "Security", icon: ShieldCheck, perm: "database" as const },
+  { href: "/admin/audit-logs", label: "Audit Logs", icon: History, perm: "audit" as const },
 ];
 
-export function AdminShell({ user, brand, children }: { user: { name: string; role: Role }; brand: string; children: ReactNode }) {
+export type NavItem = { href: string; label: string; icon: any };
+
+/** `nav` and `home` let another area (the parish portal) reuse this shell with its own menu. */
+export function AdminShell({ user, brand, children, nav, home = "/admin" }: { user: { name: string; role: Role }; brand: string; children: ReactNode; nav?: NavItem[]; home?: string }) {
   const path = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const items = ITEMS.filter((i) => can(user.role, i.perm));
+  const items: NavItem[] = nav ?? ITEMS.filter((i) => can(user.role, i.perm));
 
   const Nav = (
     <nav className="flex flex-1 flex-col gap-1">
       {items.map((i) => {
-        const active = i.href === "/admin" || i.href === "/admin/finance" ? path === i.href : path.startsWith(i.href);
+        const active = i.href === home || i.href === "/admin/finance" ? path === i.href : path.startsWith(i.href);
         return (
           <Link key={i.href} href={i.href} onClick={() => setOpen(false)} className={cn("relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/65 transition hover:text-white", active && "text-white")}>
             {active && <motion.span layoutId="admin-pill" className="absolute inset-0 rounded-xl border border-brand/30 bg-brand/15" transition={{ type: "spring", damping: 30, stiffness: 400 }} />}
@@ -71,7 +82,7 @@ export function AdminShell({ user, brand, children }: { user: { name: string; ro
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[17rem_1fr]">
       <aside className="glass-strong sticky top-0 hidden h-dvh flex-col rounded-none border-y-0 border-l-0 p-4 lg:flex">
-        <Link href="/admin" className="mb-5 flex items-center gap-2 px-1 text-sm font-black"><Home className="h-4 w-4 text-brand" /><span className="truncate">{brand}</span></Link>
+        <Link href={home} className="mb-5 flex items-center gap-2 px-1 text-sm font-black"><Home className="h-4 w-4 text-brand" /><span className="truncate">{brand}</span></Link>
         {Profile}{Nav}
         <div className="flex gap-2 pt-3"><NotificationBell /><ThemeToggle className="flex-1" /></div>
       </aside>

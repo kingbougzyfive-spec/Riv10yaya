@@ -1,3 +1,5 @@
+import { withTx } from "@/lib/tx";
+import { recordDecision } from "@/lib/ledger";
 import { z } from "zod";
 import mongoose from "mongoose";
 import { handle, audit } from "@/lib/api";
@@ -34,11 +36,13 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   const { id } = await ctx.params;
   if (!mongoose.isValidObjectId(id)) throw new ApiError(404, "Not found");
   const i = schema.parse(await req.json());
-  const { Remittance, Media, Parish } = await getDb();
+  const db = await getDb();
+  const { Remittance, Media, Parish } = db;
   const r = await Remittance.findById(id);
   if (!r) throw new ApiError(404, "Record not found.");
   const p: any = i.paymentId ? r.payments.id(i.paymentId) : r;
   if (!p) throw new ApiError(404, "Payment not found on this record.");
+  const fromStatus: string = p.status;
   const parish = await Parish.findById(r.parish, { name: 1 }).lean<any>();
   const where = `${parish?.name ?? "Parish"} · ${MONTHS[r.month - 1]} ${r.year}${r.kind === "levy" ? ` (${r.description})` : ""}`;
   const entry = (extra: Record<string, unknown>) => ({ at: new Date(), by: user.id, byName: user.name, paymentId: i.paymentId, ...extra });
@@ -71,7 +75,10 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
     const amountKobo = Math.round(i.adjustAmount * 100);
     r.adjustments.push({ amountKobo, reason: i.reason, by: user.id as any, byName: user.name, at: new Date() });
     r.history.push(entry({ action: "adjusted", reason: i.reason, note: i.note, amountKobo, reference: i.bankReference || undefined, evidenceId: i.evidenceId }));
-    await r.save();
+    await withTx(Remittance.db, async (session) => {
+      await recordDecision({ db, user, r, p, paymentKey: "primary", action: "adjust", fromStatus, toStatus: p.status, reason: i.reason, note: i.note, bankReference: i.bankReference, adjustmentKobo: amountKobo, evidenceId: i.evidenceId, session });
+      await r.save({ session });
+    });
     await audit(user, "remittance.adjust", String(r._id), { amountKobo, reason: i.reason }, req);
     await notifyUsers(await owners(), { title: `Payment record adjusted: ${where}`, body: `${amountKobo > 0 ? "+" : ""}${money(amountKobo)}. Reason: ${i.reason}`, link: "/admin/finance", event: "payment_adjusted" });
     return { ok: true, status: p.status, fv: obligationFv(r.toObject()) };
@@ -99,7 +106,11 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   p.reviewedBy = user.id;
   p.reviewedAt = new Date();
   r.markModified("payments");
-  await r.save();
+  // One transaction: the decision records, the ledger row (confirmations only) and the remittance change succeed together.
+  await withTx(Remittance.db, async (session) => {
+    await recordDecision({ db, user, r, p, paymentKey: i.paymentId || "primary", action: i.action, fromStatus, toStatus: p.status, reason: i.reason, note: i.note, bankReference: i.bankReference, seenKobo: p.seenKobo, confirmedKobo: p.status === "confirmed" ? p.confirmedKobo : undefined, evidenceId: i.evidenceId, session });
+    await r.save({ session });
+  });
   await audit(user, `remittance.${i.action}`, String(r._id), { status: p.status, paymentId: i.paymentId }, req);
 
   // Notify the parish, its area and its zone. A missing payment is an open verification issue, not a finding of misconduct.

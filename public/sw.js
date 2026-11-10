@@ -22,10 +22,10 @@ const ALL = [STATIC, PAGES, DATA, MEDIA];
 const OFFLINE = "/offline.html";
 const MAX_ENTRIES = { [PAGES]: 40, [DATA]: 40, [MEDIA]: 80 };
 
-const PUBLIC_PAGES = ["/", "/about", "/events", "/announcements", "/departments", "/zones", "/leadership", "/gallery", "/contact", "/join", "/install"];
+const PUBLIC_PAGES = ["/", "/about", "/events", "/announcements", "/departments", "/zones", "/structure", "/leadership", "/gallery", "/contact", "/join", "/install"];
 const PUBLIC_PAGE_PREFIXES = ["/events/", "/announcements/", "/zones/", "/departments/"];
 const PUBLIC_JSON = ["/api/public/announcements", "/api/public/events", "/api/public/departments", "/api/public/org"];
-const NEVER = ["/admin", "/me", "/login", "/setup", "/forgot", "/reset", "/print", "/attend"];
+const NEVER = ["/admin", "/portal", "/member", "/login", "/setup", "/forgot-password", "/reset-password", "/print", "/attendance"];
 
 function isPublicPage(p) {
   return PUBLIC_PAGES.includes(p) || PUBLIC_PAGE_PREFIXES.some((x) => p.startsWith(x));

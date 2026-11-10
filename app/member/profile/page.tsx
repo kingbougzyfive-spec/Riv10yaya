@@ -4,11 +4,11 @@ import { getUser } from "@/lib/auth";
 import { SimplePage } from "@/components/site/views";
 import { MemberPortal } from "@/components/site/MemberPortal";
 export const dynamic = "force-dynamic";
-export const metadata = { title: "My account" };
+export const metadata = { title: "My profile" };
 export default async function Page() {
   const user = await getUser();
   if (!user) redirect("/login");
-  if (user.role !== "member") redirect("/admin");
+  if (user.role !== "member") redirect(user.role === "parish_admin" ? "/portal" : "/admin");
   const { site } = await getSite();
-  return (<SimplePage site={site} current="/me"><section className="px-5 py-12 sm:px-6"><MemberPortal /></section></SimplePage>);
+  return (<SimplePage site={site} current="/member"><section className="px-5 py-12 sm:px-6"><MemberPortal view="profile" /></section></SimplePage>);
 }

@@ -2,7 +2,8 @@ import { z } from "zod";
 import { handle } from "@/lib/api";
 import { ApiError } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { distanceM, phoneKey, throttle, validPhone } from "@/lib/ids";
+import { distanceM, phoneKey, validPhone } from "@/lib/ids";
+import { HOUR, MIN, rateLimit } from "@/lib/ratelimit";
 import { orgNames } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,7 @@ const schema = z.object({
 /** Marks attendance. Time is the server's clock; duplicates are blocked by a unique index. QR scan alone isn't proof of presence: location is an optional extra signal. */
 export const POST = handle<Ctx>(async (req, ctx) => {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (!throttle(`att:${ip}`, 12)) throw new ApiError(429, "Too many attempts. Please wait a minute.");
+  await rateLimit(`att:${ip}`, 12, MIN, "Too many attempts. Please wait a minute.");
   const s = await find((await ctx.params).token);
   const st = stateOf(s);
   if (st === "scheduled") throw new ApiError(409, `Attendance opens at ${new Date(s.opensAt).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" })}.`);

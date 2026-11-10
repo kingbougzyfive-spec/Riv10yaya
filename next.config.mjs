@@ -28,6 +28,21 @@ const nextConfig = {
   // Type errors still fail the build (so problems surface). Lint is skipped because eslint isn't a dependency yet.
   eslint: { ignoreDuringBuilds: true },
   poweredByHeader: false,
+  // Old addresses keep working (printed QR codes, saved links, e-mails already sent).
+  async redirects() {
+    return [
+      { source: "/forgot", destination: "/forgot-password", permanent: false },
+      { source: "/reset", destination: "/reset-password", permanent: false },
+      { source: "/attend/:token", destination: "/attendance/:token", permanent: false },
+      { source: "/me", destination: "/member", permanent: false },
+      { source: "/admin/organization", destination: "/admin/organizations", permanent: false },
+      { source: "/admin/assistant", destination: "/admin/ai-assistant", permanent: false },
+      { source: "/admin/communications", destination: "/admin/notifications", permanent: false },
+      { source: "/admin/audit", destination: "/admin/audit-logs", permanent: false },
+      { source: "/admin/finance/dashboard", destination: "/admin/analytics", permanent: false },
+      { source: "/admin/governance", destination: "/admin/leadership", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {
@@ -45,7 +60,9 @@ const nextConfig = {
       // Private data is never kept by browsers or proxies. (/api/media sets its own caching: public images are cacheable, files are not.)
       { source: "/api/:path((?!media/).*)", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
       { source: "/admin/:path*", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
-      { source: "/me", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
+      { source: "/portal/:path*", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
+      { source: "/member/:path*", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
+      { source: "/member", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
       { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache" }, { key: "Service-Worker-Allowed", value: "/" }] },
     ];
   },

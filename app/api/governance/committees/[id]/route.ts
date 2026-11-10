@@ -54,7 +54,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
     if (SINGLE.includes(i.role) && taken(i.role)) throw new ApiError(409, `This committee already has a ${i.role.replace("_", " ")}. Change their role first.`);
     c.members.push({ member: m._id, name: m.name, role: i.role, since: now, active: true });
     log("member added", `${m.name} (${i.role})`);
-    await notifyMember(m, { title: `You were added to ${c.name}`, body: `Role: ${i.role.replace("_", " ")}`, link: "/me" });
+    await notifyMember(m, { title: `You were added to ${c.name}`, body: `Role: ${i.role.replace("_", " ")}`, link: "/member" });
   } else if (i.action === "set_role") {
     const row = c.members.id(i.rowId);
     if (!row || !row.active) throw new ApiError(404, "Member not found on this committee.");

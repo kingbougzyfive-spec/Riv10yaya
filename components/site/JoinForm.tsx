@@ -17,7 +17,7 @@ export function JoinForm() {
   const parishes = org?.parishes.filter((p: any) => p.zone === f.zone && (zone?.hasAreas ? p.area === f.area : true)) ?? [];
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true);
-    try { await api("/api/public/join", { method: "POST", json: { name: f.name, phone: f.phone, email: f.email, password: f.password, parish: f.parish, dob: f.dob, memberId: f.memberId, privacy: f.privacy, ...(minor ? { guardian: { name: f.gName, phone: f.gPhone, relationship: f.gRel }, guardianConsent: f.gConsent } : {}) } }); toast.ok("Welcome! Your account is ready."); router.push("/me"); router.refresh(); }
+    try { await api("/api/public/join", { method: "POST", json: { name: f.name, phone: f.phone, email: f.email, password: f.password, parish: f.parish, dob: f.dob, memberId: f.memberId, privacy: f.privacy, ...(minor ? { guardian: { name: f.gName, phone: f.gPhone, relationship: f.gRel }, guardianConsent: f.gConsent } : {}) } }); toast.ok("Welcome! Your account is ready."); router.push("/member"); router.refresh(); }
     catch (er: any) { toast.err(er.message); setBusy(false); }
   }
   return (

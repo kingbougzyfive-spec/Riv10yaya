@@ -15,7 +15,7 @@ export function SessionDetail({ id, canManage }: { id: string; canManage: boolea
   const [busy, setBusy] = useState("");
   const load = useCallback(() => api(`/api/attendance/sessions/${id}`).then(setD).catch((e) => toast.err(e.message)), [id, toast]);
   useEffect(() => { setOrigin(window.location.origin); load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, [load]);
-  const url = d && origin ? `${origin}/attend/${d.session.token}` : "";
+  const url = d && origin ? `${origin}/attendance/${d.session.token}` : "";
   const png = useQr(url || "x", 1024);
   const run = async (key: string, fn: () => Promise<any>, ok: string) => { setBusy(key); try { await fn(); toast.ok(ok); await load(); } catch (e: any) { toast.err(e.message); } setBusy(""); };
 

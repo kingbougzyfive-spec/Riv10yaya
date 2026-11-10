@@ -22,7 +22,7 @@ const caches = {
   async delete(n) { return store.delete(n); },
 };
 let online = true; const fetched = [];
-const net = { "/": ["<html>home</html>", {}], "/events": ["<html>events</html>", {}], "/me": ["<html>private</html>", {}], "/admin/finance": ["<html>fin</html>", {}],
+const net = { "/": ["<html>home</html>", {}], "/events": ["<html>events</html>", {}], "/member": ["<html>private</html>", {}], "/admin/finance": ["<html>fin</html>", {}],
   "/api/public/events": ['{"rows":[1]}', { "Content-Type": "application/json" }], "/api/remittances": ['{"secret":1}', {}],
   "/api/media/pub": ["img", { "Cache-Control": "public, max-age=31536000, immutable" }], "/api/media/priv": ["secret", { "Cache-Control": "private, no-store" }],
   "/_next/static/a.js": ["js", {}] };
@@ -50,14 +50,14 @@ listeners.activate({ waitUntil: (p) => (w = p) }); await w;
 t((await go("/api/remittances", { method: "POST" })).handled === false, "POST /api/remittances is not handled by the worker");
 t((await go("/api/remittances", { method: "PATCH" })).handled === false, "PATCH is not handled");
 t((await go("/api/remittances")).handled === false, "GET of a financial API goes straight to the network");
-await go("/admin/finance", { mode: "navigate" }); await go("/me", { mode: "navigate" });
-t(![...store.values()].some((m) => [...m.keys()].some((k) => /admin|\/me/.test(k))), "/admin and /me are never stored");
+await go("/admin/finance", { mode: "navigate" }); await go("/member", { mode: "navigate" });
+t(![...store.values()].some((m) => [...m.keys()].some((k) => /admin|\/member/.test(k))), "/admin and /me are never stored");
 await go("/", { mode: "navigate" }); await go("/events", { mode: "navigate" });
 await go("/api/public/events"); await go("/api/media/pub"); await go("/api/media/priv"); await go("/_next/static/a.js");
 t(![...store.values()].some((m) => [...m.keys()].some((k) => k.includes("/api/media/priv"))), "private media is never stored");
 online = false;
 let r = await go("/events", { mode: "navigate" }); t((await r.res.text()).includes("events"), "public page served from cache offline");
-r = await go("/me", { mode: "navigate" }); t((await r.res.text()) === "ok", "private page offline shows the offline page, not a cached copy");
+r = await go("/member", { mode: "navigate" }); t((await r.res.text()) === "ok", "private page offline shows the offline page, not a cached copy");
 r = await go("/gallery", { mode: "navigate" }); t((await r.res.text()) === "ok", "never-visited public page offline shows the offline page");
 r = await go("/api/public/events"); t((await r.res.text()).includes("rows"), "public JSON served from cache offline");
 r = await go("/api/media/pub"); t((await r.res.text()) === "img", "public image served from cache offline");

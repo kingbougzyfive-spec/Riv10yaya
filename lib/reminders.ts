@@ -105,7 +105,7 @@ export async function runReminders(now = new Date()): Promise<{ ran: boolean; su
   for (const e of evs) {
     const r = await registrantRecipients({ event: e._id, status: "registered", reminderAt: { $exists: false } });
     if (!r.userIds.length && !r.external.length) continue;
-    await dispatch({ event: "event_reminder", title: `Reminder: ${e.title}`, body: `${new Date(e.startsAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" })}${e.venue ? ` · ${e.venue}` : ""}. Bring your QR ticket.`, link: "/me", userIds: r.userIds, noEmail: r.noEmail, external: r.external, origin: "system" });
+    await dispatch({ event: "event_reminder", title: `Reminder: ${e.title}`, body: `${new Date(e.startsAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" })}${e.venue ? ` · ${e.venue}` : ""}. Bring your QR ticket.`, link: "/member", userIds: r.userIds, noEmail: r.noEmail, external: r.external, origin: "system" });
     await (await getDb()).Registration.updateMany({ event: e._id, status: "registered" }, { $set: { reminderAt: now } });
     evN += r.userIds.length + r.external.length;
   }
@@ -119,7 +119,7 @@ export async function runReminders(now = new Date()): Promise<{ ran: boolean; su
     if (m.committee) { const c = await Committee.findById(m.committee, { members: 1 }).lean<any>(); ids = [...ids, ...(c?.members ?? []).filter((x: any) => x.active && x.member).map((x: any) => x.member)]; }
     const members = ids.length ? await Member.find({ _id: { $in: ids } }, { phoneKey: 1, oldPhoneKeys: 1, email: 1, name: 1, dob: 1 }).lean<any[]>() : [];
     const r = await fromMembers(members);
-    await dispatch({ event: "meeting_reminder", title: `Meeting reminder: ${m.title}`, body: `${new Date(m.scheduledAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" })}${m.venue ? ` · ${m.venue}` : ""}`, link: "/me", userIds: r.userIds, noEmail: r.noEmail, origin: "system" });
+    await dispatch({ event: "meeting_reminder", title: `Meeting reminder: ${m.title}`, body: `${new Date(m.scheduledAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" })}${m.venue ? ` · ${m.venue}` : ""}`, link: "/member", userIds: r.userIds, noEmail: r.noEmail, origin: "system" });
     await Meeting.updateOne({ _id: m._id }, { $set: { reminderAt: now } });
     mtN += r.userIds.length;
   }
@@ -137,7 +137,7 @@ export async function runReminders(now = new Date()): Promise<{ ran: boolean; su
       const m = members.find((x) => String(x._id) === String(t.assignee));
       const uid = m && [m.phoneKey, ...(m.oldPhoneKeys ?? [])].map((k: string) => byKey.get(k)).find(Boolean);
       if (!uid) continue;
-      await dispatch({ event: "task_overdue", title: `Overdue task: ${t.title}`, body: `This was due ${new Date(t.dueAt).toLocaleDateString("en-NG", { dateStyle: "medium" })}.`, link: "/me", userIds: [uid], dedupe: `to:${t._id}:${Math.floor(L.dayIndex / 3)}`, origin: "system" });
+      await dispatch({ event: "task_overdue", title: `Overdue task: ${t.title}`, body: `This was due ${new Date(t.dueAt).toLocaleDateString("en-NG", { dateStyle: "medium" })}.`, link: "/member", userIds: [uid], dedupe: `to:${t._id}:${Math.floor(L.dayIndex / 3)}`, origin: "system" });
       tkN++;
     }
   }

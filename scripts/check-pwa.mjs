@@ -18,7 +18,7 @@ const refs = [...sp.matchAll(/src: "\/splash\/([^"]+)"/g)].map((m) => m[1]);
 ok(refs.every((r) => splash.includes(r)), "every splash reference has a file");
 const sw = readFileSync(join(root, "public/sw.js"), "utf8");
 ok(/method !== "GET"\) return/.test(sw), "service worker ignores every non-GET request (writes are never intercepted)");
-ok(/"\/admin"/.test(sw) && /"\/me"/.test(sw), "service worker never caches /admin or /me");
+ok(/"\/admin"/.test(sw) && /"\/member"/.test(sw), "service worker never caches /admin, /portal or /member");
 ok(!/\/api\/(finance|remittances|reports|members|users)/.test(sw), "service worker does not mention financial or private APIs");
 const layout = readFileSync(join(root, "app/layout.tsx"), "utf8");
 ok(layout.includes("startupImage") && layout.includes("capable: true"), "layout declares Apple web app + startup images");

@@ -48,7 +48,7 @@ export const POST = handle(async (req) => {
   if (i.dueAt && Date.parse(i.dueAt) < Date.now() - 86_400_000) throw new ApiError(422, "The deadline can't be in the past.");
   const { Task } = await getDb();
   const t = await Task.create({ ...org, title: i.title, description: i.description, assignee: assignee?._id, assigneeName: assignee?.name, dueAt: i.dueAt ? new Date(i.dueAt) : undefined, priority: i.priority, committee: i.committee || undefined, department: i.department || undefined, meeting: i.meeting || undefined, createdBy: user.id, createdByName: user.name, updates: [{ at: new Date(), by: user.id, byName: user.name, status: "open", note: "Task created" }] });
-  if (assignee) await notifyMember(assignee, { title: `New task: ${i.title}`, body: i.dueAt ? `Due ${new Date(i.dueAt).toLocaleDateString("en-NG", { dateStyle: "medium" })}` : undefined, link: "/me", event: "task_assigned" });
+  if (assignee) await notifyMember(assignee, { title: `New task: ${i.title}`, body: i.dueAt ? `Due ${new Date(i.dueAt).toLocaleDateString("en-NG", { dateStyle: "medium" })}` : undefined, link: "/member", event: "task_assigned" });
   await audit(user, "task.create", i.title, { assignee: assignee?.name }, req);
   return { id: String(t._id) };
 });

@@ -102,7 +102,7 @@ export async function requirePageUser(roles?: readonly Role[]): Promise<SessionU
   const user = await getUser();
   if (!user) redirect("/login");
   if (user.mustChange) {
-    const target = user.role === "member" ? "/me" : "/admin/account";
+    const target = user.role === "member" ? "/member" : "/admin/account";
     const here = (await headers()).get("x-path") || "";
     if (here !== target) redirect(`${target}?force=1`);
   }

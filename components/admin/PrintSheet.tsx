@@ -10,7 +10,7 @@ export function PrintSheet({ id, layout, brand }: { id: string; layout: string; 
   useEffect(() => { setOrigin(window.location.origin); api(`/api/attendance/sessions/${id}`).then(setD).catch((e) => setErr(e.message)); }, [id]);
   if (err) return <p className="p-10">{err}</p>;
   if (!d || !origin) return <p className="p-10">Loading…</p>;
-  const url = `${origin}/attend/${d.session.token}`;
+  const url = `${origin}/attendance/${d.session.token}`;
   const where = [d.session.zone, d.session.area, d.session.parish].filter(Boolean).join(" → ");
   return (
     <div className="min-h-screen bg-[#fff] text-[#0b1220]">

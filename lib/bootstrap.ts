@@ -2,6 +2,7 @@ import { audit } from "./api";
 import { hashPassword } from "./auth";
 import { getDb } from "./db";
 import { passwordProblem } from "./password";
+import { syncRbacCatalog } from "./rbac-catalog";
 
 let done = false;
 
@@ -32,6 +33,7 @@ export async function ensureBootstrapAdmin(): Promise<void> {
       mustChangePassword: true, bootstrap: true, passwordChangedAt: new Date(),
     });
     await audit({ id: String(u._id), name: u.name, email, role: "super_admin" }, "bootstrap.admin_created", email, { entity: "user", entityId: String(u._id), reason: "First-run temporary administrator from server environment" });
+    await syncRbacCatalog(await getDb()).catch(() => {});
     done = true;
   } catch (e) {
     console.error("bootstrap admin failed", e);

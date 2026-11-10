@@ -19,7 +19,7 @@ export function EventsList({ limit }: { limit?: number } = {}) {
       {events === null && [0, 1, 2].map((i) => <div key={i} className="skeleton h-72" />)}
       {events?.map((e, i) => (
         <motion.div key={e.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.06, 0.4) }}>
-          <Link href={`/events/${e.id}`} className="glass glass-hover group block overflow-hidden p-0">
+          <Link href={`/events/${e.slug || e.id}`} className="glass glass-hover group block overflow-hidden p-0">
             <div className="relative aspect-[16/10] bg-gradient-to-br from-brand/25 to-accent/25">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {e.flyerId ? <img src={`/api/media/${e.flyerId}`} alt="" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" /> : <div className="grid h-full place-items-center"><CalendarDays className="h-12 w-12 text-white/30" /></div>}
@@ -34,7 +34,7 @@ export function EventsList({ limit }: { limit?: number } = {}) {
   );
 }
 
-export function EventDetail({ id }: { id: string }) {
+export function EventDetail({ id, scrollToRegister = false }: { id: string; scrollToRegister?: boolean }) {
   const toast = useToast();
   const router = useRouter();
   const [ev, setEv] = useState<any>(null);
@@ -43,6 +43,8 @@ export function EventDetail({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState<any>({ name: "", phone: "", email: "", zone: "", area: "", parish: "", answers: {} });
   useEffect(() => { api(`/api/public/events/${id}`).then((r) => setEv(r.event)).catch((e) => setErr(e.message)); api("/api/public/org").then(setOrg).catch(() => {}); }, [id]);
+
+  useEffect(() => { if (scrollToRegister && ev) document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [scrollToRegister, ev]);
 
   if (err) return <p className="glass p-10 text-center text-white/60">{err}</p>;
   if (!ev) return <div className="skeleton h-96" />;
@@ -79,7 +81,7 @@ export function EventDetail({ id }: { id: string }) {
       </div>
       <div className="lg:sticky lg:top-24 lg:self-start">
         <div className="glass p-6">
-          <h2 className="text-lg font-bold">Register</h2>
+          <h2 id="register" className="text-lg font-bold">Register</h2>
           {ev.registrationClosed ? <p className="mt-3 rounded-xl bg-white/5 p-4 text-sm text-white/60">{ev.closedReason}</p> : (
             <form onSubmit={submit} className="mt-4 space-y-4">
               {ev.spotsLeft !== null && <p className="text-xs text-accent">{ev.spotsLeft} spots left</p>}

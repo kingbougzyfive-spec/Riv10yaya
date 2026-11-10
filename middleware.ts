@@ -21,7 +21,7 @@ export function middleware(req: NextRequest) {
     if (bad) return NextResponse.json({ error: "Request blocked: it didn't come from this site." }, { status: 403 });
   }
 
-  if ((pathname.startsWith("/admin") || pathname.startsWith("/print")) && !req.cookies.get("yaya_session")) {
+  if ((pathname.startsWith("/admin") || pathname.startsWith("/print") || pathname.startsWith("/portal")) && !req.cookies.get("yaya_session")) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
@@ -32,4 +32,4 @@ export function middleware(req: NextRequest) {
   h.set("x-path", pathname);
   return NextResponse.next({ request: { headers: h } });
 }
-export const config = { matcher: ["/admin/:path*", "/print/:path*", "/me/:path*", "/me", "/api/:path*"] };
+export const config = { matcher: ["/admin/:path*", "/print/:path*", "/me/:path*", "/member", "/api/:path*"] };

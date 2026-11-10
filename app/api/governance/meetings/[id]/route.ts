@@ -67,7 +67,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
     // An action point becomes a real task, so it is tracked and can be completed.
     const t = await Task.create({ level: org.level, zone: org.zone || undefined, area: org.area || undefined, parish: org.parish || undefined, title: i.text, assignee: who?._id, assigneeName: who?.name, dueAt: i.dueAt ? new Date(i.dueAt) : undefined, meeting: m._id, committee: m.committee, department: m.department, description: `Action point from: ${m.title}`, createdBy: user.id, createdByName: user.name, updates: [{ at: now, by: user.id, byName: user.name, status: "open", note: "From meeting action point" }] });
     m.actions.push({ text: i.text, assignee: who?._id, assigneeName: who?.name, dueAt: i.dueAt ? new Date(i.dueAt) : undefined, task: t._id });
-    if (who) await notifyMember(who, { title: `Action point: ${i.text}`, link: "/me", event: "task_assigned" });
+    if (who) await notifyMember(who, { title: `Action point: ${i.text}`, link: "/member", event: "task_assigned" });
   }
   await m.save();
   await audit(user, `meeting.${i.action}`, m.title, i.action === "attendance" ? attendanceStats(m.attendance) : undefined, req);

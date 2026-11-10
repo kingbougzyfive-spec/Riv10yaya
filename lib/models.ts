@@ -1,6 +1,10 @@
 import { Schema, type Connection, type Model } from "mongoose";
 
 import { ROLES } from "./roles";
+import { orgChain, reportShapeProblem } from "./org-chain";
+import { slugify } from "./slug";
+import { periodDue, periodKey, periodLabel } from "./period";
+import { additionalLevySchema, bankReconciliationSchema, contributionSchema, financialApprovalSchema, paymentTransactionSchema, permissionSchema, reportingPeriodSchema, roleSchema } from "./schemas-extra";
 export { ROLES, ROLE_LABELS } from "./roles";
 export type { Role } from "./roles";
 import type { Role } from "./roles";
@@ -190,6 +194,10 @@ const remittanceSchema = new Schema(
     month: { type: Number, min: 1, max: 12, required: true },
     year: { type: Number, required: true },
     description: String, // levies
+    /** Canonical reporting period (linked automatically from month/year) and, for levies, the obligation it answers. */
+    period: { type: Schema.Types.ObjectId, ref: "ReportingPeriod", index: true },
+    levy: { type: Schema.Types.ObjectId, ref: "AdditionalLevy" },
+    contribution: { type: Schema.Types.ObjectId, ref: "Contribution" },
     /** levy = an obligation set by the province; contribution = a voluntary gift. Reported separately. */
     category: { type: String, enum: ["levy", "contribution"], default: "levy" },
     offeringKobo: Number, // yst: total offering collected
@@ -254,6 +262,7 @@ const reportSchema = new Schema(
     activity: Schema.Types.Mixed,
     rollup: Schema.Types.Mixed,
     remittance: { type: Schema.Types.ObjectId, ref: "Remittance" },
+    period: { type: Schema.Types.ObjectId, ref: "ReportingPeriod", index: true },
     submittedBy: { type: Schema.Types.ObjectId, ref: "User" },
     submittedAt: { type: Date, default: Date.now },
   },
@@ -264,6 +273,8 @@ reportSchema.index({ type: 1, zone: 1, area: 1, parish: 1, month: 1, year: 1 }, 
 const eventSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
+    /** Public address, /events/<slug>. Generated from the title; the old id address keeps working. */
+    slug: { type: String, unique: true, sparse: true },
     description: String,
     venue: String,
     mapUrl: String,
@@ -660,7 +671,76 @@ for (const op of ["deleteOne", "deleteMany", "findOneAndDelete"] as const) {
   reportSchema.pre(op as any, refuse("Submitted reports"));
 }
 
-export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "SheetSyncLog", "AiLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument"] as const;
+
+// ---------- Section 20: relationships, indexes and data-integrity rules ----------
+// Rule 6: impossible organisational combinations are refused by the data layer itself.
+orgChain(parishSchema, { self: true, requireArea: true });
+orgChain(remittanceSchema);
+orgChain(reportSchema);
+orgChain(memberSchema);
+orgChain(registrationSchema);
+orgChain(userSchema);
+reportSchema.pre("validate", function (this: any) { const bad = reportShapeProblem(this); if (bad) this.invalidate("type", bad); });
+
+// Rule 1: exactly one canonical Youth Sunday obligation per parish per period (index above); one record per parish per levy.
+remittanceSchema.index({ parish: 1, levy: 1 }, { unique: true, partialFilterExpression: { levy: { $type: "objectId" } } });
+remittanceSchema.index({ parish: 1, contribution: 1 }, { unique: true, partialFilterExpression: { contribution: { $type: "objectId" } } });
+// Rule 7: duplicate receipts and references are findable instantly (flagged for a human, never auto-rejected).
+remittanceSchema.index({ reference: 1 }, { sparse: true });
+remittanceSchema.index({ "payments.reference": 1 }, { sparse: true });
+remittanceSchema.index({ evidenceId: 1 }, { sparse: true });
+remittanceSchema.index({ "payments.evidenceId": 1 }, { sparse: true });
+remittanceSchema.index({ year: -1, month: -1, status: 1 });
+remittanceSchema.index({ zone: 1, year: -1, month: -1 });
+reportSchema.index({ status: 1, year: -1, month: -1 });
+reportSchema.index({ zone: 1, year: -1, month: -1 });
+userSchema.index({ role: 1, active: 1 });
+userSchema.index({ parish: 1 }, { sparse: true });
+memberSchema.index({ parish: 1, status: 1 });
+memberSchema.index({ oldPhoneKeys: 1 }, { sparse: true });
+registrationSchema.index({ phoneKey: 1 });
+registrationSchema.index({ member: 1, event: 1 }, { sparse: true });
+attendanceSchema.index({ phoneKey: 1 });
+eventSchema.index({ status: 1, startsAt: -1 });
+announcementSchema.index({ status: 1, pinned: -1, publishedAt: -1 });
+notificationLogSchema.index({ createdAt: -1 });
+
+eventSchema.pre("validate", async function (this: any) {
+  if (this.slug) return;
+  const base = slugify(this.title || "event");
+  for (let n = 0; n < 8; n++) {
+    const cand = n === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
+    if (!(await this.model("Event").exists({ slug: cand }))) { this.slug = cand; return; }
+  }
+  this.slug = `${base}-${Date.now().toString(36)}`;
+});
+
+// Controlled revisions: a reporting period that has been locked accepts no new submissions.
+for (const schema of [remittanceSchema, reportSchema]) {
+  schema.pre("validate", async function (this: any) {
+    if (this.period || !this.year || !this.month) return;
+    const P = this.model("ReportingPeriod");
+    const p: any = await P.findOneAndUpdate(
+      { key: periodKey(this.year, this.month) },
+      { $setOnInsert: { key: periodKey(this.year, this.month), year: this.year, month: this.month, label: periodLabel(this.year, this.month), dueAt: periodDue(this.year, this.month), status: "open" } },
+      { upsert: true, new: true },
+    );
+    if (this.isNew && p.status === "locked") { this.invalidate("month", `${p.label} is locked and accepts no new submissions.`); return; }
+    this.period = p._id;
+  });
+}
+
+// Immutable by design: decisions and confirmed money can never be edited or removed. A mistake is corrected with
+// a new, explained record (a manual adjustment), never by changing history.
+for (const [schema, what] of [[financialApprovalSchema, "Financial approvals"], [paymentTransactionSchema, "Confirmed payments"]] as const) {
+  for (const op of ["updateOne", "updateMany", "findOneAndUpdate", "findOneAndReplace", "replaceOne", "deleteOne", "deleteMany", "findOneAndDelete"] as const) schema.pre(op as any, refuse(what));
+  schema.pre("save", function (this: any, next: any) { if (!this.isNew) throw new Error(`${what} cannot be changed or deleted.`); next(); });
+}
+for (const op of ["deleteOne", "deleteMany", "findOneAndDelete"] as const) bankReconciliationSchema.pre(op as any, refuse("Reconciliation records"));
+reportingPeriodSchema.pre("deleteOne", refuse("Reporting periods") as any);
+reportingPeriodSchema.pre("deleteMany", refuse("Reporting periods") as any);
+
+export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "SheetSyncLog", "AiLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument", "Role", "Permission", "ReportingPeriod", "AdditionalLevy", "Contribution", "PaymentTransaction", "FinancialApproval", "BankReconciliationRecord"] as const;
 /** Collections that stay on the running database only (not copied to backup databases). */
 export const LOCAL_ONLY = ["RateLimit", "ErrorLog"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number] | (typeof LOCAL_ONLY)[number];
@@ -694,6 +774,14 @@ const schemas: Record<ModelName, Schema> = {
   Task: taskSchema,
   Meeting: meetingSchema,
   GovDocument: documentSchema,
+  Role: roleSchema,
+  Permission: permissionSchema,
+  ReportingPeriod: reportingPeriodSchema,
+  AdditionalLevy: additionalLevySchema,
+  Contribution: contributionSchema,
+  PaymentTransaction: paymentTransactionSchema,
+  FinancialApproval: financialApprovalSchema,
+  BankReconciliationRecord: bankReconciliationSchema,
   RateLimit: rateLimitSchema,
   ErrorLog: errorLogSchema,
 };
