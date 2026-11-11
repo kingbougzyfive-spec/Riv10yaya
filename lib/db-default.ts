@@ -6,4 +6,4 @@
  * "use client" file. Keep the GitHub repository PRIVATE, and rotate this password in Atlas if the repo is ever shared.
  */
 export const DEFAULT_MONGODB_URI =
-  "mongodb+srv://Kingboughzy15u_db_user:b8Muj5VOjHoxGREi@cluster0.5vmkgrg.mongodb.net/rivers10yaya?retryWrites=true&w=majority&appName=Cluster0";
+  "mongodb+srv://octacity:octacity@octacity.dbqxrtd.mongodb.net/octacity";
