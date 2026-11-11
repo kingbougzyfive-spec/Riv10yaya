@@ -10,7 +10,7 @@ import { adminsOf, notifyUsers } from "@/lib/notify";
 import { reportRef } from "@/lib/ids";
 import mongoose from "mongoose";
 import { obligationFv, totals } from "@/lib/verification";
-import { CONTACT_ROLES, recordScope, resolveIdentity } from "@/lib/scope";
+import { canSeeContact, recordScope, resolveIdentity } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ export const GET = handle(async (req) => {
   return {
     rows: rows.map((r) => {
       // Contact details only for authorised administrators (or the author's own parish). Never public, never members.
-      const seeContact = (CONTACT_ROLES as readonly string[]).includes(user.role) || (user.parish && String(r.parish) === user.parish);
+      const seeContact = canSeeContact(user, r);
       const m = r.remittance ? rem.get(String(r.remittance)) : null;
       return {
         id: String(r._id), reportId: r.reportId ?? null, type: r.type, month: r.month, year: r.year, names: r.names, submittedAt: r.submittedAt,

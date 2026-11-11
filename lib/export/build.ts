@@ -6,7 +6,7 @@ import { listFilter } from "../gov-server";
 import { listMembers } from "../member-list";
 import { orgNames } from "../names";
 import { ROLE_LABELS } from "../roles";
-import { CONTACT_ROLES, clampScope as clamp, recordScope } from "../scope";
+import { CONTACT_ROLES, canSeeContact, clampScope as clamp, recordScope } from "../scope";
 import { EXPORT_BY_KEY, isExportType, type ExportType } from "./catalog";
 import * as D from "./docs";
 import type { ReportDoc } from "./doc";
@@ -35,7 +35,7 @@ export async function buildExport(type: string, user: SessionUser, q: URLSearchP
   const used: string[] = []; const f = clamp(scope, q);
   for (const [k, m] of [["zone", n.zone], ["area", n.area], ["parish", n.parish]] as const) if (oid(q.get(k)) && def.filters.includes(k)) used.push(`${k[0].toUpperCase() + k.slice(1)}: ${m.get(q.get(k)!) ?? "?"}`);
   const base = (extra: string[] = []): D.Base => ({ org, preparedBy: `${user.name} (${ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? user.role})`, scope: scopeLabel, filters: [...used, ...extra], now: new Date(), canContact: (CONTACT_ROLES as readonly string[]).includes(user.role) || (user.role === "parish_admin" && type === "parish_monthly") });
-  const contactFor = (r: any) => (CONTACT_ROLES as readonly string[]).includes(user.role) || (!!user.parish && String(r.parish) === user.parish);
+  const contactFor = (r: any) => canSeeContact(user, r);
 
   // ---------- monthly reports
   if (type === "parish_monthly" || type === "area_monthly" || type === "zone_monthly") {

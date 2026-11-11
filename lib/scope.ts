@@ -1,11 +1,9 @@
 import type { SessionUser } from "./auth";
 import { getDb } from "./db";
+export { CONTACT_ROLES, canSeeContact, clampScope } from "./scope-core";
 
 export const PROVINCIAL = ["super_admin", "finance_admin", "provincial_admin", "auditor"] as const;
 export const isProvincial = (u: SessionUser) => (PROVINCIAL as readonly string[]).includes(u.role);
-
-/** Roles allowed to see report-contact phone numbers (never members, never public). */
-export const CONTACT_ROLES = ["super_admin", "provincial_admin", "finance_admin", "zonal_admin", "area_admin"] as const;
 
 /**
  * Mongo filter limiting records (reports / remittances) to the user's organisational scope.
@@ -42,14 +40,3 @@ export async function resolveIdentity(u: SessionUser) {
   return null;
 }
 
-const NO_MATCH = "000000000000000000000000";
-const isOid = (v: string | null): v is string => !!v && /^[a-f0-9]{24}$/i.test(v);
-/**
- * Applies a zone/area/parish chosen in a filter on top of the person's own scope. A choice outside their scope
- * matches nothing (never more), so a filter can narrow a view but can never widen it.
- */
-export function clampScope(scope: Record<string, any>, q: URLSearchParams, keys: ("zone" | "area" | "parish")[] = ["zone", "area", "parish"]) {
-  const f: Record<string, any> = { ...scope };
-  for (const k of keys) { const v = q.get(k); if (!isOid(v)) continue; f[k] = f[k] && String(f[k]) !== v ? NO_MATCH : v; }
-  return f;
-}

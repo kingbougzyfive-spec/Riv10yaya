@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check": "node scripts/check-pwa.mjs && node scripts/check-models.mjs && node scripts/check-routes.mjs && node scripts/check-ui.mjs && node tests/sw.test.mjs",
+    "test:acceptance": "node scripts/run-acceptance.mjs",
+    "test:e2e": "node tests/e2e/acceptance.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
