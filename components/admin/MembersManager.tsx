@@ -69,7 +69,7 @@ export function MembersManager({ role }: { role: string }) {
       </div>
       {d && d.pages > 1 && <div className="mt-4 flex items-center justify-center gap-3 text-sm"><button className="btn btn-ghost btn-sm" disabled={fl.page <= 1} onClick={() => setFl({ ...fl, page: fl.page - 1 })}>Previous</button><span>Page {fl.page} of {d.pages}</span><button className="btn btn-ghost btn-sm" disabled={fl.page >= d.pages} onClick={() => setFl({ ...fl, page: fl.page + 1 })}>Next</button></div>}
 
-      <AddMember open={add} onClose={() => setAdd(false)} role={role} org={org} depts={depts} cats={d?.categories ?? []} onDone={(id) => { setAdd(false); load(); toast.ok(`Added. Member ID: ${id}`); }} />
+      <AddMember open={add} onClose={() => setAdd(false)} role={role} org={org} depts={depts} cats={d?.categories ?? []} onDone={(id: string) => { setAdd(false); load(); toast.ok(`Added. Member ID: ${id}`); }} />
       <Detail id={openId} onClose={() => setOpenId(null)} role={role} org={org} depts={depts} cats={d?.categories ?? []} onChanged={load} />
       {cats && <Categories onClose={() => { setCats(false); load(); }} />}
     </>

@@ -1,5 +1,6 @@
 import { withTx } from "@/lib/tx";
 import { recordDecision } from "@/lib/ledger";
+import type { Decision } from "@/lib/ledger-core";
 import { z } from "zod";
 import mongoose from "mongoose";
 import { handle, audit } from "@/lib/api";
@@ -108,7 +109,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   r.markModified("payments");
   // One transaction: the decision records, the ledger row (confirmations only) and the remittance change succeed together.
   await withTx(Remittance.db, async (session) => {
-    await recordDecision({ db, user, r, p, paymentKey: i.paymentId || "primary", action: i.action, fromStatus, toStatus: p.status, reason: i.reason, note: i.note, bankReference: i.bankReference, seenKobo: p.seenKobo, confirmedKobo: p.status === "confirmed" ? p.confirmedKobo : undefined, evidenceId: i.evidenceId, session });
+    await recordDecision({ db, user, r, p, paymentKey: i.paymentId || "primary", action: i.action as Decision, fromStatus, toStatus: p.status, reason: i.reason, note: i.note, bankReference: i.bankReference, seenKobo: p.seenKobo, confirmedKobo: p.status === "confirmed" ? p.confirmedKobo : undefined, evidenceId: i.evidenceId, session });
     await r.save({ session });
   });
   await audit(user, `remittance.${i.action}`, String(r._id), { status: p.status, paymentId: i.paymentId }, req);

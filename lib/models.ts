@@ -744,7 +744,7 @@ for (const schema of [remittanceSchema, reportSchema]) {
 // a new, explained record (a manual adjustment), never by changing history.
 for (const [schema, what] of [[financialApprovalSchema, "Financial approvals"], [paymentTransactionSchema, "Confirmed payments"]] as const) {
   for (const op of ["updateOne", "updateMany", "findOneAndUpdate", "findOneAndReplace", "replaceOne", "deleteOne", "deleteMany", "findOneAndDelete"] as const) schema.pre(op as any, refuse(what));
-  schema.pre("save", function (this: any, next: any) { if (!this.isNew) throw new Error(`${what} cannot be changed or deleted.`); next(); });
+  (schema as any).pre("save", function (this: any, next: any) { if (!this.isNew) throw new Error(`${what} cannot be changed or deleted.`); next(); });
 }
 for (const op of ["deleteOne", "deleteMany", "findOneAndDelete"] as const) bankReconciliationSchema.pre(op as any, refuse("Reconciliation records"));
 reportingPeriodSchema.pre("deleteOne", refuse("Reporting periods") as any);

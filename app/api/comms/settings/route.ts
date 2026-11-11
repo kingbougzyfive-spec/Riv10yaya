@@ -6,7 +6,7 @@ import { pushConfigured } from "@/lib/push";
 import { getReminderConfig, saveReminderConfig } from "@/lib/reminders";
 
 export const dynamic = "force-dynamic";
-const ADMIN = ["super_admin", "provincial_admin"];
+const ADMIN = ["super_admin", "provincial_admin"] as const;
 
 export const GET = handle(async () => {
   await requireApiUser(ADMIN);

@@ -18,7 +18,7 @@ export function CommsHub({ me, avail = { email: true, push: true } }: { me: Me; 
   return (
     <>
       <div className="glass mb-5 flex gap-1 overflow-x-auto p-1">{tabs.map((t) => <button key={t} onClick={() => setTab(t)} className={cn("relative whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold", tab === t ? "text-[#04130d]" : "text-white/65")}>{tab === t && <motion.span layoutId="comms-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">{t}</span></button>)}</div>
-      {tab === "Compose" && <Compose me={me} onSent={() => setTab("Delivery log")} />}
+      {tab === "Compose" && <Compose me={me} avail={avail} onSent={() => setTab("Delivery log")} />}
       {tab === "Delivery log" && <Logs me={me} />}
       {tab === "Reminders" && <Reminders />}
     </>
@@ -27,7 +27,7 @@ export function CommsHub({ me, avail = { email: true, push: true } }: { me: Me; 
 
 type Aud = { type: string; ids: string[]; eventId: string };
 
-function Compose({ me, onSent }: { me: Me; onSent: () => void }) {
+function Compose({ me, avail, onSent }: { me: Me; avail: { email: boolean; push: boolean }; onSent: () => void }) {
   const toast = useToast();
   const org = useOrg();
   const [f, setF] = useState({ title: "", body: "", link: "", kind: "notice" });

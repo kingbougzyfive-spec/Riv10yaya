@@ -27,9 +27,9 @@ export function OfflineBanner() {
     return () => document.removeEventListener("visibilitychange", vis);
   }, [online]);
   useEffect(() => {
-    if (online) return;
+    if (online) return undefined;
     setBack(false);
-    return () => { setBack(true); const t = setTimeout(() => setBack(false), 2500); return () => clearTimeout(t); };
+    return () => { setBack(true); setTimeout(() => setBack(false), 2500); };
   }, [online]);
 
   return (
