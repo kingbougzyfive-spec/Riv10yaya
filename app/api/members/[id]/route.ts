@@ -28,7 +28,7 @@ export const GET = handle<Ctx>(async (req, ctx) => {
   const depts = await deptNames(m.departments ?? []);
   const shaped: any = shapeMember({
     id: String(m._id), memberId: m.memberId, name: m.name, phone: m.phone, email: m.email, dob: m.dob, gender: m.gender, guardian: m.guardian, category: m.category, status: m.status, joinedAt: m.joinedAt ?? m.createdAt,
-    parishId: String(m.parish), parish: n.parish.get(String(m.parish)), area: m.area ? n.area.get(String(m.area)) : "", zone: n.zone.get(String(m.zone)), departments: depts.map((d) => d.name), leadership: m.leadership,
+    parishId: m.parish ? String(m.parish) : "", parish: m.parish ? n.parish.get(String(m.parish)) : "", area: m.area ? n.area.get(String(m.area)) : "", zone: m.zone ? n.zone.get(String(m.zone)) : "", departments: depts.map((d) => d.name), leadership: m.leadership,
   }, user.role);
   shaped.departmentIds = depts.map((d) => d.id);
   // Under-18 records are only opened in full by the parish administrator (or the super admin); each opening is logged.

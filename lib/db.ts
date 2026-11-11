@@ -132,7 +132,11 @@ async function open(uri: string): Promise<Connection> {
   const conn = mongoose.createConnection(uri, {
     serverSelectionTimeoutMS: 5000,
     connectTimeoutMS: 5000,
-    maxPoolSize: 10,
+    socketTimeoutMS: 30000,
+    // Serverless: many short-lived instances share one Atlas cluster, so keep each instance's pool small and let idle sockets go.
+    maxPoolSize: 5,
+    minPoolSize: 0,
+    maxIdleTimeMS: 30000,
   });
   await conn.asPromise();
   return conn;
@@ -172,7 +176,15 @@ async function connectFirstHealthy(): Promise<{ conn: Connection; id: string }> 
   for (const c of candidates) {
     const started = Date.now();
     try {
-      const conn = await open(c.uri);
+      let conn: Connection;
+      try { conn = await open(c.uri); }
+      catch (first: any) {
+        // Wrong password / bad address will not fix themselves; a timeout often does (Atlas waking up, a cold start).
+        // Only retry quick failures: after a full 5s timeout a second try would push the request past Vercel's 10s limit.
+        if (/bad auth|Authentication failed|ENOTFOUND|querySrv/i.test(String(first?.message)) || Date.now() - started > 2500) throw first;
+        await new Promise((r) => setTimeout(r, 400));
+        conn = await open(c.uri);
+      }
       setHealth(c.id, { ok: true, latencyMs: Date.now() - started });
       if (c !== candidates[0]) {
         cache.failoverNote = `Primary unavailable. Running on "${c.label}".`;
@@ -214,8 +226,8 @@ export async function getDb(): Promise<Models> {
     return cache.models!;
   }
 
-  // Avoid hammering dead databases: after a total failure, fail fast for 8 seconds.
-  if (cache.lastFailAt && Date.now() - cache.lastFailAt < 8000 && !cache.connecting) {
+  // Avoid hammering dead databases: after a total failure, fail fast for 2 seconds (short, so a blip clears quickly).
+  if (cache.lastFailAt && Date.now() - cache.lastFailAt < 2000 && !cache.connecting) {
     throw new AllDatabasesFailedError(cache.lastFailDetail || "");
   }
   if (cache.conn) {

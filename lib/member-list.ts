@@ -33,7 +33,7 @@ export async function listMembers(q: URLSearchParams, user: any, scope: any, lim
   (await deptNames(dids)).forEach((d) => depts.set(d.id, d.name));
   const out = rows.map((m) => shapeMember({
     id: String(m._id), memberId: m.memberId, name: m.name, phone: m.phone, email: m.email, dob: m.dob, gender: m.gender, guardian: m.guardian, category: m.category, status: m.status, joinedAt: m.joinedAt ?? m.createdAt,
-    parishId: String(m.parish), parish: n.parish.get(String(m.parish)), area: m.area ? n.area.get(String(m.area)) : "", zone: n.zone.get(String(m.zone)),
+    parishId: m.parish ? String(m.parish) : "", parish: m.parish ? n.parish.get(String(m.parish)) : "", area: m.area ? n.area.get(String(m.area)) : "", zone: m.zone ? n.zone.get(String(m.zone)) : "",
     departments: (m.departments ?? []).map((d: any) => depts.get(String(d))).filter(Boolean), leadership: m.leadership,
   }, user.role));
   return { rows: out, total, page, pages: Math.ceil(total / limit) };

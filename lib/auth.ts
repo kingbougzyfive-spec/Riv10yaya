@@ -68,10 +68,16 @@ export async function getUser(): Promise<SessionUser | null> {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;
-  try {
-    const { payload } = await jwtVerify(token, await ensureSecret());
-    const { User } = await getDb();
-    const u = await User.findById(payload.uid).lean<any>();
+  // Database trouble (a brief Atlas/Vercel blip) must NEVER look like "signed out": those errors propagate so the page
+  // shows a "reconnecting" screen and the session stays valid. Only a bad, forged or expired token means signed out.
+  const key = await ensureSecret();
+  let payload: any;
+  try { ({ payload } = await jwtVerify(token, key)); } catch { return null; }
+  const { User } = await getDb();
+  let u: any;
+  try { u = await User.findById(payload.uid).lean<any>(); }
+  catch (e: any) { if (/not reach any configured database/i.test(String(e?.message))) throw e; await new Promise((r) => setTimeout(r, 400)); u = await User.findById(payload.uid).lean<any>(); }
+  {
     if (!u || !u.active) return null;
     if (Number(payload.sv ?? 0) !== Number(u.sessionVersion ?? 0)) return null;
     return {
@@ -85,8 +91,6 @@ export async function getUser(): Promise<SessionUser | null> {
       parish: u.parish ? String(u.parish) : undefined,
       mustChange: !!u.mustChangePassword,
     };
-  } catch {
-    return null;
   }
 }
 
