@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, Copy, Database, Loader2, Plus, RefreshCw, 
 import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm, useTextPrompt } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { cn } from "@/lib/cn";
 
@@ -14,6 +15,8 @@ type C = {
 
 export function DatabaseManager() {
   const toast = useToast();
+  const confirm = useConfirm();
+  const askText = useTextPrompt();
   const [conns, setConns] = useState<C[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -53,7 +56,7 @@ export function DatabaseManager() {
           <li>It automatically returns to the Active database once it's healthy again (checked every minute).</li>
           <li>A backup is only useful if it holds your data: use <b className="text-white">Copy data here</b> regularly to refresh it. Copying never deletes anything on the backup.</li>
         </ul>
-        <p className="mt-3 text-xs text-white/45">{conns ? `${healthy} of ${conns.filter((c) => c.enabled).length} enabled connections healthy.` : ""}</p>
+        <p className="mt-3 text-xs text-white/65">{conns ? `${healthy} of ${conns.filter((c) => c.enabled).length} enabled connections healthy.` : ""}</p>
       </div>
 
       <div className="grid gap-4">
@@ -62,10 +65,10 @@ export function DatabaseManager() {
           <motion.div key={c.id} layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className={cn("glass p-5", c.isRunning && "ring-1 ring-emerald-400/40")}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-xl", c.health?.ok ? "bg-emerald-500/15 text-emerald-300" : c.health ? "bg-red-500/15 text-red-300" : "bg-white/10 text-white/50")}><Database className="h-5 w-5" /></div>
+                <div className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-xl", c.health?.ok ? "bg-emerald-500/15 text-emerald-300" : c.health ? "bg-red-500/15 text-red-300" : "bg-white/10 text-white/65")}><Database className="h-5 w-5" /></div>
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 truncate font-bold">{c.label}{c.isActive && <Star className="h-4 w-4 shrink-0 fill-accent text-accent" aria-label="Active" />}</p>
-                  <p className="truncate text-xs text-white/45">{c.host}</p>
+                  <p className="truncate text-xs text-white/65">{c.host}</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -75,19 +78,19 @@ export function DatabaseManager() {
                 {!c.enabled && <span className="badge badge-bad">Disabled</span>}
               </div>
             </div>
-            <p className="mt-3 truncate rounded-lg bg-black/25 px-3 py-2 font-mono text-[11px] text-white/45">{c.masked}</p>
+            <p className="mt-3 truncate rounded-lg bg-black/25 px-3 py-2 font-mono text-[11px] text-white/65">{c.masked}</p>
             <div className="mt-3 flex items-center gap-2 text-xs">
-              {c.health?.ok ? <><CheckCircle2 className="h-4 w-4 text-emerald-400" /><span className="text-emerald-300">Healthy{c.health.latencyMs != null ? ` · ${c.health.latencyMs} ms` : ""}</span></> : c.health ? <><XCircle className="h-4 w-4 text-red-400" /><span className="text-red-300">{c.health.error || "Unreachable"}</span></> : <span className="text-white/40">Not checked yet</span>}
-              <span className="ml-auto text-white/35">Priority {c.priority}</span>
+              {c.health?.ok ? <><CheckCircle2 className="h-4 w-4 text-emerald-400" /><span className="text-emerald-300">Healthy{c.health.latencyMs != null ? ` · ${c.health.latencyMs} ms` : ""}</span></> : c.health ? <><XCircle className="h-4 w-4 text-red-400" /><span className="text-red-300">{c.health.error || "Unreachable"}</span></> : <span className="text-white/65">Not checked yet</span>}
+              <span className="ml-auto text-white/65">Priority {c.priority}</span>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {!c.isActive && c.enabled && <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => act(c.id, { action: "activate" }, "Switched. This database is now active.")}>{busy === c.id + "activate" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Star className="h-3.5 w-3.5" />}Make active</button>}
-              {!c.isRunning && c.health?.ok && <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => confirm(`Copy all data from the database in use into "${c.label}"? Existing records with the same ID will be overwritten; nothing is deleted.`) && act(c.id, { action: "sync" }, "")}>{busy === c.id + "sync" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}Copy data here</button>}
+              {!c.isRunning && c.health?.ok && <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={async () => (await confirm({ title: `Copy data into "${c.label}"?`, message: "Existing records with the same ID will be overwritten; nothing is deleted.", confirmLabel: "Copy data", tone: "default" })) && act(c.id, { action: "sync" }, "")}>{busy === c.id + "sync" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}Copy data here</button>}
               {c.source === "managed" && <>
                 <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => act(c.id, { action: "update", enabled: !c.enabled }, c.enabled ? "Disabled" : "Enabled")}>{c.enabled ? "Disable" : "Enable"}</button>
-                <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => { const v = prompt("Priority (1 = tried first after the active one)", String(c.priority)); if (v) act(c.id, { action: "update", priority: Number(v) }, "Priority saved"); }}>Priority</button>
-                <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => { const v = prompt("New name", c.label); if (v) act(c.id, { action: "update", label: v }, "Renamed"); }}>Rename</button>
-                <button className="btn btn-danger btn-sm ml-auto" disabled={!!busy} onClick={() => confirm(`Remove "${c.label}"? The database itself is not touched.`) && act(c.id, { action: "remove" }, "Removed")}><Trash2 className="h-3.5 w-3.5" />Remove</button>
+                <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={async () => { const v = await askText({ title: "Set priority", message: "1 = tried first after the active one", input: { label: "Priority", initial: String(c.priority) } }); if (v) act(c.id, { action: "update", priority: Number(v) }, "Priority saved"); }}>Priority</button>
+                <button className="btn btn-ghost btn-sm" disabled={!!busy} onClick={async () => { const v = await askText({ title: "Rename connection", input: { label: "New name", initial: c.label } }); if (v) act(c.id, { action: "update", label: v }, "Renamed"); }}>Rename</button>
+                <button className="btn btn-danger btn-sm ml-auto" disabled={!!busy} onClick={async () => (await confirm({ title: `Remove "${c.label}"?`, message: "The database itself is not touched.", confirmLabel: "Remove" })) && act(c.id, { action: "remove" }, "Removed")}><Trash2 className="h-3.5 w-3.5" />Remove</button>
               </>}
             </div>
           </motion.div>

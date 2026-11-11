@@ -39,7 +39,7 @@ export function HomeView({ site, counts, preview, next }: { site: SiteData; coun
       {!preview && <section className="mx-auto max-w-6xl px-5 pt-16 sm:px-6"><SectionTitle eyebrow="News" title="Latest announcements" /><AnnouncementsList limit={2} /></section>}
       {site.sections.leadership && <Leaders site={site} limit={4} />}
       {site.sections.gallery && <Gallery site={site} limit={6} />}
-      {!preview && <section className="mx-auto max-w-6xl px-5 pt-16 sm:px-6"><div className="glass grid justify-items-center gap-4 p-8 text-center sm:p-12"><p className="text-xs font-bold uppercase tracking-widest text-accent">Be part of it</p><h2 className="gradient-text max-w-xl text-3xl font-black sm:text-4xl">Find your parish. Find your people.</h2><p className="max-w-lg text-white/60">Create your free profile in under a minute and never miss an event.</p><div className="flex flex-wrap justify-center gap-3"><Link href="/join" className="btn btn-primary px-6 py-3">Join the community</Link><Link href="/events" className="btn btn-ghost px-6 py-3">Register for an event</Link></div></div></section>}
+      {!preview && <section className="mx-auto max-w-6xl px-5 pt-16 sm:px-6"><div className="glass grid justify-items-center gap-4 p-8 text-center sm:p-12"><p className="text-xs font-bold uppercase tracking-widest text-accent">Be part of it</p><h2 className="gradient-text max-w-xl text-3xl font-black sm:text-4xl">Find your parish. Find your people.</h2><p className="max-w-lg text-white/65">Create your free profile in under a minute and never miss an event.</p><div className="flex flex-wrap justify-center gap-3"><Link href="/join" className="btn btn-primary px-6 py-3">Join the community</Link><Link href="/events" className="btn btn-ghost px-6 py-3">Register for an event</Link></div></div></section>}
       {site.sections.contact && <ContactBlock site={site} />}
     </Frame>
   );
@@ -75,7 +75,7 @@ export function ZonesView({ site, zones }: { site: SiteData; zones: { id: string
     <Frame site={site} current="/zones">
       <section className="mx-auto max-w-6xl px-5 py-14 sm:px-6">
         <SectionTitle eyebrow="Structure" title="Zones, areas and parishes">Our family is organised into zones. Some zones have areas; others have parishes directly under them.</SectionTitle>
-        {zones.length === 0 && <p className="glass p-6 text-white/55">No zones have been published yet.</p>}
+        {zones.length === 0 && <p className="glass p-6 text-white/65">No zones have been published yet.</p>}
         <div className="grid gap-5 md:grid-cols-2">
           {zones.map((z, i) => (
             <Reveal key={z.id} delay={(i % 2) * 0.08}>
@@ -84,7 +84,7 @@ export function ZonesView({ site, zones }: { site: SiteData; zones: { id: string
                 {z.hasAreas ? (
                   <ul className="mt-4 space-y-3">
                     {z.areas.map((a) => (
-                      <li key={a.id}><p className="text-sm font-semibold text-accent">{a.name}</p><p className="text-xs text-white/55">{a.parishes.length ? a.parishes.join(" • ") : "No parishes yet"}</p></li>
+                      <li key={a.id}><p className="text-sm font-semibold text-accent">{a.name}</p><p className="text-xs text-white/65">{a.parishes.length ? a.parishes.join(" • ") : "No parishes yet"}</p></li>
                     ))}
                   </ul>
                 ) : (

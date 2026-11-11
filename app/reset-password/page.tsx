@@ -21,7 +21,7 @@ function Form() {
     try { await api("/api/auth/reset", { method: "POST", json: { token, password: pw } }); toast.ok("Password updated. Please sign in."); router.push("/login"); }
     catch (er: any) { toast.err(er.message); setBusy(false); }
   }
-  if (!token) return <p className="text-sm text-white/60">This link is missing its token. <Link href="/forgot-password" className="text-brand underline">Request a new one</Link>.</p>;
+  if (!token) return <p className="text-sm text-white/65">This link is missing its token. <Link href="/forgot-password" className="text-brand underline">Request a new one</Link>.</p>;
   return (
     <form onSubmit={submit} className="space-y-4">
       <div><label className="label">New password</label><input className="input" type="password" minLength={10} required autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /><p className="hint">At least 10 characters.</p></div>

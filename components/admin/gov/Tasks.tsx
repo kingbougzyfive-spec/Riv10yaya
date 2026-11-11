@@ -20,7 +20,7 @@ export function Tasks({ me, canEdit, committee, meeting }: { me: Me; canEdit: bo
   const s = d?.stats;
   return (
     <>
-      {s && <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">{[["Total", s.total], ["To do", s.open], ["In progress", s.inProgress], ["Done", `${s.done} (${s.pct}%)`], ["Overdue", s.overdue]].map(([l, v], i) => <div key={l as string} className={cn("glass p-3", l === "Overdue" && s.overdue > 0 && "ring-1 ring-red-400/50")}><p className="text-[11px] uppercase tracking-wide text-white/50">{l}</p><p className="text-xl font-extrabold">{v}</p></div>)}</div>}
+      {s && <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">{[["Total", s.total], ["To do", s.open], ["In progress", s.inProgress], ["Done", `${s.done} (${s.pct}%)`], ["Overdue", s.overdue]].map(([l, v], i) => <div key={l as string} className={cn("glass p-3", l === "Overdue" && s.overdue > 0 && "ring-1 ring-red-400/50")}><p className="text-[11px] uppercase tracking-wide text-white/65">{l}</p><p className="text-xl font-extrabold">{v}</p></div>)}</div>}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <select className="input !w-auto" value={st} onChange={(e) => setSt(e.target.value)}><option value="">Any status</option>{TASK_STATUSES.map((x) => <option key={x} value={x}>{TASK_LABEL[x]}</option>)}</select>
         <label className="flex items-center gap-2 text-sm text-white/70"><input type="checkbox" checked={over} onChange={(e) => setOver(e.target.checked)} />Overdue only</label>
@@ -29,10 +29,10 @@ export function Tasks({ me, canEdit, committee, meeting }: { me: Me; canEdit: bo
       {!d && <div className="skeleton h-24" />}
       <div className="space-y-2">{d?.rows.map((t: any) => (
         <button key={t.id} onClick={() => setSel(t)} className="glass flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition hover:-translate-y-0.5">
-          <div className="min-w-0"><p className="truncate font-semibold">{t.title}</p><p className="truncate text-xs text-white/50">{t.assigneeName || "Unassigned"} · {t.place}{t.dueAt ? ` · due ${fmt(t.dueAt)}` : ""}</p></div>
+          <div className="min-w-0"><p className="truncate font-semibold">{t.title}</p><p className="truncate text-xs text-white/65">{t.assigneeName || "Unassigned"} · {t.place}{t.dueAt ? ` · due ${fmt(t.dueAt)}` : ""}</p></div>
           <div className="flex items-center gap-2">{t.priority === "high" && <span className="badge badge-bad">High</span>}{t.overdue && <span className="badge badge-bad">Overdue</span>}<LevelBadge level={t.level} /><span className={TASK_BADGE[t.status]}>{TASK_LABEL[t.status]}</span></div>
         </button>))}
-        {d?.rows.length === 0 && <div className="glass p-10 text-center text-white/50">No tasks match.</div>}</div>
+        {d?.rows.length === 0 && <div className="glass p-10 text-center text-white/65">No tasks match.</div>}</div>
       {add && <AddTask me={me} committee={committee} meeting={meeting} onClose={() => setAdd(false)} onDone={() => { setAdd(false); load(); }} />}
       {sel && <TaskDetail t={sel} onClose={() => setSel(null)} onDone={() => { setSel(null); load(); }} />}
     </>
@@ -68,7 +68,7 @@ function AddTask({ me, committee, meeting, onClose, onDone }: { me: Me; committe
         <Field label="Task"><input className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="What needs to be done?" /></Field>
         <Field label="Details"><textarea className="input min-h-[70px]" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field>
         {!meeting && <MemberPicker org={pickerOrg} value={who} onChange={setWho} label="Assign to" />}
-        {meeting && <p className="text-xs text-white/50">Assign to someone from the meeting's attendance list on the meeting itself.</p>}
+        {meeting && <p className="text-xs text-white/65">Assign to someone from the meeting's attendance list on the meeting itself.</p>}
         <div className="grid gap-3 sm:grid-cols-2"><Field label="Deadline"><input className="input" type="date" min={today()} value={f.dueAt} onChange={(e) => setF({ ...f, dueAt: e.target.value })} /></Field><Field label="Priority"><select className="input" value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value })}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></Field></div>
         <button className="btn btn-primary w-full py-3" disabled={busy || f.title.trim().length < 2} onClick={save}>{busy && <Loader2 className="h-4 w-4 animate-spin" />}Create task</button>
       </div>
@@ -86,7 +86,7 @@ function TaskDetail({ t, onClose, onDone }: { t: any; onClose: () => void; onDon
   const finished = t.status === "done" || t.status === "cancelled";
   return (
     <Modal open onClose={onClose} title={t.title} wide>
-      <p className="mb-1 text-sm text-white/60">{t.place} · {t.assigneeName || "Unassigned"} · {t.dueAt ? `due ${fmt(t.dueAt)}` : "no deadline"} · <span className={TASK_BADGE[t.status]}>{TASK_LABEL[t.status]}</span>{t.overdue && <span className="badge badge-bad ml-1">Overdue</span>}</p>
+      <p className="mb-1 text-sm text-white/65">{t.place} · {t.assigneeName || "Unassigned"} · {t.dueAt ? `due ${fmt(t.dueAt)}` : "no deadline"} · <span className={TASK_BADGE[t.status]}>{TASK_LABEL[t.status]}</span>{t.overdue && <span className="badge badge-bad ml-1">Overdue</span>}</p>
       {t.description && <p className="mb-3 text-sm">{t.description}</p>}
       {t.canManage && (
         <div className="space-y-4">
@@ -97,7 +97,7 @@ function TaskDetail({ t, onClose, onDone }: { t: any; onClose: () => void; onDon
         </div>
       )}
       <p className="mb-1 mt-5 text-sm font-bold">History</p>
-      <ul className="space-y-1 text-xs text-white/60">{t.updates.map((u: any, i: number) => <li key={i}>{fmtDT(u.at)} · {u.byName} · {u.note || u.status}</li>)}</ul>
+      <ul className="space-y-1 text-xs text-white/65">{t.updates.map((u: any, i: number) => <li key={i}>{fmtDT(u.at)} · {u.byName} · {u.note || u.status}</li>)}</ul>
     </Modal>
   );
 }

@@ -3,6 +3,7 @@ import { FileText, Loader2, Lock, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { LEVEL_LABEL, LEVELS } from "@/lib/governance";
 import { defaultOrg, Field, fmt, LevelBadge, OrgPicker, type Me, type OrgVal } from "./shared";
@@ -12,6 +13,7 @@ const size = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `$
 
 export function Documents({ me, canEdit }: { me: Me; canEdit: boolean }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<any[] | null>(null);
   const [cat, setCat] = useState("");
   const [lv, setLv] = useState("");
@@ -23,16 +25,16 @@ export function Documents({ me, canEdit }: { me: Me; canEdit: boolean }) {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <select className="input !w-auto" value={cat} onChange={(e) => setCat(e.target.value)}><option value="">All types</option>{CATS.map((c) => <option key={c} value={c} className="capitalize">{c}</option>)}</select>
         <select className="input !w-auto" value={lv} onChange={(e) => setLv(e.target.value)}><option value="">All levels</option>{LEVELS.map((l) => <option key={l} value={l}>{LEVEL_LABEL[l]}</option>)}</select>
-        <p className="flex items-center gap-1.5 text-xs text-white/50"><Lock className="h-3.5 w-3.5" />Only administrators of the level (and above) can open a document.</p>
+        <p className="flex items-center gap-1.5 text-xs text-white/65"><Lock className="h-3.5 w-3.5" />Only administrators of the level (and above) can open a document.</p>
         {canEdit && <button className="btn btn-primary ml-auto" onClick={() => setAdd(true)}><Plus className="h-4 w-4" />Upload document</button>}
       </div>
       {!rows && <div className="skeleton h-24" />}
       <div className="space-y-2">{rows?.map((d) => (
         <div key={d.id} className="glass flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <a href={`/api/media/${d.mediaId}`} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-3 hover:text-brand"><FileText className="h-5 w-5 shrink-0 text-brand" /><span className="min-w-0"><b className="block truncate">{d.title}</b><span className="block truncate text-xs text-white/50">{d.fileName} · {size(d.size)} · {d.place} · {d.uploadedByName} · {fmt(d.at)}</span></span></a>
-          <div className="flex items-center gap-2"><span className="badge capitalize">{d.category}</span><LevelBadge level={d.level} />{d.canManage && <button className="btn btn-ghost btn-sm" aria-label="Delete" onClick={async () => { if (!confirm(`Delete "${d.title}"? This can't be undone.`)) return; try { await api(`/api/governance/documents/${d.id}`, { method: "DELETE" }); toast.ok("Deleted"); load(); } catch (e: any) { toast.err(e.message); } }}><Trash2 className="h-3.5 w-3.5" /></button>}</div>
+          <a href={`/api/media/${d.mediaId}`} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-3 hover:text-brand"><FileText className="h-5 w-5 shrink-0 text-brand" /><span className="min-w-0"><b className="block truncate">{d.title}</b><span className="block truncate text-xs text-white/65">{d.fileName} · {size(d.size)} · {d.place} · {d.uploadedByName} · {fmt(d.at)}</span></span></a>
+          <div className="flex items-center gap-2"><span className="badge capitalize">{d.category}</span><LevelBadge level={d.level} />{d.canManage && <button className="btn btn-ghost btn-sm" aria-label="Delete" onClick={async () => { if (!(await confirm({ title: `Delete "${d.title}"?`, message: "This can't be undone.", confirmLabel: "Delete" }))) return; try { await api(`/api/governance/documents/${d.id}`, { method: "DELETE" }); toast.ok("Deleted"); load(); } catch (e: any) { toast.err(e.message); } }}><Trash2 className="h-3.5 w-3.5" /></button>}</div>
         </div>))}
-        {rows?.length === 0 && <div className="glass p-10 text-center text-white/50">No documents yet.</div>}</div>
+        {rows?.length === 0 && <div className="glass p-10 text-center text-white/65">No documents yet.</div>}</div>
       {add && <Upload me={me} onClose={() => setAdd(false)} onDone={() => { setAdd(false); load(); }} />}
     </>
   );

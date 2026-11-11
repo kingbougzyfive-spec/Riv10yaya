@@ -40,7 +40,7 @@ export function EvidenceUpload({ value, onChange, label = "Payment evidence" }: 
       {value ? (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm">
           <span className="flex min-w-0 items-center gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" /><span className="truncate">{name || "Uploaded"}</span></span>
-          <button type="button" onClick={() => { onChange("", ""); setName(""); }} aria-label="Remove"><X className="h-4 w-4 text-white/50 hover:text-white" /></button>
+          <button type="button" onClick={() => { onChange("", ""); setName(""); }} aria-label="Remove"><X className="h-4 w-4 text-white/65 hover:text-white" /></button>
         </div>
       ) : (
         <button type="button" onClick={() => ref.current?.click()} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/15 px-4 py-4 text-sm text-white/65 transition hover:border-brand hover:text-white">
@@ -77,7 +77,7 @@ export function ContactSection({ value, onChange }: { value: Contact; onChange: 
   return (
     <section className="glass p-5 sm:p-6">
       <h3 className="mb-1 flex items-center gap-2 text-sm font-black tracking-wider"><Phone className="h-4 w-4 text-accent" />ADMINISTRATOR'S CONTACT INFORMATION</h3>
-      <p className="mb-4 text-xs text-white/50">Confirm these details each month. They're saved with this report so provincial leaders can call you directly. They are never shown publicly.</p>
+      <p className="mb-4 text-xs text-white/65">Confirm these details each month. They're saved with this report so provincial leaders can call you directly. They are never shown publicly.</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2"><label className="label">Full name of administrator submitting the report <span className="text-accent">*</span></label><input className="input" autoComplete="name" value={value.fullName} onChange={(e) => onChange({ ...value, fullName: e.target.value })} /></div>
         <div><label className="label">Active phone number <span className="text-accent">*</span></label><input className="input" type="tel" inputMode="tel" autoComplete="tel" placeholder="0803 000 0000" value={value.phone} onChange={(e) => onChange({ ...value, phone: e.target.value })} /></div>

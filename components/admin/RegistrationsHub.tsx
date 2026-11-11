@@ -11,7 +11,7 @@ export function RegistrationsHub({ canCheckIn }: { canCheckIn: boolean }) {
   useEffect(() => { api("/api/events").then((r) => { setEvents(r.events); setId(r.events.find((e: any) => e.status === "published")?.id ?? r.events[0]?.id ?? ""); }).catch((e) => setErr(e.message)); }, []);
   if (err) return <p className="text-red-300">{err}</p>;
   if (!events) return <div className="skeleton h-40" />;
-  if (!events.length) return <p className="glass p-8 text-center text-white/60">No events yet. Create one under Events first.</p>;
+  if (!events.length) return <p className="glass p-8 text-center text-white/65">No events yet. Create one under Events first.</p>;
   return (
     <div className="space-y-5">
       <div className="glass max-w-xl p-4"><label className="label">Event</label>

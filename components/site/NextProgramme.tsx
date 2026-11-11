@@ -25,7 +25,7 @@ export function NextProgramme({ event }: { event: NextEvent }) {
         {left !== null && left > 0 && (
           <div className="flex gap-2" aria-label="Time until the event starts">
             {[["days", Math.floor(s / 86400)], ["hrs", pad(Math.floor((s % 86400) / 3600))], ["min", pad(Math.floor((s % 3600) / 60))], ["sec", pad(s % 60)]].map(([l, v]) => (
-              <div key={l as string} className="min-w-[3.4rem] rounded-xl border border-white/10 bg-white/5 px-2 py-1.5 text-center"><p className="text-xl font-black tabular-nums">{v}</p><p className="text-[10px] uppercase tracking-widest text-white/50">{l}</p></div>
+              <div key={l as string} className="min-w-[3.4rem] rounded-xl border border-white/10 bg-white/5 px-2 py-1.5 text-center"><p className="text-xl font-black tabular-nums">{v}</p><p className="text-[10px] uppercase tracking-widest text-white/65">{l}</p></div>
             ))}
           </div>
         )}

@@ -21,7 +21,7 @@ export function AreaField(p: { label: string; value: string; onChange: (v: strin
   return (
     <Field label={p.label} hint={p.hint}>
       <textarea className="input resize-y leading-relaxed" rows={p.rows || 4} value={p.value} maxLength={p.max} onChange={(e) => p.onChange(e.target.value)} />
-      {p.max && <p className="mt-1 text-right text-[10px] text-white/30">{p.value.length}/{p.max}</p>}
+      {p.max && <p className="mt-1 text-right text-[10px] text-white/65">{p.value.length}/{p.max}</p>}
     </Field>
   );
 }
@@ -40,7 +40,7 @@ export function ColorField({ label, value, onChange, hint }: { label: string; va
 export function Toggle({ label, checked, onChange, hint }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string }) {
   return (
     <button type="button" onClick={() => onChange(!checked)} className="flex w-full items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:bg-white/10" role="switch" aria-checked={checked}>
-      <span><span className="block text-sm font-medium">{label}</span>{hint && <span className="block text-xs text-white/45">{hint}</span>}</span>
+      <span><span className="block text-sm font-medium">{label}</span>{hint && <span className="block text-xs text-white/65">{hint}</span>}</span>
       <span className={cn("relative h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-brand" : "bg-white/20")}>
         <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-[#fff] shadow transition-all", checked ? "left-[22px]" : "left-0.5")} />
       </span>
@@ -58,7 +58,7 @@ export function ImageField({ label, value, onChange, hint, round }: { label: str
           {url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={url} alt="" className="h-full w-full object-cover" />
-          ) : <ImageIcon className="h-6 w-6 text-white/35 transition group-hover:text-brand" />}
+          ) : <ImageIcon className="h-6 w-6 text-white/65 transition group-hover:text-brand" />}
         </button>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>{url ? "Change" : "Choose image"}</button>

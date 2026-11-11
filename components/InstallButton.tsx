@@ -66,14 +66,14 @@ export function InstallPanel() {
             <li>Tap <b>Install now</b> above if you see it, or</li>
             <li className={step}>tap the <MoreVertical className="h-4 w-4" /> menu, then <b>Install app</b> (or <b>Add to Home screen</b>).</li>
           </ol>
-          <p className="mt-2 text-xs text-white/45">Samsung Internet: menu, then Add page to, then Home screen.</p>
+          <p className="mt-2 text-xs text-white/65">Samsung Internet: menu, then Add page to, then Home screen.</p>
         </Card>
         <Card icon={<MonitorSmartphone className="h-4 w-4" />} title="Computer (Chrome / Edge)" active={plat === "desktop"}>
           <p>Click the install icon at the right of the address bar, or open the browser menu and choose <b>Install</b>.</p>
-          <p className="mt-2 text-xs text-white/45">Firefox on a computer can't install web apps. Use Chrome or Edge, or just keep the site bookmarked.</p>
+          <p className="mt-2 text-xs text-white/65">Firefox on a computer can't install web apps. Use Chrome or Edge, or just keep the site bookmarked.</p>
         </Card>
       </div>
-      <p className="text-xs text-white/45">Installing is optional. The website works in any browser. Once installed, public pages you have already opened can be read offline, but payments, reports and approvals always need an internet connection.</p>
+      <p className="text-xs text-white/65">Installing is optional. The website works in any browser. Once installed, public pages you have already opened can be read offline, but payments, reports and approvals always need an internet connection.</p>
     </div>
   );
 }

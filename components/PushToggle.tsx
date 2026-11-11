@@ -56,8 +56,8 @@ export function PushToggle() {
   }
 
   if (state === "hidden") return null;
-  if (state === "ios-install") return <p className="max-w-md text-sm text-white/55">On iPhone and iPad, notifications work only after you add the app to your Home Screen (Safari, Share, Add to Home Screen) on iOS or iPadOS 16.4 or later. Open it from the Home Screen icon, then come back here and tap Turn on notifications. Delivery depends on your device and Apple's rules, and is not identical to Android or a computer.</p>;
-  if (state === "blocked") return <p className="flex items-center gap-2 text-sm text-white/55"><BellOff className="h-4 w-4" />Notifications are blocked in your browser settings for this site.</p>;
+  if (state === "ios-install") return <p className="max-w-md text-sm text-white/65">On iPhone and iPad, notifications work only after you add the app to your Home Screen (Safari, Share, Add to Home Screen) on iOS or iPadOS 16.4 or later. Open it from the Home Screen icon, then come back here and tap Turn on notifications. Delivery depends on your device and Apple's rules, and is not identical to Android or a computer.</p>;
+  if (state === "blocked") return <p className="flex items-center gap-2 text-sm text-white/65"><BellOff className="h-4 w-4" />Notifications are blocked in your browser settings for this site.</p>;
   return state === "on"
     ? <button className="btn btn-ghost" disabled={busy} onClick={disable}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellOff className="h-4 w-4" />}Turn off notifications</button>
     : <button className="btn btn-primary" disabled={busy} onClick={enable}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}Turn on notifications</button>;

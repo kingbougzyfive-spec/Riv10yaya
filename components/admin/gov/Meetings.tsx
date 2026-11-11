@@ -22,10 +22,10 @@ export function Meetings({ me, canEdit }: { me: Me; canEdit: boolean }) {
       {!rows && <div className="skeleton h-24" />}
       <div className="space-y-2">{rows?.map((m) => (
         <button key={m.id} onClick={() => setOpen(m.id)} className="glass flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition hover:-translate-y-0.5">
-          <div className="min-w-0"><p className="truncate font-semibold">{m.title}</p><p className="truncate text-xs text-white/50">{fmtDT(m.scheduledAt)} · {m.place}{m.venue ? ` · ${m.venue}` : ""}</p></div>
+          <div className="min-w-0"><p className="truncate font-semibold">{m.title}</p><p className="truncate text-xs text-white/65">{fmtDT(m.scheduledAt)} · {m.place}{m.venue ? ` · ${m.venue}` : ""}</p></div>
           <div className="flex items-center gap-2">{m.attendance.total > 0 && m.status === "held" && <span className="badge">{m.attendance.present}/{m.attendance.total} present</span>}{m.hasMinutes && <span className="badge badge-ok">Minutes</span>}<LevelBadge level={m.level} /><span className={ST[m.status]}>{m.status}</span></div>
         </button>))}
-        {rows?.length === 0 && <div className="glass p-10 text-center text-white/50">No meetings yet.</div>}</div>
+        {rows?.length === 0 && <div className="glass p-10 text-center text-white/65">No meetings yet.</div>}</div>
       {add && <AddMeeting me={me} onClose={() => setAdd(false)} onDone={(id) => { setAdd(false); load(); setOpen(id); }} />}
       {open && <Detail id={open} canEdit={canEdit} onClose={() => { setOpen(null); load(); }} />}
     </>
@@ -94,33 +94,33 @@ function Detail({ id, canEdit, onClose }: { id: string; canEdit: boolean; onClos
             <div className="space-y-3 text-sm">
               <p>{fmtDT(m.scheduledAt)}{m.venue ? ` · ${m.venue}` : ""} · {LEVEL_LABEL[m.level as GLevel]} · {m.place} · <span className={ST[m.status]}>{m.status}</span></p>
               {m.agenda && <div><p className="mb-1 font-bold">Agenda</p><p className="whitespace-pre-wrap text-white/75">{m.agenda}</p></div>}
-              <p className="text-white/60">Attendance: {m.attendance.present} present, {m.attendance.apology} apologies, {m.attendance.absent} absent of {m.attendance.total}</p>
+              <p className="text-white/65">Attendance: {m.attendance.present} present, {m.attendance.apology} apologies, {m.attendance.absent} absent of {m.attendance.total}</p>
               {edit && m.status === "scheduled" && <button className="btn btn-danger btn-sm" disabled={busy} onClick={() => go({ action: "cancel" }, "Meeting cancelled")}>Cancel meeting</button>}
             </div>
           )}
           {tab === "Attendance" && (
             <div className="space-y-3">
-              {!started && <p className="text-sm text-white/55">Attendance opens when the meeting starts ({fmtDT(m.scheduledAt)}).</p>}
-              <ul className="space-y-1.5 text-sm">{d.attendance.map((a: any) => <li key={a.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span>{a.name}</span>{edit && started ? <select className="input !w-auto !py-1 text-xs" value={att[a.id]} onChange={(e) => setAtt({ ...att, [a.id]: e.target.value })}><option value="present">Present</option><option value="apology">Apology</option><option value="absent">Absent</option></select> : <span className="badge capitalize">{a.status}</span>}</li>)}{!d.attendance.length && <li className="text-white/45">No one on the list yet.</li>}</ul>
+              {!started && <p className="text-sm text-white/65">Attendance opens when the meeting starts ({fmtDT(m.scheduledAt)}).</p>}
+              <ul className="space-y-1.5 text-sm">{d.attendance.map((a: any) => <li key={a.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span>{a.name}</span>{edit && started ? <select className="input !w-auto !py-1 text-xs" value={att[a.id]} onChange={(e) => setAtt({ ...att, [a.id]: e.target.value })}><option value="present">Present</option><option value="apology">Apology</option><option value="absent">Absent</option></select> : <span className="badge capitalize">{a.status}</span>}</li>)}{!d.attendance.length && <li className="text-white/65">No one on the list yet.</li>}</ul>
               {edit && started && <><button className="btn btn-primary btn-sm" disabled={busy || !d.attendance.length} onClick={() => go({ action: "attendance", rows: Object.entries(att).map(([id, status]) => ({ id, status })) }, "Attendance saved")}>Save attendance</button>
                 <div className="grid gap-3 border-t border-white/10 pt-3 sm:grid-cols-[1fr_auto] sm:items-end"><MemberPicker org={org} value={extra} onChange={setExtra} label="Add someone not on the list" /><button className="btn btn-ghost" disabled={!extra || busy} onClick={async () => { if (await go({ action: "add_attendee", member: extra!.id }, "Added")) setExtra(null); }}>Add as present</button></div></>}
             </div>
           )}
           {tab === "Minutes" && (
             <div className="space-y-3">
-              {m.minutesAt && <p className="text-xs text-white/50">Recorded by {m.minutesBy} on {fmtDT(m.minutesAt)}. Saving again replaces the text.</p>}
-              {edit ? (started ? <><textarea className="input min-h-[240px]" value={minutes} onChange={(e) => setMinutes(e.target.value)} placeholder="Opening prayer, attendance, discussion, resolutions, closing…" /><button className="btn btn-primary" disabled={busy || minutes.trim().length < 5} onClick={() => go({ action: "minutes", minutes }, "Minutes saved")}>Save minutes</button></> : <p className="text-sm text-white/55">Minutes can be written once the meeting has started.</p>) : <p className="whitespace-pre-wrap text-sm">{m.minutes || "No minutes recorded."}</p>}
+              {m.minutesAt && <p className="text-xs text-white/65">Recorded by {m.minutesBy} on {fmtDT(m.minutesAt)}. Saving again replaces the text.</p>}
+              {edit ? (started ? <><textarea className="input min-h-[240px]" value={minutes} onChange={(e) => setMinutes(e.target.value)} placeholder="Opening prayer, attendance, discussion, resolutions, closing…" /><button className="btn btn-primary" disabled={busy || minutes.trim().length < 5} onClick={() => go({ action: "minutes", minutes }, "Minutes saved")}>Save minutes</button></> : <p className="text-sm text-white/65">Minutes can be written once the meeting has started.</p>) : <p className="whitespace-pre-wrap text-sm">{m.minutes || "No minutes recorded."}</p>}
             </div>
           )}
           {tab === "Decisions & actions" && (
             <div className="space-y-5">
-              <section><p className="mb-2 font-bold">Decisions</p><ul className="space-y-1.5 text-sm">{d.decisions.map((x: any) => <li key={x.id} className="rounded-lg bg-white/5 px-3 py-2">{x.text}<span className="block text-xs text-white/45">{x.byName} · {fmt(x.at)}</span></li>)}{!d.decisions.length && <li className="text-white/45">None recorded.</li>}</ul>
+              <section><p className="mb-2 font-bold">Decisions</p><ul className="space-y-1.5 text-sm">{d.decisions.map((x: any) => <li key={x.id} className="rounded-lg bg-white/5 px-3 py-2">{x.text}<span className="block text-xs text-white/65">{x.byName} · {fmt(x.at)}</span></li>)}{!d.decisions.length && <li className="text-white/65">None recorded.</li>}</ul>
                 {edit && <div className="mt-2 flex gap-2"><input className="input" placeholder="Record a decision" value={dec} onChange={(e) => setDec(e.target.value)} /><button className="btn btn-ghost" disabled={busy || dec.trim().length < 3} onClick={async () => { if (await go({ action: "decision_add", text: dec }, "Decision recorded")) setDec(""); }}>Add</button></div>}</section>
-              <section><p className="mb-2 font-bold">Action points</p><ul className="space-y-1.5 text-sm">{d.tasks.map((t: any) => <li key={t.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span>{t.title}<span className="text-xs text-white/45"> · {t.assigneeName || "Unassigned"}{t.dueAt ? ` · due ${fmt(t.dueAt)}` : ""}</span></span><span className={TASK_BADGE[t.status]}>{TASK_LABEL[t.status]}</span></li>)}{!d.tasks.length && <li className="text-white/45">None recorded.</li>}</ul>
+              <section><p className="mb-2 font-bold">Action points</p><ul className="space-y-1.5 text-sm">{d.tasks.map((t: any) => <li key={t.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span>{t.title}<span className="text-xs text-white/65"> · {t.assigneeName || "Unassigned"}{t.dueAt ? ` · due ${fmt(t.dueAt)}` : ""}</span></span><span className={TASK_BADGE[t.status]}>{TASK_LABEL[t.status]}</span></li>)}{!d.tasks.length && <li className="text-white/65">None recorded.</li>}</ul>
                 {edit && <div className="mt-3 space-y-3 rounded-xl border border-white/10 p-3"><Field label="New action point (becomes a tracked task)"><input className="input" value={act.text} onChange={(e) => setAct({ ...act, text: e.target.value })} /></Field><div className="grid gap-3 sm:grid-cols-2"><MemberPicker org={org} value={who} onChange={setWho} label="Owner" /><Field label="Deadline"><input className="input" type="date" min={today()} value={act.dueAt} onChange={(e) => setAct({ ...act, dueAt: e.target.value })} /></Field></div><button className="btn btn-primary btn-sm" disabled={busy || act.text.trim().length < 3} onClick={async () => { if (await go({ action: "action_add", text: act.text, ...(who ? { assignee: who.id } : {}), ...(act.dueAt ? { dueAt: act.dueAt } : {}) }, "Action point added")) { setAct({ text: "", dueAt: "" }); setWho(null); } }}>Add action point</button></div>}</section>
             </div>
           )}
-          {tab === "Documents" && <ul className="space-y-1.5 text-sm">{d.documents.map((x: any) => <li key={x.id}><a className="flex justify-between rounded-lg bg-white/5 px-3 py-2 hover:bg-white/10" href={`/api/media/${x.mediaId}`} target="_blank" rel="noreferrer"><span>{x.title}</span><span className="text-xs text-white/45">{x.category}</span></a></li>)}{!d.documents.length && <li className="text-white/45">No documents attached. Upload one from the Documents tab and choose this meeting.</li>}</ul>}
+          {tab === "Documents" && <ul className="space-y-1.5 text-sm">{d.documents.map((x: any) => <li key={x.id}><a className="flex justify-between rounded-lg bg-white/5 px-3 py-2 hover:bg-white/10" href={`/api/media/${x.mediaId}`} target="_blank" rel="noreferrer"><span>{x.title}</span><span className="text-xs text-white/65">{x.category}</span></a></li>)}{!d.documents.length && <li className="text-white/65">No documents attached. Upload one from the Documents tab and choose this meeting.</li>}</ul>}
         </>
       )}
     </Modal>

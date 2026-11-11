@@ -27,16 +27,16 @@ export function Leadership({ me, canEdit }: { me: Me; canEdit: boolean }) {
       {!rows && <div className="skeleton h-24" />}
       {groups.map((g) => (
         <section key={g.l} className="mb-6">
-          <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/55">{LEVEL_LABEL[g.l]} leadership</h3>
+          <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/65">{LEVEL_LABEL[g.l]} leadership</h3>
           <div className="grid gap-2.5 md:grid-cols-2">{g.items.map((a) => (
             <button key={a.id} onClick={() => setSel(a)} className="glass p-4 text-left transition hover:-translate-y-0.5">
               <div className="flex items-start justify-between gap-2"><div><p className="font-bold">{a.position}</p><p className="text-sm text-white/80">{a.holderName}</p></div>{a.status === "ended" ? <span className="badge">Ended</span> : <LevelBadge level={a.level} />}</div>
-              <p className="mt-1 text-xs text-white/50">{a.place} · since {fmt(a.startsAt)}</p>
-              {a.responsibilities.length > 0 && <p className="mt-2 line-clamp-2 text-xs text-white/60">{a.responsibilities.join(" · ")}</p>}
+              <p className="mt-1 text-xs text-white/65">{a.place} · since {fmt(a.startsAt)}</p>
+              {a.responsibilities.length > 0 && <p className="mt-2 line-clamp-2 text-xs text-white/65">{a.responsibilities.join(" · ")}</p>}
             </button>))}</div>
         </section>
       ))}
-      {rows && !groups.length && <div className="glass p-10 text-center text-white/50">No leadership appointments yet.</div>}
+      {rows && !groups.length && <div className="glass p-10 text-center text-white/65">No leadership appointments yet.</div>}
       {add && <AddAppointment me={me} onClose={() => setAdd(false)} onDone={() => { setAdd(false); load(); }} />}
       {sel && <Manage a={sel} onClose={() => setSel(null)} onDone={() => { setSel(null); load(); }} />}
     </>
@@ -76,12 +76,12 @@ function Manage({ a, onClose, onDone }: { a: any; onClose: () => void; onDone: (
   const edit = a.canManage && a.status === "active";
   return (
     <Modal open onClose={onClose} title={`${a.position} · ${a.holderName}`} wide>
-      <p className="mb-3 text-sm text-white/60">{a.place} · {LEVEL_LABEL[a.level as GLevel]} · since {fmt(a.startsAt)}{a.status === "ended" ? ` · ended ${fmt(a.endedAt)}: ${a.endedReason}` : ""}</p>
+      <p className="mb-3 text-sm text-white/65">{a.place} · {LEVEL_LABEL[a.level as GLevel]} · since {fmt(a.startsAt)}{a.status === "ended" ? ` · ended ${fmt(a.endedAt)}: ${a.endedReason}` : ""}</p>
       {edit ? <div className="space-y-4"><Field label="Position title"><input className="input" value={pos} onChange={(e) => setPos(e.target.value)} /></Field><Responsibilities value={resp} onChange={setResp} /><button className="btn btn-primary" disabled={busy} onClick={() => go({ action: "update", position: pos, responsibilities: resp }, "Saved")}>Save</button>
         <div className="border-t border-white/10 pt-4"><Field label="End this appointment" hint="The record stays in the history."><input className="input" placeholder="Reason (e.g. term completed)" value={reason} onChange={(e) => setReason(e.target.value)} /></Field><button className="btn btn-danger mt-2" disabled={busy || reason.length < 2} onClick={() => go({ action: "end", reason }, "Appointment ended")}>End appointment</button></div></div>
-        : <ul className="space-y-1 text-sm">{a.responsibilities.map((r: string, i: number) => <li key={i} className="rounded-lg bg-white/5 px-3 py-1.5">{r}</li>)}{!a.responsibilities.length && <li className="text-white/45">No responsibilities recorded.</li>}</ul>}
+        : <ul className="space-y-1 text-sm">{a.responsibilities.map((r: string, i: number) => <li key={i} className="rounded-lg bg-white/5 px-3 py-1.5">{r}</li>)}{!a.responsibilities.length && <li className="text-white/65">No responsibilities recorded.</li>}</ul>}
       <p className="mb-1 mt-5 text-sm font-bold">History</p>
-      <ul className="space-y-1 text-xs text-white/60">{a.history.map((h: any, i: number) => <li key={i}>{fmt(h.at)} · {h.byName} · {h.action}{h.note ? `: ${h.note}` : ""}</li>)}</ul>
+      <ul className="space-y-1 text-xs text-white/65">{a.history.map((h: any, i: number) => <li key={i}>{fmt(h.at)} · {h.byName} · {h.action}{h.note ? `: ${h.note}` : ""}</li>)}</ul>
     </Modal>
   );
 }

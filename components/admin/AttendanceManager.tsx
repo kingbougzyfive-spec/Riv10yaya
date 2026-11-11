@@ -24,7 +24,7 @@ export function AttendanceManager({ role, canCreate }: { role: string; canCreate
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="glass flex gap-1 p-1">{([["sessions", "Sessions", QrIcon], ["report", "Reports", BarChart3]] as const).map(([k, l, I]) => <button key={k} onClick={() => setTab(k)} className={cn("relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold", tab === k ? "text-[#04130d]" : "text-white/60")}>{tab === k && <motion.span layoutId="att-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative flex items-center gap-2"><I className="h-4 w-4" />{l}</span></button>)}</div>
+        <div className="glass flex gap-1 p-1">{([["sessions", "Sessions", QrIcon], ["report", "Reports", BarChart3]] as const).map(([k, l, I]) => <button key={k} onClick={() => setTab(k)} className={cn("relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold", tab === k ? "text-[#04130d]" : "text-white/65")}>{tab === k && <motion.span layoutId="att-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative flex items-center gap-2"><I className="h-4 w-4" />{l}</span></button>)}</div>
         {canCreate && tab === "sessions" && <button className="btn btn-primary" onClick={() => setCreate(true)}><Plus className="h-4 w-4" />New session</button>}
       </div>
       {tab === "sessions" ? (
@@ -33,12 +33,12 @@ export function AttendanceManager({ role, canCreate }: { role: string; canCreate
           {rows?.map((s, i) => (
             <motion.div key={s.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }}>
               <Link href={`/admin/attendance/${s.id}`} className="glass glass-hover flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="min-w-0"><p className="truncate font-bold">{s.title}</p><p className="truncate text-xs text-white/45">{KIND_LABEL[s.kind] ?? s.kind} · {[s.zone, s.area, s.parish].filter(Boolean).join(" → ") || "Province-wide"} · {fmtDT(s.opensAt)}</p></div>
+                <div className="min-w-0"><p className="truncate font-bold">{s.title}</p><p className="truncate text-xs text-white/65">{KIND_LABEL[s.kind] ?? s.kind} · {[s.zone, s.area, s.parish].filter(Boolean).join(" → ") || "Province-wide"} · {fmtDT(s.opensAt)}</p></div>
                 <div className="flex items-center gap-2"><span className={cn("badge capitalize", stateBadge[s.state])}>{s.state}</span><span className="badge">{s.count} present{s.visitors ? ` · ${s.visitors} visitors` : ""}</span></div>
               </Link>
             </motion.div>
           ))}
-          {rows?.length === 0 && <div className="glass p-10 text-center text-white/45">No attendance sessions yet. Create one to get a QR code.</div>}
+          {rows?.length === 0 && <div className="glass p-10 text-center text-white/65">No attendance sessions yet. Create one to get a QR code.</div>}
         </div>
       ) : <Report />}
       {create && <CreateSession role={role} onClose={() => setCreate(false)} onDone={load} />}
@@ -60,8 +60,8 @@ function Report() {
     <div className="space-y-5">
       <div className="flex flex-wrap gap-3"><div><label className="label">From</label><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div><div><label className="label">To</label><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div></div>
       {!d ? <div className="skeleton h-40" /> : (<>
-        <div className="grid grid-cols-3 gap-3">{[["Total attendance", d.total], ["Sessions", d.sessions], ["Visitors", d.visitors]].map(([l, v]) => <div key={l as string} className="glass p-4"><p className="text-2xl font-black">{v}</p><p className="text-[11px] uppercase tracking-wider text-white/45">{l}</p></div>)}</div>
-        {d.trend.length > 0 && <div className="glass p-5"><p className="mb-4 font-bold">Attendance trend</p><div className="flex h-40 items-end gap-1.5 overflow-x-auto">{d.trend.map((t: any) => <div key={t.id} className="group flex min-w-[18px] flex-1 flex-col items-center justify-end gap-1" title={`${t.title}: ${t.count}`}><span className="text-[10px] text-white/50 opacity-0 group-hover:opacity-100">{t.count}</span><motion.div className="w-full rounded-t-md bg-gradient-to-t from-brand/60 to-accent" initial={{ height: 0 }} animate={{ height: `${(t.count / max(d.trend)) * 100}%` }} transition={{ duration: 0.8 }} /></div>)}</div></div>}
+        <div className="grid grid-cols-3 gap-3">{[["Total attendance", d.total], ["Sessions", d.sessions], ["Visitors", d.visitors]].map(([l, v]) => <div key={l as string} className="glass p-4"><p className="text-2xl font-black">{v}</p><p className="text-[11px] uppercase tracking-wider text-white/65">{l}</p></div>)}</div>
+        {d.trend.length > 0 && <div className="glass p-5"><p className="mb-4 font-bold">Attendance trend</p><div className="flex h-40 items-end gap-1.5 overflow-x-auto">{d.trend.map((t: any) => <div key={t.id} className="group flex min-w-[18px] flex-1 flex-col items-center justify-end gap-1" title={`${t.title}: ${t.count}`}><span className="text-[10px] text-white/65 opacity-0 group-hover:opacity-100">{t.count}</span><motion.div className="w-full rounded-t-md bg-gradient-to-t from-brand/60 to-accent" initial={{ height: 0 }} animate={{ height: `${(t.count / max(d.trend)) * 100}%` }} transition={{ duration: 0.8 }} /></div>)}</div></div>}
         <div className="grid gap-5 lg:grid-cols-3"><Bars title="By zone" list={d.byZone} /><Bars title="By area" list={d.byArea} /><Bars title="By parish" list={d.byParish} /></div>
       </>)}
     </div>

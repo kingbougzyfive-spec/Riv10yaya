@@ -29,13 +29,13 @@ export default async function Page() {
         <h1 className="text-4xl font-black">Our structure</h1>
         <p className="mt-3 max-w-2xl text-white/65">{zones.length} zones, {tot.areas} areas and {tot.parishes} parishes, working together under one provincial Youth leadership.</p>
         <ol className="mt-10 grid gap-4 sm:grid-cols-2">{steps.map((s, i) => (
-          <li key={s.t} className="glass flex gap-4 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand"><s.icon className="h-5 w-5" /></span><div><p className="font-bold">{i + 1}. {s.t}</p><p className="mt-1 text-sm text-white/60">{s.d}</p></div></li>
+          <li key={s.t} className="glass flex gap-4 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand"><s.icon className="h-5 w-5" /></span><div><p className="font-bold">{i + 1}. {s.t}</p><p className="mt-1 text-sm text-white/65">{s.d}</p></div></li>
         ))}</ol>
         {zones.length > 0 && (
           <div className="mt-12">
             <div className="mb-4 flex items-end justify-between"><h2 className="text-2xl font-black">Zones</h2><Link href="/zones" className="text-sm text-brand underline">See every area and parish</Link></div>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{zones.map((z) => (
-              <li key={z.id} className="glass p-4"><p className="font-bold">{z.name}</p><p className="mt-1 text-sm text-white/55">{z.hasAreas ? `${z.areas} area${z.areas === 1 ? "" : "s"} · ` : "Standalone zone · "}{z.parishes} parish{z.parishes === 1 ? "" : "es"}</p></li>
+              <li key={z.id} className="glass p-4"><p className="font-bold">{z.name}</p><p className="mt-1 text-sm text-white/65">{z.hasAreas ? `${z.areas} area${z.areas === 1 ? "" : "s"} · ` : "Standalone zone · "}{z.parishes} parish{z.parishes === 1 ? "" : "es"}</p></li>
             ))}</ul>
           </div>
         )}

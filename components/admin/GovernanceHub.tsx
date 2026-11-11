@@ -19,8 +19,8 @@ export function GovernanceHub({ me, canEdit, tabs = TABS }: { me: Me; canEdit: b
   const [tab, setTab] = useState<GovTab>(tabs[0]);
   return (
     <>
-      {tabs.length > 1 && <div className="glass mb-5 flex gap-1 overflow-x-auto p-1">{tabs.map((t) => <button key={t} onClick={() => setTab(t)} className={cn("relative whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold", tab === t ? "text-[#04130d]" : "text-white/60")}>{tab === t && <motion.span layoutId="gov-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">{t}</span></button>)}</div>}
-      {!canEdit && <p className="mb-4 rounded-xl bg-white/5 p-3 text-sm text-white/60">You have read-only access.</p>}
+      {tabs.length > 1 && <div className="glass mb-5 flex gap-1 overflow-x-auto p-1">{tabs.map((t) => <button key={t} onClick={() => setTab(t)} className={cn("relative whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold", tab === t ? "text-[#04130d]" : "text-white/65")}>{tab === t && <motion.span layoutId="gov-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">{t}</span></button>)}</div>}
+      {!canEdit && <p className="mb-4 rounded-xl bg-white/5 p-3 text-sm text-white/65">You have read-only access.</p>}
       {tab === "Leadership" && <Leadership me={me} canEdit={canEdit} />}
       {tab === "Departments" && <Departments me={me} canEdit={canEdit} />}
       {tab === "Committees" && <Committees me={me} canEdit={canEdit} />}

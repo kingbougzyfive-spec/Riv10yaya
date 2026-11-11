@@ -27,7 +27,7 @@ export default function ForgotPage() {
         <form onSubmit={submit} className="space-y-4">
           <div><label className="label">Email</label><input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
           <button className="btn btn-primary w-full py-3" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}Send reset link</button>
-          <p className="text-center text-xs text-white/40"><Link href="/login" className="hover:text-white">← Back to sign in</Link></p>
+          <p className="text-center text-xs text-white/65"><Link href="/login" className="hover:text-white">← Back to sign in</Link></p>
         </form>
       )}
     </AuthShell>

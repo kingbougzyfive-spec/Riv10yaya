@@ -30,7 +30,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               {t.kind === "ok" ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />}
               <span className="flex-1">{t.msg}</span>
-              <button onClick={() => setItems((s) => s.filter((x) => x.id !== t.id))} aria-label="Dismiss"><X className="h-4 w-4 text-white/40 hover:text-white" /></button>
+              <button onClick={() => setItems((s) => s.filter((x) => x.id !== t.id))} aria-label="Dismiss"><X className="h-4 w-4 text-white/65 hover:text-white" /></button>
             </motion.div>
           ))}
         </AnimatePresence>

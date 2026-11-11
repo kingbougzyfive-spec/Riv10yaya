@@ -38,11 +38,11 @@ export function SheetsSettings() {
       {s.canConfigure && <input type="checkbox" className="h-4 w-4" checked={t.enabled} onChange={(e) => save({ tabs: { [t.key]: e.target.checked } })} aria-label={`Sync ${t.defaultName}`} />}
       <div className="min-w-[200px] flex-1">
         {s.canConfigure ? <input className="input !py-1.5 font-semibold" value={names[t.key] ?? t.name} onChange={(e) => setNames({ ...names, [t.key]: e.target.value })} onBlur={() => names[t.key] !== t.name && save({ names: { [t.key]: names[t.key] } })} aria-label="Tab name" /> : <p className="font-semibold">{t.name}</p>}
-        <p className="mt-0.5 text-xs text-white/50">{t.help}</p>
-        {t.status === "failed" && <p className="mt-1 flex items-start gap-1.5 text-xs text-red-300"><AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />{t.error} <span className="text-white/40">({fmt(t.errorAt)}, attempt {t.attempts})</span></p>}
+        <p className="mt-0.5 text-xs text-white/65">{t.help}</p>
+        {t.status === "failed" && <p className="mt-1 flex items-start gap-1.5 text-xs text-red-300"><AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />{t.error} <span className="text-white/65">({fmt(t.errorAt)}, attempt {t.attempts})</span></p>}
         {t.note && t.status === "ok" && <p className="mt-1 text-xs text-amber-300">{t.note}</p>}
       </div>
-      <div className="w-28 text-xs text-white/55">{t.rows !== null ? `${t.rows.toLocaleString("en-NG")} rows` : ""}<br />{fmt(t.okAt)}</div>
+      <div className="w-28 text-xs text-white/65">{t.rows !== null ? `${t.rows.toLocaleString("en-NG")} rows` : ""}<br />{fmt(t.okAt)}</div>
       <span className={ST[t.enabled ? t.status : "skipped"]}>{t.enabled ? ST_LABEL[t.status] : "Off"}</span>
       <button className="btn btn-ghost btn-sm" disabled={!ready || !t.enabled || !t.canSync || !!busy || s.running} onClick={() => sync([t.key], t.status === "failed")}>{busy === t.key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}Sync</button>
     </div>
@@ -51,9 +51,9 @@ export function SheetsSettings() {
   return (
     <div className="space-y-5">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="grid gap-3 sm:grid-cols-3">
-        <div className="glass p-4"><p className="text-xs uppercase tracking-wide text-white/50">Last successful sync</p><p className="mt-1 flex items-center gap-2 font-bold">{s.lastOkAt ? <><CheckCircle2 className="h-4 w-4 text-emerald-400" />{fmt(s.lastOkAt)}</> : "Never"}</p></div>
-        <div className="glass p-4"><p className="text-xs uppercase tracking-wide text-white/50">Failed tabs</p><p className={cn("mt-1 text-2xl font-extrabold", s.failed ? "text-red-300" : "text-emerald-300")}>{s.failed}</p></div>
-        <div className="glass p-4"><p className="text-xs uppercase tracking-wide text-white/50">Last run</p><p className="mt-1 text-sm font-semibold">{s.running ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Running…</span> : s.lastRun ? `${fmt(s.lastRun.at)} · ${s.lastRun.trigger === "auto" ? "automatic" : s.lastRun.trigger}` : "—"}</p>{s.lastRun && !s.running && <p className="text-xs text-white/50">{s.lastRun.ok} updated · {s.lastRun.skipped} unchanged · {s.lastRun.failed} failed</p>}</div>
+        <div className="glass p-4"><p className="text-xs uppercase tracking-wide text-white/65">Last successful sync</p><p className="mt-1 flex items-center gap-2 font-bold">{s.lastOkAt ? <><CheckCircle2 className="h-4 w-4 text-emerald-400" />{fmt(s.lastOkAt)}</> : "Never"}</p></div>
+        <div className="glass p-4"><p className="text-xs uppercase tracking-wide text-white/65">Failed tabs</p><p className={cn("mt-1 text-2xl font-extrabold", s.failed ? "text-red-300" : "text-emerald-300")}>{s.failed}</p></div>
+        <div className="glass p-4"><p className="text-xs uppercase tracking-wide text-white/65">Last run</p><p className="mt-1 text-sm font-semibold">{s.running ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Running…</span> : s.lastRun ? `${fmt(s.lastRun.at)} · ${s.lastRun.trigger === "auto" ? "automatic" : s.lastRun.trigger}` : "—"}</p>{s.lastRun && !s.running && <p className="text-xs text-white/65">{s.lastRun.ok} updated · {s.lastRun.skipped} unchanged · {s.lastRun.failed} failed</p>}</div>
       </motion.div>
 
       <div className="glass space-y-4 p-5">
@@ -72,7 +72,7 @@ export function SheetsSettings() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="glass flex gap-1 p-1">{(["tabs", "log"] as const).map((v) => <button key={v} onClick={() => setView(v)} className={cn("rounded-xl px-4 py-1.5 text-sm font-semibold", view === v ? "bg-brand text-[#04130d]" : "text-white/60")}>{v === "tabs" ? "Tabs" : "Sync log"}</button>)}</div>
+        <div className="glass flex gap-1 p-1">{(["tabs", "log"] as const).map((v) => <button key={v} onClick={() => setView(v)} className={cn("rounded-xl px-4 py-1.5 text-sm font-semibold", view === v ? "bg-brand text-[#04130d]" : "text-white/65")}>{v === "tabs" ? "Tabs" : "Sync log"}</button>)}</div>
         <span className="flex-1" />
         <button className="btn btn-ghost" disabled={!ready || !!busy || s.running || !s.failed} onClick={retry}>{busy === "retry" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}Retry failed ({s.failed})</button>
         <button className="btn btn-primary" disabled={!ready || !!busy || s.running} onClick={() => sync()}>{busy === "all" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}Sync all now</button>
@@ -80,9 +80,9 @@ export function SheetsSettings() {
       </div>
 
       {view === "tabs" && <>
-        {finance.length > 0 && <div className="glass overflow-hidden"><p className="border-b border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white/50">Finance · confirmed, pending and rejected money kept apart</p>{finance.map((t: any) => <Row key={t.key} t={t} />)}</div>}
-        {other.length > 0 && <div className="glass overflow-hidden"><p className="border-b border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white/50">Registers, attendance, events and reports</p>{other.map((t: any) => <Row key={t.key} t={t} />)}</div>}
-        <p className="text-xs text-white/45">Each sync replaces a tab with a fresh copy from the database, so rows are never duplicated and a repeat does no harm. Tabs with no changes since the last success are skipped. Anything typed into the spreadsheet is overwritten and never read back.</p>
+        {finance.length > 0 && <div className="glass overflow-hidden"><p className="border-b border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white/65">Finance · confirmed, pending and rejected money kept apart</p>{finance.map((t: any) => <Row key={t.key} t={t} />)}</div>}
+        {other.length > 0 && <div className="glass overflow-hidden"><p className="border-b border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white/65">Registers, attendance, events and reports</p>{other.map((t: any) => <Row key={t.key} t={t} />)}</div>}
+        <p className="text-xs text-white/65">Each sync replaces a tab with a fresh copy from the database, so rows are never duplicated and a repeat does no harm. Tabs with no changes since the last success are skipped. Anything typed into the spreadsheet is overwritten and never read back.</p>
       </>}
       {view === "log" && <Log tabs={s.tabs} />}
     </div>
@@ -100,10 +100,10 @@ function Log({ tabs }: { tabs: any[] }) {
       {!rows && <div className="skeleton h-24" />}
       <div className="space-y-1.5">{rows?.map((l) => (
         <div key={l.id} className="glass flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
-          <div className="min-w-0"><p className="truncate font-semibold">{l.tab}</p><p className="text-xs text-white/50">{fmt(l.at)} · {l.trigger === "auto" ? "automatic" : l.trigger}{l.byName ? ` · ${l.byName}` : ""}{l.rows !== null ? ` · ${l.rows.toLocaleString("en-NG")} rows` : ""}{l.ms !== null ? ` · ${(l.ms / 1000).toFixed(1)}s` : ""}</p>{(l.error || l.note) && <p className={cn("text-xs", l.error ? "text-red-300" : "text-white/50")}>{l.error || l.note}</p>}</div>
+          <div className="min-w-0"><p className="truncate font-semibold">{l.tab}</p><p className="text-xs text-white/65">{fmt(l.at)} · {l.trigger === "auto" ? "automatic" : l.trigger}{l.byName ? ` · ${l.byName}` : ""}{l.rows !== null ? ` · ${l.rows.toLocaleString("en-NG")} rows` : ""}{l.ms !== null ? ` · ${(l.ms / 1000).toFixed(1)}s` : ""}</p>{(l.error || l.note) && <p className={cn("text-xs", l.error ? "text-red-300" : "text-white/65")}>{l.error || l.note}</p>}</div>
           <span className={ST[l.status]}>{l.status === "ok" ? "Updated" : l.status === "failed" ? "Failed" : "Unchanged"}</span>
         </div>))}
-        {rows?.length === 0 && <div className="glass p-10 text-center text-white/50">Nothing logged yet.</div>}</div>
+        {rows?.length === 0 && <div className="glass p-10 text-center text-white/65">Nothing logged yet.</div>}</div>
     </div>
   );
 }

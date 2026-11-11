@@ -12,7 +12,7 @@ export function AuthShell({ title, subtitle, children, wide }: { title: string; 
         className={`glass w-full ${wide ? "max-w-xl" : "max-w-md"} p-7 sm:p-9`}
       >
         <h1 className="gradient-text text-2xl font-black sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-2 text-sm text-white/55">{subtitle}</p>}
+        {subtitle && <p className="mt-2 text-sm text-white/65">{subtitle}</p>}
         <div className="mt-7">{children}</div>
       </motion.div>
     </div>

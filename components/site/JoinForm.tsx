@@ -26,7 +26,7 @@ export function JoinForm() {
       <div><label className="label">Email</label><input className="input" type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
       <div><label className="label">Password</label><input className="input" type="password" minLength={10} required value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
       <div><label className="label">Date of birth</label><input className="input" type="date" required max={new Date().toISOString().slice(0, 10)} value={f.dob} onChange={(e) => setF({ ...f, dob: e.target.value })} /></div>
-      <div><label className="label">Member ID <span className="font-normal text-white/40">(only if your parish already registered you)</span></label><input className="input font-mono uppercase" placeholder="YM-XXXXXX" value={f.memberId} onChange={(e) => setF({ ...f, memberId: e.target.value })} /></div>
+      <div><label className="label">Member ID <span className="font-normal text-white/65">(only if your parish already registered you)</span></label><input className="input font-mono uppercase" placeholder="YM-XXXXXX" value={f.memberId} onChange={(e) => setF({ ...f, memberId: e.target.value })} /></div>
       {minor && (
         <div className="space-y-3 rounded-2xl border border-accent/40 bg-accent/10 p-4">
           <p className="text-sm font-semibold">You are under 18, so a parent or guardian must agree.</p>

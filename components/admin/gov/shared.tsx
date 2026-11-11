@@ -53,11 +53,11 @@ export function MemberPicker({ org, value, onChange, label = "Member" }: { org: 
     const t = setTimeout(() => api(`/api/members?${p}`).then((r) => setRows(r.rows.slice(0, 8))).catch(() => setRows([])), 250);
     return () => clearTimeout(t);
   }, [q, org.level, org.zone, org.area, org.parish]);
-  if (value) return <Field label={label}><div className="flex items-center justify-between rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm"><b>{value.name}</b><button type="button" className="text-xs text-white/50 hover:text-white" onClick={() => onChange(null)}>Change</button></div></Field>;
+  if (value) return <Field label={label}><div className="flex items-center justify-between rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm"><b>{value.name}</b><button type="button" className="text-xs text-white/65 hover:text-white" onClick={() => onChange(null)}>Change</button></div></Field>;
   return (
     <Field label={label}>
-      <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" /><input className="input !pl-9" placeholder="Search by name or member ID…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-      {rows.length > 0 && <ul className="mt-1 max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-black/30">{rows.map((m) => <li key={m.id}><button type="button" className="flex w-full justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-white/10" onClick={() => { onChange({ id: m.id, name: m.name }); setQ(""); setRows([]); }}><span>{m.name}</span><span className="text-xs text-white/45">{m.parish} · {m.memberId}</span></button></li>)}</ul>}
+      <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/65" /><input className="input !pl-9" placeholder="Search by name or member ID…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+      {rows.length > 0 && <ul className="mt-1 max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-black/30">{rows.map((m) => <li key={m.id}><button type="button" className="flex w-full justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-white/10" onClick={() => { onChange({ id: m.id, name: m.name }); setQ(""); setRows([]); }}><span>{m.name}</span><span className="text-xs text-white/65">{m.parish} · {m.memberId}</span></button></li>)}</ul>}
     </Field>
   );
 }
@@ -70,7 +70,7 @@ export function Responsibilities({ value, onChange }: { value: string[]; onChang
   return (
     <div>
       <label className="label">Responsibilities</label>
-      <ul className="mb-2 space-y-1">{value.map((r, i) => <li key={i} className="flex items-start justify-between gap-2 rounded-lg bg-white/5 px-3 py-1.5 text-sm"><span>{r}</span><button type="button" className="text-xs text-white/45 hover:text-red-300" onClick={() => onChange(value.filter((_, j) => j !== i))}>Remove</button></li>)}</ul>
+      <ul className="mb-2 space-y-1">{value.map((r, i) => <li key={i} className="flex items-start justify-between gap-2 rounded-lg bg-white/5 px-3 py-1.5 text-sm"><span>{r}</span><button type="button" className="text-xs text-white/65 hover:text-red-300" onClick={() => onChange(value.filter((_, j) => j !== i))}>Remove</button></li>)}</ul>
       <div className="flex gap-2"><input className="input" placeholder="Add a responsibility and press Add" value={t} onChange={(e) => setT(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && t.trim().length > 1) { e.preventDefault(); onChange([...value, t.trim()]); setT(""); } }} /><button type="button" className="btn btn-ghost" disabled={t.trim().length < 2} onClick={() => { onChange([...value, t.trim()]); setT(""); }}>Add</button></div>
     </div>
   );

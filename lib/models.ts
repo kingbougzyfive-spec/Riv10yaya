@@ -38,6 +38,8 @@ const userSchema = new Schema(
 
 const zoneSchema = new Schema(
   {
+    /** true only for rows created by the optional "sample data" button, so they can be told apart from (and removed without touching) real records */
+    isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     nameKey: { type: String, required: true, unique: true },
     /** false => standalone zone: parishes sit directly under it */
@@ -50,6 +52,8 @@ const zoneSchema = new Schema(
 
 const areaSchema = new Schema(
   {
+    /** true only for rows created by the optional "sample data" button, so they can be told apart from (and removed without touching) real records */
+    isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     nameKey: { type: String, required: true },
     zone: { type: Schema.Types.ObjectId, ref: "Zone", required: true, index: true },
@@ -61,6 +65,8 @@ areaSchema.index({ zone: 1, nameKey: 1 }, { unique: true });
 
 const parishSchema = new Schema(
   {
+    /** true only for rows created by the optional "sample data" button, so they can be told apart from (and removed without touching) real records */
+    isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     nameKey: { type: String, required: true },
     zone: { type: Schema.Types.ObjectId, ref: "Zone", required: true, index: true },
@@ -403,6 +409,8 @@ attendanceSchema.index({ session: 1, phoneKey: 1 }, { unique: true });
 
 const announcementSchema = new Schema(
   {
+    /** true only for rows created by the optional "sample data" button, so they can be told apart from (and removed without touching) real records */
+    isSample: { type: Boolean, default: false, index: true },
     title: { type: String, required: true, trim: true },
     body: { type: String, default: "" },
     imageId: { type: Schema.Types.ObjectId, ref: "Media" },
@@ -416,6 +424,8 @@ const announcementSchema = new Schema(
 
 const departmentSchema = new Schema(
   {
+    /** true only for rows created by the optional "sample data" button, so they can be told apart from (and removed without touching) real records */
+    isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
     headName: String,

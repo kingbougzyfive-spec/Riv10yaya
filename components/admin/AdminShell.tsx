@@ -44,30 +44,49 @@ const ITEMS = [
   { href: "/admin/audit-logs", label: "Audit Logs", icon: History, perm: "audit" as const },
 ];
 
-export type NavItem = { href: string; label: string; icon: any };
+export type NavItem = { href: string; label: string; icon: any; group?: string };
+
+/** Sidebar sections, in display order. Items keep their order within a section. */
+const GROUP_OF: Record<string, string> = {
+  "/admin": "Overview", "/admin/analytics": "Overview",
+  "/admin/organizations": "People & Structure", "/admin/users": "People & Structure", "/admin/members": "People & Structure", "/admin/leadership": "People & Structure", "/admin/departments": "People & Structure",
+  "/admin/events": "Events", "/admin/registrations": "Events", "/admin/attendance": "Events",
+  "/admin/reports": "Reports & Finance", "/admin/remittances": "Reports & Finance", "/admin/finance": "Reports & Finance", "/admin/reconciliation": "Reports & Finance", "/admin/exports": "Reports & Finance",
+  "/admin/committees": "Governance", "/admin/tasks": "Governance", "/admin/meetings": "Governance", "/admin/documents": "Governance",
+  "/admin/announcements": "Communications", "/admin/notifications": "Communications", "/admin/ai-assistant": "Communications", "/admin/site": "Communications", "/admin/media": "Communications",
+  "/admin/integrations": "System", "/admin/database": "System", "/admin/settings": "System", "/admin/security": "System", "/admin/audit-logs": "System",
+};
+const GROUP_ORDER = ["Overview", "People & Structure", "Events", "Reports & Finance", "Governance", "Communications", "System"];
+function grouped(list: NavItem[]): NavItem[] {
+  return list.map((i, n) => ({ ...i, group: i.group ?? GROUP_OF[i.href], n })).sort((a: any, b: any) => (GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group)) || a.n - b.n);
+}
 
 /** `nav` and `home` let another area (the parish portal) reuse this shell with its own menu. */
 export function AdminShell({ user, brand, children, nav, home = "/admin" }: { user: { name: string; role: Role }; brand: string; children: ReactNode; nav?: NavItem[]; home?: string }) {
   const path = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const items: NavItem[] = nav ?? ITEMS.filter((i) => can(user.role, i.perm));
+  const items: NavItem[] = nav ?? grouped(ITEMS.filter((i) => can(user.role, i.perm)));
 
   const Nav = (
     <nav className="flex flex-1 flex-col gap-1">
-      {items.map((i) => {
+      {items.map((i, idx) => {
+        const heading = i.group && i.group !== items[idx - 1]?.group ? i.group : null;
         const active = i.href === home || i.href === "/admin/finance" ? path === i.href : path.startsWith(i.href);
         return (
-          <Link key={i.href} href={i.href} onClick={() => setOpen(false)} className={cn("relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/65 transition hover:text-white", active && "text-white")}>
-            {active && <motion.span layoutId="admin-pill" className="absolute inset-0 rounded-xl border border-brand/30 bg-brand/15" transition={{ type: "spring", damping: 30, stiffness: 400 }} />}
+          <div key={i.href} className="contents">
+          {heading && <p className={cn("px-3.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-white/65", idx > 0 && "pt-4")}>{heading}</p>}
+          <Link href={i.href} aria-current={active ? "page" : undefined} onClick={() => setOpen(false)} className={cn("relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/65 transition hover:text-white", active && "text-white")}>
+            {active && <span aria-hidden className="absolute inset-0 rounded-xl border border-brand/30 bg-brand/15" />}
             <i.icon className={cn("relative h-4 w-4", active && "text-brand")} /><span className="relative">{i.label}</span>
           </Link>
+          </div>
         );
       })}
       <div className="mt-auto space-y-1 pt-4">
-        <Link href="/admin/account" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-white/5 hover:text-white"><KeyRound className="h-4 w-4" />My account</Link>
-        <Link href="/" target="_blank" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-white/5 hover:text-white"><ExternalLink className="h-4 w-4" />View website</Link>
-        <button onClick={async () => { await signOutEverywhereLocal(); router.push("/login"); router.refresh(); }} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/55 hover:bg-red-500/10 hover:text-red-300"><LogOut className="h-4 w-4" />Sign out</button>
+        <Link href="/admin/account" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/65 hover:bg-white/5 hover:text-white"><KeyRound className="h-4 w-4" />My account</Link>
+        <Link href="/" target="_blank" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/65 hover:bg-white/5 hover:text-white"><ExternalLink className="h-4 w-4" />View website</Link>
+        <button onClick={async () => { await signOutEverywhereLocal(); router.push("/login"); router.refresh(); }} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm text-white/65 hover:bg-red-500/10 hover:text-red-300"><LogOut className="h-4 w-4" />Sign out</button>
       </div>
     </nav>
   );
@@ -75,7 +94,7 @@ export function AdminShell({ user, brand, children, nav, home = "/admin" }: { us
   const Profile = (
     <div className="mb-5 flex items-center gap-3 rounded-2xl bg-white/5 p-3">
       <div className="grid h-10 w-10 place-items-center rounded-xl font-black text-[#04130d]" style={{ background: "linear-gradient(135deg, rgb(var(--brand)), rgb(var(--accent)))" }}>{user.name.slice(0, 1).toUpperCase()}</div>
-      <div className="min-w-0"><p className="truncate text-sm font-semibold">{user.name}</p><p className="truncate text-[11px] text-white/45">{ROLE_LABELS[user.role]}</p></div>
+      <div className="min-w-0"><p className="truncate text-sm font-semibold">{user.name}</p><p className="truncate text-[11px] text-white/65">{ROLE_LABELS[user.role]}</p></div>
     </div>
   );
 
@@ -101,8 +120,8 @@ export function AdminShell({ user, brand, children, nav, home = "/admin" }: { us
           </>
         )}
       </AnimatePresence>
-      <main className="min-w-0 p-4 sm:p-6 lg:p-8">
-        <motion.div key={path} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}>{children}</motion.div>
+      <main id="content" tabIndex={-1} className="min-w-0 p-4 outline-none sm:p-6 lg:p-8">
+        <motion.div key={path} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>{children}</motion.div>
       </main>
     </div>
   );
@@ -111,7 +130,7 @@ export function AdminShell({ user, brand, children, nav, home = "/admin" }: { us
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div><h1 className="text-2xl font-black tracking-tight sm:text-3xl">{title}</h1>{subtitle && <p className="mt-1 max-w-2xl text-sm text-white/55">{subtitle}</p>}</div>
+      <div><h1 className="text-2xl font-black tracking-tight sm:text-3xl">{title}</h1>{subtitle && <p className="mt-1 max-w-2xl text-sm text-white/65">{subtitle}</p>}</div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );

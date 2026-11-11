@@ -7,7 +7,7 @@ export default async function Page() {
   const { site } = await getSite();
   return (
     <SimplePage site={site} current="/leadership">
-      <div className="pt-8">{site.leaders.length ? <Leaders site={site} /> : <p className="mx-auto max-w-6xl px-6 py-20 text-white/55">Leadership profiles are coming soon.</p>}</div>
+      <div className="pt-8">{site.leaders.length ? <Leaders site={site} /> : <p className="mx-auto max-w-6xl px-6 py-20 text-white/65">Leadership profiles are coming soon.</p>}</div>
     </SimplePage>
   );
 }

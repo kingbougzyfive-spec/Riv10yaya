@@ -43,7 +43,7 @@ export function ExportCenter({ defs, me }: { defs: Def[]; me: Me }) {
     return () => clearTimeout(t);
   }, [def, qs, needsEvent, f]);
 
-  if (!def) return <div className="glass p-10 text-center text-white/50">No reports are available for your role.</div>;
+  if (!def) return <div className="glass p-10 text-center text-white/65">No reports are available for your role.</div>;
   const set = (k: string, v: string) => setF((x) => ({ ...x, [k]: v, ...(k === "zone" ? { area: "", parish: "" } : k === "area" ? { parish: "" } : {}) }));
   const groups = [...new Set(defs.map((d) => d.group))];
   const has = (k: string) => def.filters.includes(k as any);
@@ -53,7 +53,7 @@ export function ExportCenter({ defs, me }: { defs: Def[]; me: Me }) {
       <div className="space-y-4">
         {groups.map((g) => (
           <div key={g}>
-            <p className="mb-1.5 px-1 text-[11px] font-bold uppercase tracking-wide text-white/45">{g}</p>
+            <p className="mb-1.5 px-1 text-[11px] font-bold uppercase tracking-wide text-white/65">{g}</p>
             <div className="space-y-1.5">{defs.filter((d) => d.group === g).map((d) => <button key={d.key} onClick={() => setKey(d.key)} className={cn("relative w-full rounded-xl border px-3.5 py-2.5 text-left text-sm transition", key === d.key ? "border-brand bg-brand/15" : "border-white/10 hover:border-white/25")}>{key === d.key && <motion.span layoutId="exp-sel" className="absolute inset-y-2 left-0 w-1 rounded-full bg-brand" />}<span className="font-semibold">{d.label}</span></button>)}</div>
           </div>
         ))}
@@ -61,7 +61,7 @@ export function ExportCenter({ defs, me }: { defs: Def[]; me: Me }) {
 
       <div className="min-w-0 space-y-4">
         <div className="glass space-y-4 p-5">
-          <div><p className="text-lg font-bold">{def.label}</p><p className="text-sm text-white/60">{def.help}</p></div>
+          <div><p className="text-lg font-bold">{def.label}</p><p className="text-sm text-white/65">{def.help}</p></div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {has("year") && <Field label="Year"><input className="input" type="number" min={2020} max={2100} value={f.year ?? ""} onChange={(e) => set("year", e.target.value)} /></Field>}
             {has("month") && <Field label="Month"><select className="input" value={f.month ?? "0"} onChange={(e) => set("month", e.target.value)}>{def.key !== "provincial" && <option value="0">Whole year</option>}{MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></Field>}
@@ -86,29 +86,29 @@ export function ExportCenter({ defs, me }: { defs: Def[]; me: Me }) {
             <p className="flex items-center gap-2 font-bold">Preview {busy && <Loader2 className="h-4 w-4 animate-spin text-brand" />}</p>
             <div className="flex flex-wrap gap-2">{def.formats.map((fm) => { const ok = !!pv && pv.formats.includes(fm) && !busy; const I = FMT[fm].icon; return ok ? <a key={fm} className="btn btn-primary btn-sm" href={`/api/exports/${def.key}?${qs}&format=${fm}`}><I className="h-4 w-4" />{FMT[fm].label}</a> : <span key={fm} className="btn btn-ghost btn-sm pointer-events-none opacity-40"><I className="h-4 w-4" />{FMT[fm].label}</span>; })}</div>
           </div>
-          {needsEvent && <p className="text-sm text-white/55">Choose an event to see the preview.</p>}
+          {needsEvent && <p className="text-sm text-white/65">Choose an event to see the preview.</p>}
           {err && <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-200">{err}</p>}
           {pv && !err && (
             <div className="space-y-4">
               <div className="grid gap-2 rounded-xl bg-white/5 p-3 text-sm sm:grid-cols-2">
-                {[["Organisation", pv.org], ["Reporting period", pv.period], ["Prepared by", pv.preparedBy], ["Records covered", pv.scope], ...(pv.filters.length ? [["Filters", pv.filters.join("; ")]] : []), ...(pv.administrator ? [["Administrator", pv.administrator]] : [])].map(([k, v]) => <p key={k}><span className="text-xs uppercase tracking-wide text-white/45">{k}</span><br />{v}</p>)}
+                {[["Organisation", pv.org], ["Reporting period", pv.period], ["Prepared by", pv.preparedBy], ["Records covered", pv.scope], ...(pv.filters.length ? [["Filters", pv.filters.join("; ")]] : []), ...(pv.administrator ? [["Administrator", pv.administrator]] : [])].map(([k, v]) => <p key={k}><span className="text-xs uppercase tracking-wide text-white/65">{k}</span><br />{v}</p>)}
               </div>
               {pv.verification && <p className="flex items-start gap-2 rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-100"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" /><span><b>Financial verification: </b>{pv.verification}</span></p>}
               {pv.blocks.map((b: any, i: number) => b.t === "kv" ? (
-                <div key={i} className="grid gap-2 sm:grid-cols-3">{b.items.map((it: any) => <div key={it.k} className="rounded-xl bg-white/5 p-3"><p className="text-[11px] uppercase tracking-wide text-white/45">{it.k}</p><p className="font-bold">{it.v}</p></div>)}</div>
+                <div key={i} className="grid gap-2 sm:grid-cols-3">{b.items.map((it: any) => <div key={it.k} className="rounded-xl bg-white/5 p-3"><p className="text-[11px] uppercase tracking-wide text-white/65">{it.k}</p><p className="font-bold">{it.v}</p></div>)}</div>
               ) : (
                 <div key={i} className="overflow-x-auto">
-                  <p className="mb-1.5 text-sm font-bold">{b.title} <span className="font-normal text-white/45">· {b.total.toLocaleString("en-NG")} {b.total === 1 ? "row" : "rows"}</span></p>
-                  <table className="w-full min-w-[560px] text-xs"><thead><tr className="border-b border-white/10 text-left text-white/50">{b.cols.map((c: any) => <th key={c.h} className={cn("px-2 py-1.5 font-semibold", ["money", "int", "pct"].includes(c.kind) && "text-right")}>{c.h}</th>)}</tr></thead>
+                  <p className="mb-1.5 text-sm font-bold">{b.title} <span className="font-normal text-white/65">· {b.total.toLocaleString("en-NG")} {b.total === 1 ? "row" : "rows"}</span></p>
+                  <table className="w-full min-w-[560px] text-xs"><thead><tr className="border-b border-white/10 text-left text-white/65">{b.cols.map((c: any) => <th key={c.h} className={cn("px-2 py-1.5 font-semibold", ["money", "int", "pct"].includes(c.kind) && "text-right")}>{c.h}</th>)}</tr></thead>
                     <tbody>{b.rows.map((r: any[], j: number) => <tr key={j} className="border-b border-white/5">{r.map((v, k) => <td key={k} className={cn("px-2 py-1.5", ["money", "int", "pct"].includes(b.cols[k].kind) && "text-right tabular-nums")}>{typeof v === "number" && b.cols[k].kind === "money" ? v.toLocaleString("en-NG", { minimumFractionDigits: 2 }) : String(v ?? "")}</td>)}</tr>)}{b.totals && <tr className="font-bold">{b.totals.map((v: any, k: number) => <td key={k} className="px-2 py-1.5 text-right first:text-left">{typeof v === "number" && b.cols[k].kind === "money" ? v.toLocaleString("en-NG", { minimumFractionDigits: 2 }) : String(v ?? "")}</td>)}</tr>}</tbody></table>
-                  {b.total > b.rows.length && <p className="mt-1 text-xs text-white/45">Showing the first {b.rows.length}. The download has everything.</p>}
+                  {b.total > b.rows.length && <p className="mt-1 text-xs text-white/65">Showing the first {b.rows.length}. The download has everything.</p>}
                 </div>
               ))}
-              {pv.notes.map((n: string) => <p key={n} className="text-xs text-white/50">{n}</p>)}
+              {pv.notes.map((n: string) => <p key={n} className="text-xs text-white/65">{n}</p>)}
             </div>
           )}
         </div>
-        <p className="flex items-center gap-2 text-xs text-white/45"><Download className="h-3.5 w-3.5" />Downloads are logged. Exports contain only records within your role's access; handle files containing personal details as confidential.</p>
+        <p className="flex items-center gap-2 text-xs text-white/65"><Download className="h-3.5 w-3.5" />Downloads are logged. Exports contain only records within your role's access; handle files containing personal details as confidential.</p>
       </div>
     </div>
   );

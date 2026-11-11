@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Aurora } from "@/components/ui/Aurora";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { SwRegister } from "@/components/SwRegister";
 import { getSite } from "@/lib/cms";
 import { themeVars } from "@/lib/site-types";
@@ -34,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-xl focus:bg-brand focus:px-4 focus:py-2 focus:font-bold focus:text-[#04130d]">Skip to content</a>
         <Aurora />
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider><ConfirmProvider>{children}</ConfirmProvider></ToastProvider>
         <SwRegister />
         <OfflineBanner />
         <UpdateToast />

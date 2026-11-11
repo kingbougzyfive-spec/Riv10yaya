@@ -12,12 +12,12 @@ import { Field, fmtDT, MemberPicker, useOrg, type Me } from "./gov/shared";
 const TABS = ["Compose", "Delivery log", "Reminders"] as const;
 const isProv = (r: string) => r === "super_admin" || r === "provincial_admin";
 
-export function CommsHub({ me }: { me: Me }) {
+export function CommsHub({ me, avail = { email: true, push: true } }: { me: Me; avail?: { email: boolean; push: boolean } }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Compose");
   const tabs = TABS.filter((t) => t !== "Reminders" || isProv(me.role));
   return (
     <>
-      <div className="glass mb-5 flex gap-1 overflow-x-auto p-1">{tabs.map((t) => <button key={t} onClick={() => setTab(t)} className={cn("relative whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold", tab === t ? "text-[#04130d]" : "text-white/60")}>{tab === t && <motion.span layoutId="comms-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">{t}</span></button>)}</div>
+      <div className="glass mb-5 flex gap-1 overflow-x-auto p-1">{tabs.map((t) => <button key={t} onClick={() => setTab(t)} className={cn("relative whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold", tab === t ? "text-[#04130d]" : "text-white/65")}>{tab === t && <motion.span layoutId="comms-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">{t}</span></button>)}</div>
       {tab === "Compose" && <Compose me={me} onSent={() => setTab("Delivery log")} />}
       {tab === "Delivery log" && <Logs me={me} />}
       {tab === "Reminders" && <Reminders />}
@@ -54,11 +54,11 @@ function Compose({ me, onSent }: { me: Me; onSent: () => void }) {
   const check = async () => { setBusy(true); try { setPrev(await api("/api/comms/audience", { method: "POST", json: { audience: spec } })); } catch (e: any) { toast.err(e.message); } setBusy(false); };
   const send = async () => {
     setBusy(true);
-    try { const r = await api("/api/comms/send", { method: "POST", json: { ...f, link: f.link || undefined, audience: spec, channels: ch } }); toast.ok(`Sent to ${r.recipients} ${r.recipients === 1 ? "person" : "people"}`); setF({ title: "", body: "", link: "", kind: "notice" }); setPrev(null); onSent(); }
+    try { const r = await api("/api/comms/send", { method: "POST", json: { ...f, link: f.link || undefined, audience: spec, channels: { email: ch.email && avail.email, push: ch.push && avail.push } } }); toast.ok(`Sent to ${r.recipients} ${r.recipients === 1 ? "person" : "people"}`); setF({ title: "", body: "", link: "", kind: "notice" }); setPrev(null); onSent(); }
     catch (e: any) { toast.err(e.message); }
     setBusy(false);
   };
-  const list = (rows: any[], label = "name") => <div className="grid max-h-60 gap-1 overflow-y-auto rounded-xl border border-white/10 p-2 sm:grid-cols-2">{rows.map((r) => <label key={r.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-white/5"><input type="checkbox" checked={aud.ids.includes(r.id)} onChange={() => toggle(r.id)} />{r[label]}{r.place && r.level !== "province" ? <span className="text-xs text-white/40"> · {r.place}</span> : null}</label>)}{!rows.length && <p className="p-2 text-sm text-white/45">Nothing to choose.</p>}</div>;
+  const list = (rows: any[], label = "name") => <div className="grid max-h-60 gap-1 overflow-y-auto rounded-xl border border-white/10 p-2 sm:grid-cols-2">{rows.map((r) => <label key={r.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-white/5"><input type="checkbox" checked={aud.ids.includes(r.id)} onChange={() => toggle(r.id)} />{r[label]}{r.place && r.level !== "province" ? <span className="text-xs text-white/65"> · {r.place}</span> : null}</label>)}{!rows.length && <p className="p-2 text-sm text-white/65">Nothing to choose.</p>}</div>;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
@@ -68,18 +68,19 @@ function Compose({ me, onSent }: { me: Me; onSent: () => void }) {
         <Field label="Open this page when tapped (optional)"><select className="input" value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })}><option value="">Nothing in particular</option><option value="/announcements">Announcements</option><option value="/events">Events</option><option value="/member">My page</option><option value="/admin">Dashboard</option></select></Field>
         <div>
           <label className="label">Who should get it?</label>
-          <div className="mb-3 flex flex-wrap gap-2">{types.map(([k, l]) => <button key={k} type="button" onClick={() => { setAud({ type: k, ids: [], eventId: "" }); setPicked([]); }} className={cn("rounded-full border px-3.5 py-1.5 text-sm font-semibold", aud.type === k ? "border-brand bg-brand/20 text-brand" : "border-white/15 text-white/60")}>{l}</button>)}</div>
+          <div className="mb-3 flex flex-wrap gap-2">{types.map(([k, l]) => <button key={k} type="button" onClick={() => { setAud({ type: k, ids: [], eventId: "" }); setPicked([]); }} className={cn("rounded-full border px-3.5 py-1.5 text-sm font-semibold", aud.type === k ? "border-brand bg-brand/20 text-brand" : "border-white/15 text-white/65")}>{l}</button>)}</div>
           {aud.type === "zones" && list(zones)}
           {aud.type === "areas" && list(areas)}
           {aud.type === "parishes" && list(parishes)}
           {aud.type === "departments" && list(deps)}
           {aud.type === "event" && <select className="input" value={aud.eventId} onChange={(e) => setAud({ ...aud, eventId: e.target.value })}><option value="">Choose an event…</option>{evs.map((e: any) => <option key={e.id} value={e.id}>{e.title}</option>)}</select>}
-          {aud.type === "members" && <div className="space-y-2"><MemberPicker org={{ level: "province" }} value={one} onChange={(v) => { if (v && !picked.some((p) => p.id === v.id)) setPicked([...picked, v]); setOne(null); }} label="Add members" /><div className="flex flex-wrap gap-1.5">{picked.map((p) => <span key={p.id} className="badge">{p.name}<button className="ml-1.5 text-white/50 hover:text-white" onClick={() => setPicked(picked.filter((x) => x.id !== p.id))} aria-label={`Remove ${p.name}`}>×</button></span>)}</div></div>}
-          {aud.type === "everyone" && <p className="text-sm text-white/55">Every account holder, plus members who have an email address.</p>}
+          {aud.type === "members" && <div className="space-y-2"><MemberPicker org={{ level: "province" }} value={one} onChange={(v) => { if (v && !picked.some((p) => p.id === v.id)) setPicked([...picked, v]); setOne(null); }} label="Add members" /><div className="flex flex-wrap gap-1.5">{picked.map((p) => <span key={p.id} className="badge">{p.name}<button className="ml-1.5 text-white/65 hover:text-white" onClick={() => setPicked(picked.filter((x) => x.id !== p.id))} aria-label={`Remove ${p.name}`}>×</button></span>)}</div></div>}
+          {aud.type === "everyone" && <p className="text-sm text-white/65">Every account holder, plus members who have an email address.</p>}
         </div>
         <div>
           <label className="label">How</label>
-          <div className="flex flex-wrap gap-4 text-sm"><label className="flex items-center gap-2 opacity-70"><input type="checkbox" checked disabled />In-app (always)</label><label className="flex items-center gap-2"><input type="checkbox" checked={ch.push} onChange={(e) => setCh({ ...ch, push: e.target.checked })} />Push</label><label className="flex items-center gap-2"><input type="checkbox" checked={ch.email} onChange={(e) => setCh({ ...ch, email: e.target.checked })} />Email</label></div>
+          <div className="flex flex-wrap gap-4 text-sm"><label className="flex items-center gap-2 opacity-70"><input type="checkbox" checked disabled />In-app (always)</label><label className={cn("flex items-center gap-2", !avail.push && "opacity-60")}><input type="checkbox" disabled={!avail.push} checked={ch.push && avail.push} onChange={(e) => setCh({ ...ch, push: e.target.checked })} />Push</label><label className={cn("flex items-center gap-2", !avail.email && "opacity-60")}><input type="checkbox" disabled={!avail.email} checked={ch.email && avail.email} onChange={(e) => setCh({ ...ch, email: e.target.checked })} />Email</label></div>
+          {(!avail.email || !avail.push) && <p role="note" className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 text-xs">{[!avail.email && "Email is not configured (RESEND_API_KEY)", !avail.push && "Push is not configured (VAPID keys)"].filter(Boolean).join(" · ")}. Those channels are switched off until they are set up, and nothing is sent through them. In-app notices still work. See Admin → Integrations.</p>}
           <p className="hint">Each person's own settings still apply. If a channel can't reach someone, the in-app notice still does.</p>
         </div>
       </div>
@@ -88,13 +89,13 @@ function Compose({ me, onSent }: { me: Me; onSent: () => void }) {
         <button className="btn btn-ghost w-full" disabled={!ready || busy} onClick={check}>{busy && !prev ? <Loader2 className="h-4 w-4 animate-spin" /> : null}Check who will get it</button>
         {prev && (
           <div className="space-y-1.5 text-sm">
-            <p className="text-2xl font-extrabold">{prev.stats.total} <span className="text-sm font-normal text-white/55">{prev.stats.total === 1 ? "person" : "people"}</span></p>
-            <p className="text-white/60">{prev.labels.join(", ")}</p>
-            <ul className="space-y-0.5 text-xs text-white/55"><li>{prev.stats.accounts} with an account (in-app, push, email)</li><li>{prev.stats.emailOnly} email only</li>{prev.stats.minorsInAppOnly > 0 && <li>{prev.stats.minorsInAppOnly} under 18: in-app and push only, never email</li>}{prev.stats.unreachable > 0 && <li>{prev.stats.unreachable} can't be reached (no account or email)</li>}{prev.capped && <li className="text-amber-300">Capped at 5,000 people.</li>}</ul>
+            <p className="text-2xl font-extrabold">{prev.stats.total} <span className="text-sm font-normal text-white/65">{prev.stats.total === 1 ? "person" : "people"}</span></p>
+            <p className="text-white/65">{prev.labels.join(", ")}</p>
+            <ul className="space-y-0.5 text-xs text-white/65"><li>{prev.stats.accounts} with an account (in-app, push, email)</li><li>{prev.stats.emailOnly} email only</li>{prev.stats.minorsInAppOnly > 0 && <li>{prev.stats.minorsInAppOnly} under 18: in-app and push only, never email</li>}{prev.stats.unreachable > 0 && <li>{prev.stats.unreachable} can't be reached (no account or email)</li>}{prev.capped && <li className="text-amber-300">Capped at 5,000 people.</li>}</ul>
             <button className="btn btn-primary mt-2 w-full py-3" disabled={busy || prev.stats.total === 0} onClick={send}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Send to {prev.stats.total}</button>
           </div>
         )}
-        {!prev && <p className="text-xs text-white/50">Choose the audience, then check the numbers. Nothing is sent until you press Send.</p>}
+        {!prev && <p className="text-xs text-white/65">Choose the audience, then check the numbers. Nothing is sent until you press Send.</p>}
       </div>
     </div>
   );
@@ -119,10 +120,10 @@ function Logs({ me }: { me: Me }) {
       {!rows && <div className="skeleton h-24" />}
       <div className="space-y-2">{rows?.map((l) => { const t = l.totals ?? {}; return (
         <button key={l.id} onClick={() => setOpen(l.id)} className="glass flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition hover:-translate-y-0.5">
-          <div className="min-w-0"><p className="truncate font-semibold">{l.title}</p><p className="truncate text-xs text-white/50">{fmtDT(l.at)} · {l.audience?.labels?.join(", ") || (l.event && (EVENTS as any)[l.event]?.label) || "—"}{l.sentByName ? ` · ${l.sentByName}` : ""}</p></div>
+          <div className="min-w-0"><p className="truncate font-semibold">{l.title}</p><p className="truncate text-xs text-white/65">{fmtDT(l.at)} · {l.audience?.labels?.join(", ") || (l.event && (EVENTS as any)[l.event]?.label) || "—"}{l.sentByName ? ` · ${l.sentByName}` : ""}</p></div>
           <div className="flex flex-wrap items-center gap-1.5 text-xs"><span className="badge">{t.recipients ?? 0} people</span>{(t.emailSent ?? 0) + (t.externalSent ?? 0) > 0 && <span className="badge">{(t.emailSent ?? 0) + (t.externalSent ?? 0)} emailed</span>}{t.pushSent > 0 && <span className="badge">{t.pushSent} pushed</span>}{l.failures > 0 && <span className="badge badge-bad">{l.failures} failed</span>}<span className={STATUS[l.status]}>{l.status}</span></div>
         </button>); })}
-        {rows?.length === 0 && <div className="glass p-10 text-center text-white/50">Nothing here yet.</div>}</div>
+        {rows?.length === 0 && <div className="glass p-10 text-center text-white/65">Nothing here yet.</div>}</div>
       {open && <LogDetail id={open} onClose={() => { setOpen(null); load(); }} />}
     </>
   );
@@ -143,12 +144,12 @@ function LogDetail({ id, onClose }: { id: string; onClose: () => void }) {
       {!d && <div className="grid place-items-center py-12"><Loader2 className="h-5 w-5 animate-spin text-brand" /></div>}
       {d && (
         <div className="space-y-5">
-          <p className="text-sm text-white/60">{fmtDT(d.log.at)} · {d.log.sentByName ?? "Automatic"} · {d.log.labels.join(", ") || "—"}</p>
+          <p className="text-sm text-white/65">{fmtDT(d.log.at)} · {d.log.sentByName ?? "Automatic"} · {d.log.labels.join(", ") || "—"}</p>
           {d.log.body && <p className="whitespace-pre-wrap rounded-xl bg-white/5 p-3 text-sm">{d.log.body}</p>}
-          <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">{rowsT.map(([l, v]) => <div key={l} className="flex justify-between border-b border-white/5 py-1"><dt className="text-white/60">{l}</dt><dd className="tabular-nums">{v ?? 0}</dd></div>)}</dl>
+          <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">{rowsT.map(([l, v]) => <div key={l} className="flex justify-between border-b border-white/5 py-1"><dt className="text-white/65">{l}</dt><dd className="tabular-nums">{v ?? 0}</dd></div>)}</dl>
           <div>
             <div className="mb-2 flex items-center justify-between"><p className="font-bold">Failures {open.length ? `(${open.length})` : ""}</p>{open.length > 0 && <button className="btn btn-primary btn-sm" disabled={busy} onClick={retry}>{busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Try again</button>}</div>
-            <ul className="space-y-1.5 text-sm">{d.failures.map((f: any) => <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span>{f.name ?? "—"}<span className="text-xs text-white/45"> · {f.channel}{f.to ? ` · ${f.to}` : ""}</span></span><span className={cn("text-xs", f.retried ? "text-emerald-300" : "text-red-300")}>{f.retried ? "Delivered on retry" : f.error}</span></li>)}{!d.failures.length && <li className="text-white/45">No failures.</li>}</ul>
+            <ul className="space-y-1.5 text-sm">{d.failures.map((f: any) => <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span>{f.name ?? "—"}<span className="text-xs text-white/65"> · {f.channel}{f.to ? ` · ${f.to}` : ""}</span></span><span className={cn("text-xs", f.retried ? "text-emerald-300" : "text-red-300")}>{f.retried ? "Delivered on retry" : f.error}</span></li>)}{!d.failures.length && <li className="text-white/65">No failures.</li>}</ul>
           </div>
         </div>
       )}
@@ -180,11 +181,11 @@ function Reminders() {
         </div>
         <div className="flex flex-wrap gap-2"><button className="btn btn-primary" disabled={busy} onClick={save}>Save</button><button className="btn btn-ghost" disabled={busy} onClick={run}>{busy && <Loader2 className="h-4 w-4 animate-spin" />}Run reminders now</button></div>
         {out && <p className="rounded-xl bg-white/5 p-3 text-xs text-white/70">{out.ran ? Object.entries(out.summary).map(([k, v]) => `${k}: ${v}`).join(" · ") : out.summary.note}</p>}
-        <p className="text-xs text-white/50">Running it again the same day never notifies anyone twice.</p>
+        <p className="text-xs text-white/65">Running it again the same day never notifies anyone twice.</p>
       </div>
       <div className="glass overflow-x-auto p-5">
         <p className="mb-3 font-bold">What triggers a notification, and who gets it</p>
-        <table className="w-full min-w-[640px] text-sm"><thead><tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-white/50"><th className="py-2">Event</th><th>Category</th><th>Who</th></tr></thead><tbody>{Object.values(EVENTS).filter((e) => e.label !== "General").map((e) => <tr key={e.label} className="border-b border-white/5"><td className="py-2 font-semibold">{e.label}</td><td className="text-xs">{CATEGORIES[e.category].label}{CATEGORIES[e.category].locked ? " · always on" : ""}</td><td className="text-xs text-white/60">{e.who}</td></tr>)}</tbody></table>
+        <table className="w-full min-w-[640px] text-sm"><thead><tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-white/65"><th className="py-2">Event</th><th>Category</th><th>Who</th></tr></thead><tbody>{Object.values(EVENTS).filter((e) => e.label !== "General").map((e) => <tr key={e.label} className="border-b border-white/5"><td className="py-2 font-semibold">{e.label}</td><td className="text-xs">{CATEGORIES[e.category].label}{CATEGORIES[e.category].locked ? " · always on" : ""}</td><td className="text-xs text-white/65">{e.who}</td></tr>)}</tbody></table>
       </div>
     </div>
   );

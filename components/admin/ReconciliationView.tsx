@@ -4,9 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
 import { formatNaira } from "@/lib/money";
+import { DataTable } from "@/components/ui/DataTable";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import type { Level } from "@/lib/status";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const OUT: Record<string, string> = { matched: "Matched to bank", not_found: "Not found in bank", amount_mismatch: "Different amount", rejected: "Rejected", resubmission_requested: "Resubmission requested" };
+const LEVEL: Record<string, Level> = { matched: "ok", not_found: "bad", amount_mismatch: "bad", rejected: "bad", resubmission_requested: "warn" };
 
 /** Bank reconciliation: each payment against the bank statement, plus a check that the confirmed-payments ledger agrees with the remittance records. */
 export function ReconciliationView({ canFix }: { canFix: boolean }) {
@@ -39,32 +43,24 @@ export function ReconciliationView({ canFix }: { canFix: boolean }) {
         <div><label className="label">Year</label><input className="input !w-28" type="number" value={f.year} onChange={(e) => setF({ ...f, year: e.target.value })} /></div>
         <div><label className="label">Outcome</label><select className="input" value={f.outcome} onChange={(e) => setF({ ...f, outcome: e.target.value })}><option value="">All</option>{Object.entries(OUT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
       </div>
-      {err && <p className="text-red-300">{err}</p>}
-      {!d && !err && <div className="skeleton h-40" />}
-      {d && (
-        <>
-          <div className="grid gap-3 sm:grid-cols-5">{Object.entries(OUT).map(([k, v]) => <div key={k} className="glass p-3 text-center"><p className="text-2xl font-black">{d.summary[k]}</p><p className="text-[11px] text-white/55">{v}</p></div>)}</div>
-          <div className="glass overflow-x-auto p-0">
-            <table className="w-full min-w-[760px] text-sm">
-              <thead><tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-white/50"><th className="p-3">Parish</th><th>Period</th><th className="text-right">Declared</th><th className="text-right">Bank</th><th>Reference</th><th>Outcome</th><th>By</th></tr></thead>
-              <tbody>
-                {d.rows.map((r: any) => (
-                  <tr key={r.id} className="border-b border-white/5 align-top">
-                    <td className="p-3 font-semibold">{r.parish}<p className="text-xs font-normal text-white/45">{r.zone}{r.area ? ` · ${r.area}` : ""}</p></td>
-                    <td className="text-xs">{MONTHS[r.month - 1]} {r.year}</td>
-                    <td className="text-right tabular-nums">{formatNaira(r.declaredKobo)}</td>
-                    <td className="text-right tabular-nums">{formatNaira(r.bankKobo)}</td>
-                    <td className="text-xs text-white/60">{r.bankReference || "—"}{r.transaction && <p className="font-mono text-white/40">{r.transaction}</p>}</td>
-                    <td><span className="badge">{OUT[r.outcome]}</span>{r.note && <p className="mt-1 max-w-[16rem] text-xs text-white/45">{r.note}</p>}</td>
-                    <td className="text-xs text-white/55">{r.by}<p>{new Date(r.at).toLocaleDateString("en-NG", { dateStyle: "medium" })}</p></td>
-                  </tr>
-                ))}
-                {!d.rows.length && <tr><td colSpan={7} className="p-8 text-center text-white/50">No reconciliation records for these filters yet. They are created when finance reviews a payment.</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+      {d && <div className="grid gap-3 sm:grid-cols-5">{Object.entries(OUT).map(([k, v]) => <div key={k} className="glass p-3 text-center"><p className="text-2xl font-black">{d.summary[k]}</p><p className="text-[11px] text-white/75">{v}</p></div>)}</div>}
+      <div className="glass p-4">
+        <DataTable<any>
+          caption="Bank reconciliation records"
+          rows={d?.rows} loading={!d && !err} error={err || null} onRetry={load} rowKey={(r) => r.id}
+          searchText={(r) => `${r.parish} ${r.zone} ${r.area} ${r.bankReference ?? ""} ${r.transaction ?? ""} ${r.by ?? ""}`} searchPlaceholder="Search parish, bank reference or reviewer"
+          empty={{ title: "No reconciliation records for these filters", hint: "They are created when finance reviews a payment." }}
+          columns={[
+            { key: "parish", header: "Parish", sortValue: (r) => r.parish, render: (r) => <><span className="font-semibold">{r.parish}</span><p className="text-xs text-white/75">{r.zone}{r.area ? ` · ${r.area}` : ""}</p></> },
+            { key: "period", header: "Period", sortValue: (r) => r.year * 100 + r.month, render: (r) => <span className="text-xs">{MONTHS[r.month - 1]} {r.year}</span> },
+            { key: "declared", header: "Declared", align: "right", sortValue: (r) => r.declaredKobo, render: (r) => <span className="tabular-nums">{formatNaira(r.declaredKobo)}</span> },
+            { key: "bank", header: "Bank", align: "right", sortValue: (r) => r.bankKobo, render: (r) => <span className="tabular-nums">{formatNaira(r.bankKobo)}</span> },
+            { key: "ref", header: "Reference", render: (r) => <span className="text-xs">{r.bankReference || "—"}{r.transaction && <span className="block font-mono text-white/75">{r.transaction}</span>}</span> },
+            { key: "outcome", header: "Outcome", sortValue: (r) => r.outcome, render: (r) => <><StatusBadge view={{ label: OUT[r.outcome] ?? r.outcome, level: LEVEL[r.outcome] ?? "none" }} />{r.note && <p className="mt-1 max-w-[16rem] text-xs text-white/75">{r.note}</p>}</> },
+            { key: "by", header: "Reviewed", sortValue: (r) => r.at, render: (r) => <span className="text-xs text-white/75">{r.by}<span className="block">{new Date(r.at).toLocaleDateString("en-NG", { dateStyle: "medium" })}</span></span> },
+          ]}
+        />
+      </div>
     </div>
   );
 }

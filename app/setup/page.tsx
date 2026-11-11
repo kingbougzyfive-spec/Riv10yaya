@@ -55,8 +55,8 @@ export default function SetupPage() {
       <div className="mb-6 flex items-center gap-2">
         {["Database", "Super Admin", "Done"].map((s, i) => (
           <div key={s} className="flex flex-1 items-center gap-2">
-            <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold transition ${i <= step ? "bg-brand text-[#04130d]" : "bg-white/10 text-white/50"}`}>{i < step ? "✓" : i + 1}</div>
-            <span className={`hidden text-xs sm:block ${i <= step ? "text-white" : "text-white/40"}`}>{s}</span>
+            <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold transition ${i <= step ? "bg-brand text-[#04130d]" : "bg-white/10 text-white/65"}`}>{i < step ? "✓" : i + 1}</div>
+            <span className={`hidden text-xs sm:block ${i <= step ? "text-white" : "text-white/65"}`}>{s}</span>
             {i < 2 && <div className="h-px flex-1 bg-white/15" />}
           </div>
         ))}
@@ -95,7 +95,7 @@ export default function SetupPage() {
         {step === 2 && (
           <motion.div key="s2" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="py-6 text-center">
             <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-400" />
-            <p className="mt-4 text-lg font-bold">All set!</p><p className="text-sm text-white/55">Opening your dashboard…</p>
+            <p className="mt-4 text-lg font-bold">All set!</p><p className="text-sm text-white/65">Opening your dashboard…</p>
           </motion.div>
         )}
       </AnimatePresence>

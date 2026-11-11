@@ -4,6 +4,7 @@ import { Check, Loader2, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { cn } from "@/lib/cn";
 
@@ -62,7 +63,7 @@ function DropZone({ onFiles, uploading }: { onFiles: (f: FileList) => void; uplo
       <input ref={ref} type="file" accept="image/*" multiple hidden onChange={(e) => e.target.files && onFiles(e.target.files)} />
       {uploading ? <Loader2 className="h-6 w-6 animate-spin text-brand" /> : <Upload className="h-6 w-6 text-brand" />}
       <p className="text-sm font-semibold">{uploading ? "Uploading…" : "Tap to upload, or drop images here"}</p>
-      <p className="text-xs text-white/40">PNG, JPG, WebP, GIF or SVG · large photos are shrunk automatically</p>
+      <p className="text-xs text-white/65">PNG, JPG, WebP, GIF or SVG · large photos are shrunk automatically</p>
     </div>
   );
 }
@@ -83,7 +84,7 @@ export function MediaPickerModal({ open, onClose, onPick, current }: { open: boo
             {current === m.id && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-brand text-[#04130d]"><Check className="h-3 w-3" /></span>}
           </motion.button>
         ))}
-        {items?.length === 0 && <p className="col-span-full py-6 text-center text-sm text-white/45">No images yet. Upload your first one above.</p>}
+        {items?.length === 0 && <p className="col-span-full py-6 text-center text-sm text-white/65">No images yet. Upload your first one above.</p>}
       </div>
     </Modal>
   );
@@ -91,6 +92,7 @@ export function MediaPickerModal({ open, onClose, onPick, current }: { open: boo
 
 export function MediaManager() {
   const toast = useToast();
+  const confirm = useConfirm();
   const { items, uploading, upload, load } = useMedia();
   const [busyId, setBusyId] = useState<string | null>(null);
   return (
@@ -103,10 +105,10 @@ export function MediaManager() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/api/media/${m.id}`} alt={m.name} loading="lazy" className="aspect-square w-full rounded-xl object-cover" />
             <div className="flex items-center justify-between gap-2 px-1.5 py-2">
-              <div className="min-w-0"><p className="truncate text-xs font-medium">{m.name}</p><p className="text-[10px] text-white/40">{Math.round((m.size || 0) / 1024)} KB</p></div>
+              <div className="min-w-0"><p className="truncate text-xs font-medium">{m.name}</p><p className="text-[10px] text-white/65">{Math.round((m.size || 0) / 1024)} KB</p></div>
               <button className="btn btn-danger btn-sm !p-1.5" disabled={busyId === m.id} aria-label="Delete"
                 onClick={async () => {
-                  if (!confirm(`Delete "${m.name}"? Pages using it will show a placeholder.`)) return;
+                  if (!(await confirm({ title: `Delete "${m.name}"?`, message: "Pages using it will show a placeholder.", confirmLabel: "Delete" }))) return;
                   setBusyId(m.id);
                   try { await api(`/api/media/${m.id}`, { method: "DELETE" }); toast.ok("Deleted"); await load(); } catch (e: any) { toast.err(e.message); }
                   setBusyId(null);
@@ -115,7 +117,7 @@ export function MediaManager() {
           </motion.div>
         ))}
       </div>
-      {items?.length === 0 && <p className="mt-8 text-center text-white/45">Your library is empty. Upload logos, event flyers and photos to use across the site.</p>}
+      {items?.length === 0 && <p className="mt-8 text-center text-white/65">Your library is empty. Upload logos, event flyers and photos to use across the site.</p>}
     </>
   );
 }

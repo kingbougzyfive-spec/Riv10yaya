@@ -41,7 +41,7 @@ export function FinanceDashboard() {
         <select className="input !w-auto" aria-label="Zone" value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value, area: "", parish: "" })}><option value="">All zones</option>{(d?.zones ?? []).map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}</select>
         <select className="input !w-auto" aria-label="Area" value={f.area} onChange={(e) => setF({ ...f, area: e.target.value, parish: "" })}><option value="">All areas</option>{areas.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
         <select className="input !w-auto" aria-label="Parish" value={f.parish} onChange={(e) => setF({ ...f, parish: e.target.value })}><option value="">All parishes</option>{parishes.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <div className="glass ml-auto flex gap-1 p-1">{([["overview", "Overview"], ["breakdown", "Zones · Areas · Parishes"], ["reconciliation", "Reconciliation"]] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} className={cn("relative rounded-xl px-3.5 py-2 text-sm font-semibold", tab === k ? "text-[#04130d]" : "text-white/60")}>{tab === k && <motion.span layoutId="fd-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">{l}</span></button>)}</div>
+        <div className="glass ml-auto flex gap-1 p-1">{([["overview", "Overview"], ["breakdown", "Zones · Areas · Parishes"], ["reconciliation", "Reconciliation"]] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} className={cn("relative rounded-xl px-3.5 py-2 text-sm font-semibold", tab === k ? "text-[#04130d]" : "text-white/65")}>{tab === k && <motion.span layoutId="fd-tab" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">{l}</span></button>)}</div>
       </div>
 
       {err && <div className="glass p-6 text-sm text-red-300">{err}</div>}
@@ -61,9 +61,9 @@ function Card({ label, value, sub, tone, onClick, i }: { label: string; value: R
   return (
     <motion.button initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} whileHover={{ y: -3 }} onClick={onClick} className="glass relative overflow-hidden p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" title="Show the records behind this figure">
       <span className={cn("absolute inset-y-0 left-0 w-1", bar)} />
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">{label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-white/65">{label}</p>
       <p className="mt-1 text-xl font-extrabold tabular-nums sm:text-2xl">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-white/50">{sub}</p>}
+      {sub && <p className="mt-0.5 text-xs text-white/65">{sub}</p>}
     </motion.button>
   );
 }
@@ -90,9 +90,9 @@ function Overview({ d, periodLabel, onOpen }: { d: any; periodLabel: string; onO
   const empty = c.expected === 0 && c.parishes === 0;
   return (
     <>
-      <p className="text-sm text-white/55">Showing <b className="text-white/80">{periodLabel}</b>. Click any figure to see the records behind it.</p>
+      <p className="text-sm text-white/65">Showing <b className="text-white/80">{periodLabel}</b>. Click any figure to see the records behind it.</p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{cards.map(([m, l, v, s, tone], i) => <Card key={m} i={i} label={l} value={v} sub={s} tone={tone} onClick={() => onOpen(m, l)} />)}</div>
-      {empty && <div className="glass p-8 text-center text-sm text-white/60">No parishes or returns match these filters yet.</div>}
+      {empty && <div className="glass p-8 text-center text-sm text-white/65">No parishes or returns match these filters yet.</div>}
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Monthly collection trend" note="Expected vs confirmed, by month">
           <ResponsiveContainer width="100%" height={260}><LineChart data={data}><CartesianGrid stroke="rgb(var(--fg) / .08)" vertical={false} /><XAxis dataKey="name" stroke={C.mute} fontSize={11} /><YAxis stroke={C.mute} fontSize={11} tickFormatter={(v) => short(v * 100)} width={54} /><Tooltip formatter={(v: number) => formatNaira(Math.round(v * 100))} contentStyle={{ background: "rgb(var(--bg))", border: "1px solid rgb(var(--fg) / .15)", borderRadius: 12 }} /><Legend /><Line type="monotone" dataKey="expectedN" name="Expected" stroke={C.accent} strokeWidth={2} dot={false} /><Line type="monotone" dataKey="confirmedN" name="Confirmed" stroke={C.brand} strokeWidth={3} dot={{ r: 3 }} /><Line type="monotone" dataKey="outstandingN" name="Outstanding" stroke={C.bad} strokeWidth={2} strokeDasharray="4 4" dot={false} /></LineChart></ResponsiveContainer>
@@ -111,8 +111,8 @@ function Overview({ d, periodLabel, onOpen }: { d: any; periodLabel: string; onO
   );
 }
 
-const Panel = ({ title, note, children }: { title: string; note?: string; children: ReactNode }) => <div className="glass p-4"><p className="font-bold">{title}</p>{note && <p className="mb-3 text-xs text-white/50">{note}</p>}{children}</div>;
-const Empty = () => <p className="py-16 text-center text-sm text-white/50">Nothing to chart yet.</p>;
+const Panel = ({ title, note, children }: { title: string; note?: string; children: ReactNode }) => <div className="glass p-4"><p className="font-bold">{title}</p>{note && <p className="mb-3 text-xs text-white/65">{note}</p>}{children}</div>;
+const Empty = () => <p className="py-16 text-center text-sm text-white/65">Nothing to chart yet.</p>;
 
 function Breakdown({ d, onPick }: { d: any; onPick: (p: any) => void }) {
   const [level, setLevel] = useState<"zone" | "area" | "parish">("zone");
@@ -120,27 +120,27 @@ function Breakdown({ d, onPick }: { d: any; onPick: (p: any) => void }) {
   const tot = d.cards;
   return (
     <div className="space-y-4">
-      <div className="glass inline-flex gap-1 p-1">{(["zone", "area", "parish"] as const).map((k) => <button key={k} onClick={() => setLevel(k)} className={cn("relative rounded-xl px-4 py-2 text-sm font-semibold capitalize", level === k ? "text-[#04130d]" : "text-white/60")}>{level === k && <motion.span layoutId="fd-lvl" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">By {k}</span></button>)}</div>
+      <div className="glass inline-flex gap-1 p-1">{(["zone", "area", "parish"] as const).map((k) => <button key={k} onClick={() => setLevel(k)} className={cn("relative rounded-xl px-4 py-2 text-sm font-semibold capitalize", level === k ? "text-[#04130d]" : "text-white/65")}>{level === k && <motion.span layoutId="fd-lvl" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative">By {k}</span></button>)}</div>
       <div className="glass overflow-x-auto">
         <table className="w-full min-w-[860px] text-sm">
-          <thead><tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-white/50"><th className="p-3">{level}</th>{level === "parish" && <th>Zone / Area</th>}<th className="text-right">Expected</th><th className="text-right">Confirmed</th><th className="text-right">Outstanding</th><th className="text-right">Pending</th><th className="text-right">Flagged</th><th className="text-right">Levies + contrib.</th><th className="text-center">Submitted</th></tr></thead>
+          <thead><tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-white/65"><th className="p-3">{level}</th>{level === "parish" && <th>Zone / Area</th>}<th className="text-right">Expected</th><th className="text-right">Confirmed</th><th className="text-right">Outstanding</th><th className="text-right">Pending</th><th className="text-right">Flagged</th><th className="text-right">Levies + contrib.</th><th className="text-center">Submitted</th></tr></thead>
           <tbody>
             {rows.map((r: any) => (
               <tr key={r.id} className="border-b border-white/5 hover:bg-white/5">
                 <td className="p-3 font-semibold">{level === "zone" ? <button className="hover:text-brand" onClick={() => onPick({ zone: r.id })}>{r.name}</button> : level === "area" ? <button className="hover:text-brand" onClick={() => onPick({ area: r.id })}>{r.name}</button> : <button className="hover:text-brand" onClick={() => onPick({ parish: r.id })}>{r.name}</button>}</td>
-                {level === "parish" && <td className="text-xs text-white/55">{r.zone}{r.area ? ` · ${r.area}` : ""}</td>}
+                {level === "parish" && <td className="text-xs text-white/65">{r.zone}{r.area ? ` · ${r.area}` : ""}</td>}
                 <td className="text-right tabular-nums">{formatNaira(r.expected)}</td><td className="text-right font-semibold tabular-nums text-emerald-300">{formatNaira(r.confirmed)}</td>
                 <td className={cn("text-right tabular-nums", r.outstanding && "text-amber-300")}>{formatNaira(r.outstanding)}</td><td className="text-right tabular-nums">{formatNaira(r.pending)}</td><td className={cn("text-right tabular-nums", r.flagged && "text-red-300")}>{formatNaira(r.flagged)}</td>
                 <td className="text-right tabular-nums">{formatNaira(r.levies + r.contributions)}</td>
                 <td className="text-center">{level === "parish" ? (r.hasSubmitted ? <span className="badge badge-ok">Submitted</span> : <span className="badge badge-warn">Not submitted</span>) : <span className="text-xs">{r.submitted}/{r.parishes}</span>}</td>
               </tr>
             ))}
-            {!rows.length && <tr><td colSpan={9} className="p-8 text-center text-white/50">No records for these filters.</td></tr>}
+            {!rows.length && <tr><td colSpan={9} className="p-8 text-center text-white/65">No records for these filters.</td></tr>}
           </tbody>
           {!!rows.length && <tfoot><tr className="border-t border-white/15 font-bold"><td className="p-3">Total (this view)</td>{level === "parish" && <td />}<td className="text-right tabular-nums">{formatNaira(tot.expected)}</td><td className="text-right tabular-nums">{formatNaira(tot.confirmed)}</td><td className="text-right tabular-nums">{formatNaira(tot.outstanding)}</td><td className="text-right tabular-nums">{formatNaira(tot.pending)}</td><td className="text-right tabular-nums">{formatNaira(tot.flagged)}</td><td className="text-right tabular-nums">{formatNaira(tot.levies + tot.contributions)}</td><td className="text-center text-xs">{tot.submitted}/{tot.parishes}</td></tr></tfoot>}
         </table>
       </div>
-      {level === "area" && <p className="text-xs text-white/50">Parishes in standalone zones have no area, so they appear only under their zone. Each parish is counted once, in the zone, area and parish views alike.</p>}
+      {level === "area" && <p className="text-xs text-white/65">Parishes in standalone zones have no area, so they appear only under their zone. Each parish is counted once, in the zone, area and parish views alike.</p>}
     </div>
   );
 }
@@ -149,7 +149,7 @@ function Reconciliation({ d, qs, onOpen }: { d: any; qs: string; onOpen: (m: str
   const r = d.reconciliation;
   const Row = ({ l, v, note, strong, onClick }: { l: string; v: number; note?: string; strong?: boolean; onClick?: () => void }) => (
     <div className={cn("flex items-baseline justify-between gap-4 border-b border-white/5 py-2", strong && "font-bold")}>
-      <div>{onClick ? <button onClick={onClick} className="text-left hover:text-brand">{l}</button> : l}{note && <p className="text-xs font-normal text-white/45">{note}</p>}</div><span className="tabular-nums">{formatNaira(v)}</span>
+      <div>{onClick ? <button onClick={onClick} className="text-left hover:text-brand">{l}</button> : l}{note && <p className="text-xs font-normal text-white/65">{note}</p>}</div><span className="tabular-nums">{formatNaira(v)}</span>
     </div>
   );
   const Ok = ({ ok }: { ok: boolean }) => <span className={cn("badge", ok ? "badge-ok" : "badge-bad")}>{ok ? "Reconciles" : "Does not reconcile"}</span>;
@@ -171,7 +171,7 @@ function Reconciliation({ d, qs, onOpen }: { d: any; qs: string; onOpen: (m: str
           <Row l="Confirmed" v={r.yst.confirmed} />
           <Row l="Outstanding" v={r.yst.outstanding} onClick={() => onOpen("outstanding", "Outstanding")} />
           <Row l="Overpaid" v={r.yst.overpaid} onClick={() => onOpen("overpaid", "Overpayments")} />
-          <p className="pt-2 text-xs text-white/50">Required − confirmed = outstanding − overpaid, for every parish.</p>
+          <p className="pt-2 text-xs text-white/65">Required − confirmed = outstanding − overpaid, for every parish.</p>
           <div className="mt-4 border-t border-white/10 pt-3">
             <p className="mb-1 text-sm font-semibold">Bank-confirmed amounts</p>
             <Row l="Confirmed from the bank" v={r.confirmedReceived} note="What finance saw, on confirmed payments (Youth Sunday and levies)" />
@@ -184,7 +184,7 @@ function Reconciliation({ d, qs, onOpen }: { d: any; qs: string; onOpen: (m: str
         <p className="text-sm text-white/70">Detailed screens:</p>
         <button className="btn btn-ghost btn-sm" onClick={() => onOpen("variance", "Variance: declared or confirmed differs from required")}>Variances</button>
         <button className="btn btn-ghost btn-sm" onClick={() => onOpen("ledger", "Payment ledger")}>Payment ledger</button>
-        <span className="ml-auto text-xs text-white/50">{r.declaredTotal ? "" : "No payments in this selection."} {d.counts.payments} payments · {d.counts.remittances} obligations</span>
+        <span className="ml-auto text-xs text-white/65">{r.declaredTotal ? "" : "No payments in this selection."} {d.counts.payments} payments · {d.counts.remittances} obligations</span>
       </div>
     </div>
   );
@@ -214,16 +214,16 @@ function Drill({ open, qs, onClose, periodLabel }: { open: { metric: string; tit
       {rows && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
-            <thead><tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-white/50"><th className="p-2">Parish</th><th>Zone / Area</th>{money && <><th>Type</th><th>Period</th><th className="text-right">Amount</th><th className="text-right">Confirmed</th></>}<th>Status</th>{money && <th>Reference</th>}</tr></thead>
+            <thead><tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-white/65"><th className="p-2">Parish</th><th>Zone / Area</th>{money && <><th>Type</th><th>Period</th><th className="text-right">Amount</th><th className="text-right">Confirmed</th></>}<th>Status</th>{money && <th>Reference</th>}</tr></thead>
             <tbody>
               {shown.map((r, i) => (
                 <tr key={r.id + i} className="border-b border-white/5 align-top">
-                  <td className="p-2 font-semibold">{r.parish}{r.note && <p className="text-xs font-normal text-white/45">{r.note}</p>}</td><td className="text-xs text-white/60">{r.zone}{r.area ? ` · ${r.area}` : ""}</td>
-                  {money && <><td className="text-xs">{r.kind}<p className="text-white/45">{r.label}</p></td><td className="text-xs">{r.period}</td><td className="text-right tabular-nums">{formatNaira(r.amountKobo)}</td><td className="text-right tabular-nums">{r.confirmedKobo ? formatNaira(r.confirmedKobo) : "—"}</td></>}
-                  <td><span className="badge">{statusText(r.status)}</span></td>{money && <td className="text-xs text-white/60">{r.reference || "—"}</td>}
+                  <td className="p-2 font-semibold">{r.parish}{r.note && <p className="text-xs font-normal text-white/65">{r.note}</p>}</td><td className="text-xs text-white/65">{r.zone}{r.area ? ` · ${r.area}` : ""}</td>
+                  {money && <><td className="text-xs">{r.kind}<p className="text-white/65">{r.label}</p></td><td className="text-xs">{r.period}</td><td className="text-right tabular-nums">{formatNaira(r.amountKobo)}</td><td className="text-right tabular-nums">{r.confirmedKobo ? formatNaira(r.confirmedKobo) : "—"}</td></>}
+                  <td><span className="badge">{statusText(r.status)}</span></td>{money && <td className="text-xs text-white/65">{r.reference || "—"}</td>}
                 </tr>
               ))}
-              {!shown.length && <tr><td colSpan={9} className="p-8 text-center text-white/50">No records behind this figure.</td></tr>}
+              {!shown.length && <tr><td colSpan={9} className="p-8 text-center text-white/65">No records behind this figure.</td></tr>}
             </tbody>
             {money && !!shown.length && <tfoot><tr className="border-t border-white/15 font-bold"><td className="p-2" colSpan={4}>{shown.length} record{shown.length === 1 ? "" : "s"}</td><td className="text-right tabular-nums">{formatNaira(total)}</td><td colSpan={3} /></tr></tfoot>}
           </table>

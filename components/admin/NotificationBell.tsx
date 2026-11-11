@@ -37,9 +37,9 @@ export function NotificationBell({ className = "" }: { className?: string }) {
         <div className="glass-strong absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] p-2 shadow-2xl">
           <div className="flex items-center justify-between px-2 py-1.5"><p className="text-sm font-bold">Notifications</p>{!!d?.unread && <button className="text-xs text-brand hover:underline" onClick={markAll}>Mark all read</button>}</div>
           <div className="max-h-80 overflow-y-auto">
-            {d?.rows.length === 0 && <p className="p-4 text-center text-sm text-white/50">Nothing yet.</p>}
+            {d?.rows.length === 0 && <p className="p-4 text-center text-sm text-white/65">Nothing yet.</p>}
             {d?.rows.map((n) => {
-              const inner = (<><p className={`text-sm ${n.read ? "text-white/70" : "font-bold"}`}>{n.title}</p>{n.body && <p className="mt-0.5 line-clamp-3 text-xs text-white/55">{n.body}</p>}<p className="mt-1 text-[10px] text-white/35">{new Date(n.at).toLocaleString("en-NG")}</p></>);
+              const inner = (<><p className={`text-sm ${n.read ? "text-white/70" : "font-bold"}`}>{n.title}</p>{n.body && <p className="mt-0.5 line-clamp-3 text-xs text-white/65">{n.body}</p>}<p className="mt-1 text-[10px] text-white/65">{new Date(n.at).toLocaleString("en-NG")}</p></>);
               return n.link ? <Link key={n.id} href={n.link} onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 hover:bg-white/5">{inner}</Link> : <div key={n.id} className="rounded-xl px-3 py-2">{inner}</div>;
             })}
           </div>

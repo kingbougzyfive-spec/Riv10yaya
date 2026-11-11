@@ -4,6 +4,7 @@ import { ArrowRightLeft, Building2, ChevronDown, Layers, Loader2, MapPin, Pencil
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { cn } from "@/lib/cn";
 
@@ -19,6 +20,7 @@ type Dlg =
 
 export function OrgManager({ canManage }: { canManage: boolean }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [data, setData] = useState<{ zones: Zone[]; areas: Area[]; parishes: Parish[] } | null>(null);
   const [q, setQ] = useState("");
   const [dlg, setDlg] = useState<Dlg>(null);
@@ -46,13 +48,13 @@ export function OrgManager({ canManage }: { canManage: boolean }) {
     catch (e: any) { toast.err(e.message); return false; }
   }
   const toggle = (type: string, id: string, active: boolean) => call("PATCH", "/api/org", { type, id, active: !active }, active ? "Deactivated" : "Activated");
-  const remove = async (type: string, id: string, name: string) => { if (confirm(`Delete "${name}"? This can't be undone.`)) await call("DELETE", `/api/org?type=${type}&id=${id}`, undefined, "Deleted"); };
+  const remove = async (type: string, id: string, name: string) => { if (await confirm({ title: `Delete "${name}"?`, message: "This can't be undone.", confirmLabel: "Delete" })) await call("DELETE", `/api/org?type=${type}&id=${id}`, undefined, "Deleted"); };
 
   if (!data) return <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-24" />)}</div>;
 
   const Row = ({ icon: I, name, active, sub, children }: { icon: any; name: string; active: boolean; sub?: string; children?: React.ReactNode }) => (
     <div className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 hover:bg-white/5">
-      <div className="flex min-w-0 items-center gap-2.5"><I className="h-4 w-4 shrink-0 text-white/40" /><div className="min-w-0"><p className={cn("truncate text-sm", !active && "text-white/35 line-through")}>{name}</p>{sub && <p className="text-[11px] text-white/35">{sub}</p>}</div></div>
+      <div className="flex min-w-0 items-center gap-2.5"><I className="h-4 w-4 shrink-0 text-white/65" /><div className="min-w-0"><p className={cn("truncate text-sm", !active && "text-white/65 line-through")}>{name}</p>{sub && <p className="text-[11px] text-white/65">{sub}</p>}</div></div>
       {canManage && <div className="flex shrink-0 gap-1">{children}</div>}
     </div>
   );
@@ -63,10 +65,10 @@ export function OrgManager({ canManage }: { canManage: boolean }) {
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[200px] flex-1"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" /><input className="input !pl-10" placeholder="Search zone, area or parish…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <div className="relative min-w-[200px] flex-1"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/65" /><input className="input !pl-10" placeholder="Search zone, area or parish…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
         {canManage && <button className="btn btn-primary" onClick={() => setDlg({ kind: "zone" })}><Plus className="h-4 w-4" />Add zone</button>}
       </div>
-      {tree.length === 0 && <div className="glass p-10 text-center text-white/50">{data.zones.length ? "Nothing matches your search." : "No zones yet. Add your first zone to start building the structure."}</div>}
+      {tree.length === 0 && <div className="glass p-10 text-center text-white/65">{data.zones.length ? "Nothing matches your search." : "No zones yet. Add your first zone to start building the structure."}</div>}
       <div className="space-y-4">
         {tree.map((z, i) => {
           const isOpen = open[z.id] ?? !!q;
@@ -76,7 +78,7 @@ export function OrgManager({ canManage }: { canManage: boolean }) {
               <button className="flex w-full items-center justify-between gap-3 p-4 text-left" onClick={() => setOpen({ ...open, [z.id]: !isOpen })}>
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand/20 text-brand"><Layers className="h-5 w-5" /></div>
-                  <div className="min-w-0"><p className={cn("truncate font-bold", !z.active && "text-white/40")}>{z.name}</p><p className="text-xs text-white/45">{z.hasAreas ? `${z.areas.length} areas` : "Standalone zone"} · {count} parishes</p></div>
+                  <div className="min-w-0"><p className={cn("truncate font-bold", !z.active && "text-white/65")}>{z.name}</p><p className="text-xs text-white/65">{z.hasAreas ? `${z.areas.length} areas` : "Standalone zone"} · {count} parishes</p></div>
                 </div>
                 <div className="flex items-center gap-2"><span className={cn("badge", z.active ? "badge-ok" : "badge-bad")}>{z.active ? "Active" : "Inactive"}</span><ChevronDown className={cn("h-4 w-4 transition", isOpen && "rotate-180")} /></div>
               </button>
@@ -119,7 +121,7 @@ export function OrgManager({ canManage }: { canManage: boolean }) {
                       <Btn icon={Trash2} danger label="Delete" onClick={() => remove("parish", p.id, p.name)} />
                     </Row>
                   ))}
-                  {z.areas.length === 0 && z.direct.length === 0 && <p className="px-3 py-4 text-sm text-white/40">{z.hasAreas ? "No areas yet." : "No parishes yet."}</p>}
+                  {z.areas.length === 0 && z.direct.length === 0 && <p className="px-3 py-4 text-sm text-white/65">{z.hasAreas ? "No areas yet." : "No parishes yet."}</p>}
                 </motion.div>
               )}
             </motion.div>
@@ -196,7 +198,7 @@ function OrgDialog({ dlg, data, onClose, onDone }: { dlg: Dlg; data: { zones: Zo
         {dlg.kind !== "transfer" && <div><label className="label">Name</label><input className="input" required autoFocus value={f.name ?? ""} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>}
         {dlg.kind === "zone" && (
           <button type="button" onClick={() => setF({ ...f, hasAreas: !f.hasAreas })} className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left">
-            <span><span className="block text-sm font-medium">{f.hasAreas ? "This zone has areas" : "Standalone zone"}</span><span className="block text-xs text-white/45">{f.hasAreas ? "Parishes sit under areas." : "Parishes sit directly under the zone."}</span></span>
+            <span><span className="block text-sm font-medium">{f.hasAreas ? "This zone has areas" : "Standalone zone"}</span><span className="block text-xs text-white/65">{f.hasAreas ? "Parishes sit under areas." : "Parishes sit directly under the zone."}</span></span>
             <span className={cn("relative h-6 w-11 rounded-full transition", f.hasAreas ? "bg-brand" : "bg-white/20")}><span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all", f.hasAreas ? "left-[22px]" : "left-0.5")} /></span>
           </button>
         )}

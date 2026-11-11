@@ -4,6 +4,7 @@ import { Eye, EyeOff, Loader2, Pin, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { cn } from "@/lib/cn";
 import { AreaField, ImageField, TextField, Toggle } from "./fields";
@@ -13,13 +14,14 @@ type Kind = "announcements" | "departments";
 /** One manager for both content types: list, add, edit, publish/hide, delete. */
 export function ContentManager({ kind }: { kind: Kind }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const isAnn = kind === "announcements";
   const [rows, setRows] = useState<any[] | null>(null);
   const [edit, setEdit] = useState<any | null>(null);
   const load = useCallback(() => api(`/api/${kind}`).then((r) => setRows(r.rows)).catch((e) => { toast.err(e.message); setRows([]); }), [kind, toast]);
   useEffect(() => { load(); }, [load]);
   const blank = isAnn ? { title: "", body: "", imageId: "", pinned: false, status: "draft", notify: true } : { name: "", description: "", headName: "", imageId: "", order: 0, active: true };
-  const remove = async (r: any) => { if (!confirm(`Delete "${r.title ?? r.name}"?`)) return; try { await api(`/api/${kind}/${r.id}`, { method: "DELETE" }); toast.ok("Deleted"); load(); } catch (e: any) { toast.err(e.message); } };
+  const remove = async (r: any) => { if (!(await confirm({ title: `Delete "${r.title ?? r.name}"?`, confirmLabel: "Delete" }))) return; try { await api(`/api/${kind}/${r.id}`, { method: "DELETE" }); toast.ok("Deleted"); load(); } catch (e: any) { toast.err(e.message); } };
   const flip = async (r: any) => { try { await api(`/api/${kind}/${r.id}`, { method: "PATCH", json: isAnn ? { ...r, status: r.status === "published" ? "draft" : "published" } : { ...r, active: !r.active } }); toast.ok("Updated"); load(); } catch (e: any) { toast.err(e.message); } };
   return (
     <>
@@ -32,7 +34,7 @@ export function ContentManager({ kind }: { kind: Kind }) {
             <motion.div key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }} className="glass flex flex-wrap items-center justify-between gap-3 p-4">
               <button className="min-w-0 flex-1 text-left" onClick={() => setEdit({ ...r })}>
                 <p className="flex items-center gap-2 truncate font-bold">{r.pinned && <Pin className="h-3.5 w-3.5 text-accent" />}{r.title ?? r.name}</p>
-                <p className="truncate text-xs text-white/45">{(r.body ?? r.description ?? "").slice(0, 110) || "No text yet"}</p>
+                <p className="truncate text-xs text-white/65">{(r.body ?? r.description ?? "").slice(0, 110) || "No text yet"}</p>
               </button>
               <div className="flex items-center gap-2"><span className={cn("badge", live ? "badge-ok" : "badge-warn")}>{isAnn ? (live ? "Published" : "Draft") : live ? "Visible" : "Hidden"}</span>
                 <button className="btn btn-ghost btn-sm" onClick={() => flip(r)}>{live ? <><EyeOff className="h-3.5 w-3.5" />{isAnn ? "Unpublish" : "Hide"}</> : <><Eye className="h-3.5 w-3.5" />{isAnn ? "Publish" : "Show"}</>}</button>
@@ -40,7 +42,7 @@ export function ContentManager({ kind }: { kind: Kind }) {
             </motion.div>
           );
         })}
-        {rows?.length === 0 && <div className="glass p-10 text-center text-white/45">Nothing here yet.</div>}
+        {rows?.length === 0 && <div className="glass p-10 text-center text-white/65">Nothing here yet.</div>}
       </div>
       {edit && <Form key={edit.id ?? "new"} kind={kind} init={edit} onClose={() => setEdit(null)} onDone={load} />}
     </>

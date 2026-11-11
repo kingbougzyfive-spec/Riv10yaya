@@ -57,7 +57,7 @@ export function SiteNav({ site, current = "/" }: { site: SiteData; current?: str
           <Logo site={site} size={38} />
           <div className="min-w-0 leading-tight">
             <p className="truncate text-sm font-bold">{site.brand.shortName || site.brand.name}</p>
-            <p className="hidden truncate text-[11px] text-white/50 sm:block">{site.brand.tagline}</p>
+            <p className="hidden truncate text-[11px] text-white/65 sm:block">{site.brand.tagline}</p>
           </div>
         </Link>
         <div className="hidden items-center gap-1 lg:flex">
@@ -111,7 +111,7 @@ export function Stats({ site, live }: { site: SiteData; live?: { zones: number; 
         {items.map((s, i) => (
           <Reveal key={i} delay={i * 0.06} className="bg-white/[.02] p-6 text-center">
             <p className="gradient-text text-3xl font-black sm:text-4xl">{s.value}</p>
-            <p className="mt-1 text-xs uppercase tracking-widest text-white/50">{s.label}</p>
+            <p className="mt-1 text-xs uppercase tracking-widest text-white/65">{s.label}</p>
           </Reveal>
         ))}
       </div>
@@ -124,7 +124,7 @@ export function SectionTitle({ eyebrow, title, children }: { eyebrow?: string; t
     <Reveal className="mb-8 max-w-2xl">
       {eyebrow && <p className="mb-2 text-xs font-bold uppercase tracking-[.2em] text-accent">{eyebrow}</p>}
       <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl">{title}</h2>
-      {children && <p className="mt-3 text-white/60">{children}</p>}
+      {children && <p className="mt-3 text-white/65">{children}</p>}
     </Reveal>
   );
 }
@@ -188,13 +188,13 @@ export function Leaders({ site, limit }: { site: SiteData; limit?: number }) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={img} alt={l.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" />
                   ) : (
-                    <div className="grid h-full place-items-center text-5xl font-black text-white/25">{l.name.slice(0, 1)}</div>
+                    <div className="grid h-full place-items-center text-5xl font-black text-white/65">{l.name.slice(0, 1)}</div>
                   )}
                 </div>
                 <div className="p-4">
                   <p className="font-bold">{l.name}</p>
                   <p className="text-xs font-medium text-accent">{l.role}</p>
-                  {l.bio && <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-white/55">{l.bio}</p>}
+                  {l.bio && <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-white/65">{l.bio}</p>}
                 </div>
               </div>
             </Reveal>
@@ -247,7 +247,7 @@ export function ContactBlock({ site }: { site: SiteData }) {
     <section className="mx-auto max-w-6xl px-5 py-16 sm:px-6">
       <SectionTitle eyebrow="Contact" title="We'd love to hear from you" />
       {rows.length === 0 ? (
-        <p className="glass p-6 text-white/55">Contact details haven't been added yet.</p>
+        <p className="glass p-6 text-white/65">Contact details haven't been added yet.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {rows.map((r, i) => (
@@ -268,7 +268,7 @@ function Row({ r }: { r: { icon: any; label: string; value: string } }) {
   return (
     <>
       <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand/20 text-brand"><r.icon className="h-5 w-5" /></div>
-      <div className="min-w-0"><p className="text-xs uppercase tracking-wider text-white/45">{r.label}</p><p className="break-words font-semibold">{r.value}</p></div>
+      <div className="min-w-0"><p className="text-xs uppercase tracking-wider text-white/65">{r.label}</p><p className="break-words font-semibold">{r.value}</p></div>
     </>
   );
 }
@@ -285,7 +285,7 @@ export function SiteFooter({ site }: { site: SiteData }) {
   return (
     <footer className="mx-auto mt-10 max-w-6xl px-3 pb-6 sm:px-6">
       <div className="glass flex flex-col items-center justify-between gap-5 p-6 sm:flex-row">
-        <div className="flex items-center gap-3"><Logo site={site} size={34} /><div><p className="text-sm font-bold">{site.brand.name}</p><p className="text-xs text-white/45">{site.footer.note || `© ${new Date().getFullYear()} ${site.brand.name}`}</p></div></div>
+        <div className="flex items-center gap-3"><Logo site={site} size={34} /><div><p className="text-sm font-bold">{site.brand.name}</p><p className="text-xs text-white/65">{site.footer.note || `© ${new Date().getFullYear()} ${site.brand.name}`}</p></div></div>
         <div className="flex gap-2">
           {socials.map((x) => (
             <a key={x.label} href={x.href} target="_blank" rel="noopener noreferrer" aria-label={x.label} className="btn btn-ghost !p-2.5 hover:!text-accent"><x.icon className="h-4 w-4" /></a>

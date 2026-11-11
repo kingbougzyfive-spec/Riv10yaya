@@ -1,4 +1,6 @@
 "use client";
+import { DataTable } from "@/components/ui/DataTable";
+import { FinanceBadge, ReportBadge, StatusBadge } from "@/components/ui/StatusBadge";
 import { motion } from "framer-motion";
 import { Download, FilePlus2, Phone } from "lucide-react";
 import Link from "next/link";
@@ -14,8 +16,8 @@ import { ActivityFields, ContactSection, PeriodPicker, statusBadge, statusLabel,
 
 const Bar = ({ a, b, label }: { a: number; b: number; label: string }) => (
   <div className="glass p-5">
-    <p className="text-xs uppercase tracking-wider text-white/45">{label}</p>
-    <p className="mt-1 text-2xl font-black">{a}<span className="text-base font-semibold text-white/40"> / {b}</span></p>
+    <p className="text-xs uppercase tracking-wider text-white/65">{label}</p>
+    <p className="mt-1 text-2xl font-black">{a}<span className="text-base font-semibold text-white/65"> / {b}</span></p>
     <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><motion.div className="h-full rounded-full bg-gradient-to-r from-brand to-accent" initial={{ width: 0 }} animate={{ width: `${b ? (a / b) * 100 : 0}%` }} transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }} /></div>
   </div>
 );
@@ -50,7 +52,7 @@ export function ReportsHub({ canSubmit, canReview }: { canSubmit: boolean; canRe
   return (
     <>
       <div className="mb-5 grid max-w-md grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-white/5 p-1" role="tablist">
-        {([["reports", "Reports"], ["compliance", "Compliance"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cn("rounded-xl py-2 text-sm font-semibold transition", tab === k ? "bg-brand text-[#04130d]" : "text-white/60 hover:text-white")}>{l}</button>)}
+        {([["reports", "Reports"], ["compliance", "Compliance"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cn("rounded-xl py-2 text-sm font-semibold transition", tab === k ? "bg-brand text-[#04130d]" : "text-white/65 hover:text-white")}>{l}</button>)}
       </div>
       {tab === "compliance" ? <ComplianceView month={p.month} year={p.year} onPeriod={(month, year) => setP({ month, year })} /> : <>
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -73,11 +75,11 @@ export function ReportsHub({ canSubmit, canReview }: { canSubmit: boolean; canRe
           <div className="grid gap-4 sm:grid-cols-3"><Bar a={sum.parishes.submitted} b={sum.parishes.total} label="Parish reports" /><Bar a={sum.areas.submitted} b={sum.areas.total} label="Area reports" /><Bar a={sum.zones.submitted} b={sum.zones.total} label="Zonal reports" /></div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[{ l: "Required remittance", v: sum.finance.requiredKobo }, { l: "Declared paid", v: sum.finance.declaredKobo }, { l: "Confirmed by finance", v: sum.finance.confirmedKobo }, { l: `Levies (separate · ${sum.levies.count})`, v: sum.levies.totalKobo }].map((x) => (
-              <div key={x.l} className="glass p-5"><p className="text-xs uppercase tracking-wider text-white/45">{x.l}</p><p className="mt-1 text-xl font-black">{formatNaira(x.v)}</p></div>
+              <div key={x.l} className="glass p-5"><p className="text-xs uppercase tracking-wider text-white/65">{x.l}</p><p className="mt-1 text-xl font-black">{formatNaira(x.v)}</p></div>
             ))}
           </div>
           {sum.byZone.length > 1 && (
-            <div className="glass overflow-x-auto p-0"><table className="w-full min-w-[520px] text-left text-sm"><thead className="text-xs uppercase tracking-wider text-white/45"><tr><th className="p-3">Zone</th><th className="p-3">Parish reports</th><th className="p-3">Required</th><th className="p-3">Confirmed</th><th className="p-3">Zonal report</th></tr></thead><tbody>
+            <div className="glass overflow-x-auto p-0"><table className="w-full min-w-[520px] text-left text-sm"><thead className="text-xs uppercase tracking-wider text-white/65"><tr><th className="p-3">Zone</th><th className="p-3">Parish reports</th><th className="p-3">Required</th><th className="p-3">Confirmed</th><th className="p-3">Zonal report</th></tr></thead><tbody>
               {sum.byZone.map((z: any) => <tr key={z.id} className="border-t border-white/10"><td className="p-3 font-semibold">{z.name}</td><td className="p-3">{z.submitted}/{z.parishes}</td><td className="p-3">{formatNaira(z.requiredKobo)}</td><td className="p-3">{formatNaira(z.confirmedKobo)}</td><td className="p-3"><span className={cn("badge", z.reportSubmitted ? "badge-ok" : "badge-warn")}>{z.reportSubmitted ? "Submitted" : "Outstanding"}</span></td></tr>)}
             </tbody></table></div>
           )}
@@ -89,11 +91,11 @@ export function ReportsHub({ canSubmit, canReview }: { canSubmit: boolean; canRe
         {rows === null && [0, 1, 2].map((i) => <div key={i} className="skeleton h-20" />)}
         {rows?.map((r, i) => (
           <motion.button key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }} onClick={() => setOpen(r)} className="glass glass-hover flex flex-wrap items-center justify-between gap-3 p-4 text-left">
-            <div className="min-w-0"><p className="truncate font-bold">{r.names.parish ?? r.names.area ?? r.names.zone}</p><p className="truncate text-xs text-white/45">{[r.names.zone, r.names.area].filter(Boolean).join(" → ")} · {MONTHS[r.month - 1]} {r.year}</p></div>
-            <div className="flex flex-wrap items-center gap-2"><span className="badge capitalize">{r.type}</span><span className={REPORT_BADGE[r.status as ReportStatus]}>{REPORT_LABEL[r.status as ReportStatus]}</span>{r.revision > 1 && <span className="badge">Revised v{r.revision}</span>}{r.remittance && <span className={statusBadge[r.remittance.status]}>{statusLabel[r.remittance.status]}</span>}{r.contact && <span className="text-xs text-white/55">{r.contact.fullName}</span>}</div>
+            <div className="min-w-0"><p className="truncate font-bold">{r.names.parish ?? r.names.area ?? r.names.zone}</p><p className="truncate text-xs text-white/65">{[r.names.zone, r.names.area].filter(Boolean).join(" → ")} · {MONTHS[r.month - 1]} {r.year}</p></div>
+            <div className="flex flex-wrap items-center gap-2"><span className="badge capitalize">{r.type}</span><span className={REPORT_BADGE[r.status as ReportStatus]}>{REPORT_LABEL[r.status as ReportStatus]}</span>{r.revision > 1 && <span className="badge">Revised v{r.revision}</span>}{r.remittance && <span className={statusBadge[r.remittance.status]}>{statusLabel[r.remittance.status]}</span>}{r.contact && <span className="text-xs text-white/65">{r.contact.fullName}</span>}</div>
           </motion.button>
         ))}
-        {rows?.length === 0 && <div className="glass p-10 text-center text-white/45">No reports submitted for {MONTHS[p.month - 1]} {p.year} yet.</div>}
+        {rows?.length === 0 && <div className="glass p-10 text-center text-white/65">No reports submitted for {MONTHS[p.month - 1]} {p.year} yet.</div>}
       </div>
 
       </>}
@@ -101,27 +103,27 @@ export function ReportsHub({ canSubmit, canReview }: { canSubmit: boolean; canRe
       <Modal open={!!open} onClose={() => setOpen(null)} wide title={open ? `${open.names.parish ?? open.names.area ?? open.names.zone} · ${MONTHS[open.month - 1]} ${open.year}` : ""}>
         {open && (
           <div className="space-y-5 text-sm">
-            <div className="flex flex-wrap items-center gap-2 text-xs"><span className="badge">{open.reportId ?? "No report ID"}</span><span className={REPORT_BADGE[open.status as ReportStatus]}>{REPORT_LABEL[open.status as ReportStatus]}</span>{open.revision > 1 && <span className="badge">Version {open.revision}</span>}<span className="text-white/45">Submitted {new Date(open.submittedAt).toLocaleString("en-NG")}</span></div>
+            <div className="flex flex-wrap items-center gap-2 text-xs"><span className="badge">{open.reportId ?? "No report ID"}</span><span className={REPORT_BADGE[open.status as ReportStatus]}>{REPORT_LABEL[open.status as ReportStatus]}</span>{open.revision > 1 && <span className="badge">Version {open.revision}</span>}<span className="text-white/65">Submitted {new Date(open.submittedAt).toLocaleString("en-NG")}</span></div>
             <div className="grid gap-3 sm:grid-cols-3">{[["Zone", open.names.zone], ["Area", open.names.area ?? "—"], ["Parish", open.names.parish ?? "—"]].map(([k, v]) => <div key={k}><p className="label">{k}</p><b>{v}</b></div>)}</div>
             {open.contact ? (
               <div className="rounded-2xl border border-brand/30 bg-brand/10 p-4">
                 <p className="mb-2 text-xs font-black tracking-wider">ADMINISTRATOR'S CONTACT INFORMATION</p>
                 <p className="font-bold">{open.contact.fullName}</p>
                 <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1"><Tel n={open.contact.phone} />{open.contact.altPhone && <Tel n={open.contact.altPhone} />}</div>
-                <p className="mt-2 text-[11px] text-white/45">As entered when this report was submitted.</p>
+                <p className="mt-2 text-[11px] text-white/65">As entered when this report was submitted.</p>
               </div>
-            ) : <p className="rounded-xl bg-white/5 p-3 text-xs text-white/50">Contact details are visible to authorised administrators only.</p>}
+            ) : <p className="rounded-xl bg-white/5 p-3 text-xs text-white/65">Contact details are visible to authorised administrators only.</p>}
             {open.remittance && <div className="rounded-xl bg-white/5 p-4"><p className="label">Youth Sunday remittance</p><p>Offering {formatNaira(open.remittance.offeringKobo)} · required <b>{formatNaira(open.remittance.requiredKobo)}</b> · confirmed <b>{formatNaira(open.remittance.confirmedKobo ?? 0)}</b>{open.remittance.outstandingKobo > 0 && <> · outstanding <b>{formatNaira(open.remittance.outstandingKobo)}</b></>} · <span className={statusBadge[open.remittance.status]}>{statusLabel[open.remittance.status]}</span></p></div>}
             {open.rollup && <div className="rounded-xl bg-white/5 p-4"><p className="label">Consolidation at submission</p><p className="text-white/70">{Object.entries(open.rollup).filter(([, v]) => typeof v === "number").map(([k, v]) => `${k.replace(/([A-Z])/g, " $1").toLowerCase()}: ${v}`).join(" · ")}</p></div>}
             <div className="space-y-3">{FIELDS[open.type as "parish"].map((f) => open.activity?.[f.key] !== undefined && open.activity?.[f.key] !== null && open.activity?.[f.key] !== "" ? <div key={f.key}><p className="label">{f.label}</p><p className="whitespace-pre-line text-white/80">{String(open.activity[f.key])}</p></div> : null)}</div>
-            {open.reviews?.length > 0 && <div className="rounded-xl bg-white/5 p-4"><p className="label">Review log</p><ul className="space-y-1.5 text-xs">{[...open.reviews].reverse().map((v: any, i: number) => <li key={i}><b>{v.action.replace("_", " ")}</b> · {v.byName} · {new Date(v.at).toLocaleString("en-NG")}{v.note && <span className="text-white/60"> — {v.note}</span>}</li>)}</ul></div>}
+            {open.reviews?.length > 0 && <div className="rounded-xl bg-white/5 p-4"><p className="label">Review log</p><ul className="space-y-1.5 text-xs">{[...open.reviews].reverse().map((v: any, i: number) => <li key={i}><b>{v.action.replace("_", " ")}</b> · {v.byName} · {new Date(v.at).toLocaleString("en-NG")}{v.note && <span className="text-white/65"> — {v.note}</span>}</li>)}</ul></div>}
             {canReview && <ReviewActions r={open} onDone={() => { setOpen(null); reload(); }} />}
             {open.history?.length > 0 && (
-              <details className="rounded-xl bg-white/5 p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-white/60">Revision history ({open.history.length}, read-only)</summary>
+              <details className="rounded-xl bg-white/5 p-4"><summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-white/65">Revision history ({open.history.length}, read-only)</summary>
                 <ul className="mt-3 space-y-3">{[...open.history].reverse().map((h: any, i: number) => (
-                  <li key={i} className="rounded-lg border border-white/10 p-3 text-xs"><b>Version {h.revision}</b> · {new Date(h.at).toLocaleString("en-NG")}{h.byName && <> · {h.byName}</>}{h.note && <p className="mt-1 text-white/60">Reason for revision: {h.note}</p>}
-                    {h.contact && <p className="mt-1 text-white/60">Contact then: {h.contact.fullName}, {h.contact.phone}{h.contact.altPhone ? `, ${h.contact.altPhone}` : ""}</p>}
-                    <div className="mt-2 space-y-1">{FIELDS[open.type as "parish"].map((fd) => h.activity?.[fd.key] !== undefined && h.activity?.[fd.key] !== "" ? <p key={fd.key} className="text-white/55"><span className="text-white/40">{fd.label}:</span> {String(h.activity[fd.key])}</p> : null)}</div></li>
+                  <li key={i} className="rounded-lg border border-white/10 p-3 text-xs"><b>Version {h.revision}</b> · {new Date(h.at).toLocaleString("en-NG")}{h.byName && <> · {h.byName}</>}{h.note && <p className="mt-1 text-white/65">Reason for revision: {h.note}</p>}
+                    {h.contact && <p className="mt-1 text-white/65">Contact then: {h.contact.fullName}, {h.contact.phone}{h.contact.altPhone ? `, ${h.contact.altPhone}` : ""}</p>}
+                    <div className="mt-2 space-y-1">{FIELDS[open.type as "parish"].map((fd) => h.activity?.[fd.key] !== undefined && h.activity?.[fd.key] !== "" ? <p key={fd.key} className="text-white/65"><span className="text-white/65">{fd.label}:</span> {String(h.activity[fd.key])}</p> : null)}</div></li>
                 ))}</ul></details>
             )}
             {canSubmit && <button className="btn btn-ghost" onClick={() => setRevising(open)}>Revise this report</button>}
@@ -152,7 +154,7 @@ function ReviseModal({ r, onClose, onDone }: { r: any; onClose: () => void; onDo
   return (
     <Modal open onClose={onClose} wide title={`Revise ${r.reportId ?? "report"}`}>
       <div className="space-y-5 text-sm">
-        <p className="rounded-xl bg-white/5 p-3 text-xs text-white/60">Your earlier answers are not lost. They stay in the revision history. The financial section isn't changed here.</p>
+        <p className="rounded-xl bg-white/5 p-3 text-xs text-white/65">Your earlier answers are not lost. They stay in the revision history. The financial section isn't changed here.</p>
         <ContactSection value={contact} onChange={setContact} />
         <ActivityFields fields={[...FIELDS[r.type as "parish"]]} values={act} onChange={(k, v) => setAct((a) => ({ ...a, [k]: v }))} />
         <div><label className="label" htmlFor="rev-note">Reason for revising (optional)</label><input id="rev-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} /></div>
@@ -175,7 +177,7 @@ function ReviewActions({ r, onDone }: { r: any; onDone: () => void }) {
   return (
     <div className="rounded-xl border border-white/10 p-4">
       <p className="label">Review this report</p>
-      <p className="mb-2 text-xs text-white/50">This is about the activity report only. It doesn't change payment verification.</p>
+      <p className="mb-2 text-xs text-white/65">This is about the activity report only. It doesn't change payment verification.</p>
       <input className="input mb-3" aria-label="Note for the administrator" placeholder="Note (required when asking for changes)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} />
       <div className="flex flex-wrap gap-2">
         <button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => go("complete")}>Mark completed</button>
@@ -199,24 +201,28 @@ function ComplianceView({ month, year, onPeriod }: { month: number; year: number
   return (
     <div className="space-y-4">
       <PeriodPicker month={month} year={year} onChange={onPeriod} />
-      <p className="text-xs text-white/50">Fully compliant means the report is in <b>and</b> the remittance has been confirmed by finance. Pending, rejected or unverified payments are never counted as paid.</p>
+      <p className="text-xs text-white/65">Fully compliant means the report is in <b>and</b> the remittance has been confirmed by finance. Pending, rejected or unverified payments are never counted as paid.</p>
       {d && <div className="flex flex-wrap gap-2">
         <button className={cn("badge", !code && "ring-1 ring-brand")} onClick={() => setCode("")}>All ({d.rows.length})</button>
         {Object.entries(d.counts).map(([k, n]) => <button key={k} className={cn("badge", code === k && "ring-1 ring-brand")} onClick={() => setCode(code === k ? "" : k)}>{labels[k] ?? k} ({n as number})</button>)}
       </div>}
-      {!d && <div className="skeleton h-48" />}
-      {d && (
-        <div className="glass overflow-x-auto p-0"><table className="w-full min-w-[760px] text-left text-sm"><thead className="text-xs uppercase tracking-wider text-white/45"><tr><th className="p-3">Parish</th><th className="p-3">Report</th><th className="p-3">Payment</th><th className="p-3">Required</th><th className="p-3">Confirmed</th><th className="p-3">Outstanding</th><th className="p-3">Overall</th></tr></thead><tbody>
-          {rows.map((r: any) => (
-            <tr key={r.id} className="border-t border-white/10"><td className="p-3"><b>{r.parish}</b><p className="text-xs text-white/45">{[r.zone, r.area].filter(Boolean).join(" → ")}</p></td>
-              <td className="p-3"><span className={REPORT_BADGE[r.reportStatus as ReportStatus]}>{REPORT_LABEL[r.reportStatus as ReportStatus]}</span></td>
-              <td className="p-3"><span className={statusBadge[r.fv]}>{r.fvLabel}</span></td>
-              <td className="p-3 tabular-nums">{formatNaira(r.requiredKobo)}</td><td className="p-3 tabular-nums">{formatNaira(r.confirmedKobo)}</td><td className="p-3 tabular-nums">{r.outstandingKobo ? formatNaira(r.outstandingKobo) : r.overpaidKobo ? `+${formatNaira(r.overpaidKobo)} over` : "—"}</td>
-              <td className="p-3"><span className={COMPLIANCE_BADGE[r.compliance.level as keyof typeof COMPLIANCE_BADGE]}>{r.compliance.label}</span>{r.compliance.detail && <p className="mt-1 text-[11px] text-white/45">{r.compliance.detail}</p>}</td></tr>
-          ))}
-          {rows.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-white/45">No parishes match.</td></tr>}
-        </tbody></table></div>
-      )}
+      <div className="glass p-4">
+        <DataTable<any>
+          caption="Parish compliance for the selected month"
+          rows={d ? rows : null} loading={!d} rowKey={(r) => r.id} pageSize={20}
+          searchText={(r) => `${r.parish} ${r.zone ?? ""} ${r.area ?? ""}`} searchPlaceholder="Search parish, zone or area"
+          empty={{ title: "No parishes match", hint: "Clear a filter to see more." }}
+          columns={[
+            { key: "parish", header: "Parish", sortValue: (r) => r.parish, render: (r) => <><b>{r.parish}</b><p className="text-xs text-white/75">{[r.zone, r.area].filter(Boolean).join(" → ")}</p></> },
+            { key: "report", header: "Report", sortValue: (r) => r.reportStatus, render: (r) => <ReportBadge status={r.reportStatus} /> },
+            { key: "pay", header: "Payment", sortValue: (r) => r.fv, render: (r) => <FinanceBadge status={r.fv} /> },
+            { key: "req", header: "Required", align: "right", sortValue: (r) => r.requiredKobo, render: (r) => <span className="tabular-nums">{formatNaira(r.requiredKobo)}</span> },
+            { key: "conf", header: "Confirmed", align: "right", sortValue: (r) => r.confirmedKobo, render: (r) => <span className="tabular-nums">{formatNaira(r.confirmedKobo)}</span> },
+            { key: "out", header: "Outstanding", align: "right", sortValue: (r) => r.outstandingKobo, render: (r) => <span className="tabular-nums">{r.outstandingKobo ? formatNaira(r.outstandingKobo) : r.overpaidKobo ? `+${formatNaira(r.overpaidKobo)} over` : "—"}</span> },
+            { key: "comp", header: "Compliance", sortValue: (r) => r.compliance.label, render: (r) => <><StatusBadge view={{ label: r.compliance.label, level: r.compliance.level }} />{r.compliance.detail && <p className="mt-1 text-[11px] text-white/75">{r.compliance.detail}</p>}</> },
+          ]}
+        />
+      </div>
     </div>
   );
 }

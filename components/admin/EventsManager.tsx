@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { fmtDT, fromLocalInput, toLocalInput } from "@/lib/dates";
 import { AreaField, ImageField, RepeatList, TextField, Toggle } from "./fields";
@@ -13,6 +14,7 @@ const blank = { title: "", description: "", venue: "", mapUrl: "", startsAt: "",
 
 export function EventsManager({ canManage }: { canManage: boolean }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [events, setEvents] = useState<any[] | null>(null);
   const [edit, setEdit] = useState<any | null>(null);
   const load = useCallback(() => api("/api/events").then((r) => setEvents(r.events)).catch((e) => toast.err(e.message)), [toast]);
@@ -27,7 +29,7 @@ export function EventsManager({ canManage }: { canManage: boolean }) {
         {events === null && [0, 1, 2].map((i) => <div key={i} className="skeleton h-24" />)}
         {events?.map((e, i) => (
           <motion.div key={e.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }} className="glass flex flex-wrap items-center justify-between gap-4 p-4">
-            <div className="min-w-0"><p className="truncate font-bold">{e.title}</p><p className="text-xs text-white/45">{fmtDT(e.startsAt)}{e.venue ? ` · ${e.venue}` : ""}</p></div>
+            <div className="min-w-0"><p className="truncate font-bold">{e.title}</p><p className="text-xs text-white/65">{fmtDT(e.startsAt)}{e.venue ? ` · ${e.venue}` : ""}</p></div>
             <div className="flex flex-wrap items-center gap-2">
               <span className={`badge ${badge(e.status)} capitalize`}>{e.status}</span>
               <span className="badge"><Users className="h-3 w-3" />{e.registered}{e.capacity ? `/${e.capacity}` : ""} · {e.attended} in</span>
@@ -35,12 +37,12 @@ export function EventsManager({ canManage }: { canManage: boolean }) {
               {canManage && <>
                 <button className="btn btn-ghost btn-sm" onClick={() => setEdit({ ...e, startsAt: toLocalInput(e.startsAt), endsAt: toLocalInput(e.endsAt), registrationDeadline: toLocalInput(e.registrationDeadline), capacity: String(e.capacity ?? 0), customFields: e.customFields ?? [], recFreq: "none", recCount: "4", _id: e.id })}><Pencil className="h-3.5 w-3.5" /></button>
                 {e.status !== "published" ? <button className="btn btn-ghost btn-sm" onClick={() => quick(e.id, { status: "published" }, "Published")}><Eye className="h-3.5 w-3.5" />Publish</button> : <button className="btn btn-ghost btn-sm" onClick={() => quick(e.id, { status: "draft" }, "Unpublished")}><EyeOff className="h-3.5 w-3.5" />Unpublish</button>}
-                {e.status !== "cancelled" && <button className="btn btn-danger btn-sm" onClick={() => confirm("Cancel this event? Registrants will see it as cancelled.") && quick(e.id, { status: "cancelled" }, "Cancelled")}><XCircle className="h-3.5 w-3.5" /></button>}
+                {e.status !== "cancelled" && <button className="btn btn-danger btn-sm" onClick={async () => (await confirm({ title: "Cancel this event?", message: "Registrants will see it as cancelled.", confirmLabel: "Cancel event", cancelLabel: "Keep event" })) && quick(e.id, { status: "cancelled" }, "Cancelled")}><XCircle className="h-3.5 w-3.5" /></button>}
               </>}
             </div>
           </motion.div>
         ))}
-        {events?.length === 0 && <div className="glass p-10 text-center text-white/45">No events yet.</div>}
+        {events?.length === 0 && <div className="glass p-10 text-center text-white/65">No events yet.</div>}
       </div>
       {edit && <EventForm key={edit._id ?? "new"} init={edit} onClose={() => setEdit(null)} onDone={load} />}
     </>

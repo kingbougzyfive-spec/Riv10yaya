@@ -22,20 +22,20 @@ export function SecurityCenter() {
       </div>
       <ul className="grid gap-3 md:grid-cols-2">
         {d.checks.map((c) => (
-          <li key={c.id} className="glass flex gap-3 p-4">{ICON[c.level]}<div><p className="font-semibold">{c.title}</p><p className="mt-0.5 text-sm text-white/60">{c.detail}</p></div></li>
+          <li key={c.id} className="glass flex gap-3 p-4">{ICON[c.level]}<div><p className="font-semibold">{c.title}</p><p className="mt-0.5 text-sm text-white/65">{c.detail}</p></div></li>
         ))}
       </ul>
       <section className="glass space-y-3 p-5">
         <p className="font-bold">Backups</p>
-        <p className="text-sm text-white/60">Your real protection is database backups from MongoDB Atlas (continuous or scheduled snapshots) plus a linked backup database under Admin, Database. This download is an extra safety copy of the records. It leaves out passwords, tokens and uploaded file contents, and may be refused when the data is large.</p>
+        <p className="text-sm text-white/65">Your real protection is database backups from MongoDB Atlas (continuous or scheduled snapshots) plus a linked backup database under Admin, Database. This download is an extra safety copy of the records. It leaves out passwords, tokens and uploaded file contents, and may be refused when the data is large.</p>
         <a className="btn btn-ghost" href="/api/security/backup"><Download className="h-4 w-4" />Download data copy (.jsonl.gz)</a>
       </section>
       <section className="glass overflow-hidden p-0">
         <p className="border-b border-white/10 p-4 font-bold">Recent server errors</p>
-        {d.errors.length === 0 ? <p className="p-6 text-center text-sm text-white/45">None recorded.</p> : (
+        {d.errors.length === 0 ? <p className="p-6 text-center text-sm text-white/65">None recorded.</p> : (
           <ul className="divide-y divide-white/10">
             {d.errors.map((e) => (
-              <li key={e.id} className="p-4 text-sm"><p><span className="font-mono text-xs text-brand">{e.requestId}</span> <span className="text-white/50">{new Date(e.at).toLocaleString("en-NG")} · {e.method} {e.path}</span></p><p className="mt-1 text-white/75">{e.message}</p></li>
+              <li key={e.id} className="p-4 text-sm"><p><span className="font-mono text-xs text-brand">{e.requestId}</span> <span className="text-white/65">{new Date(e.at).toLocaleString("en-NG")} · {e.method} {e.path}</span></p><p className="mt-1 text-white/75">{e.message}</p></li>
             ))}
           </ul>
         )}

@@ -44,7 +44,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
   useEffect(() => { load(); }, [load]);
 
   if (!ctx) return <div className="space-y-4"><div className="skeleton h-28" /><div className="skeleton h-64" /></div>;
-  if (ctx.error) return <div className="glass p-8 text-center text-white/60">{ctx.error}</div>;
+  if (ctx.error) return <div className="glass p-8 text-center text-white/65">{ctx.error}</div>;
 
   const fields: FieldDef[] = [...FIELDS[ctx.type as "parish" | "area" | "zone"]];
   const cur = mode === "remittance" ? 1 : mode === "report" ? 2 : step;
@@ -105,7 +105,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
       {/* Identity from database ids: names displayed prominently, never typed */}
       <div className="glass grid gap-4 p-5 sm:grid-cols-3">
         {[{ k: "Zone", v: ctx.names.zone }, ...(ctx.type !== "zone" ? [{ k: "Area", v: ctx.names.area ?? "— (standalone zone)" }] : []), ...(ctx.type === "parish" ? [{ k: "Parish", v: ctx.names.parish }] : []), { k: "Reporting period", v: `${MONTHS[period.month - 1]} ${period.year}` }].map((x) => (
-          <div key={x.k}><p className="text-[11px] uppercase tracking-widest text-white/45">{ctx.type === "area" && x.k === "Area" ? "Name of Area" : x.k}</p><p className="mt-1 text-lg font-extrabold">{x.v}</p></div>
+          <div key={x.k}><p className="text-[11px] uppercase tracking-widest text-white/65">{ctx.type === "area" && x.k === "Area" ? "Name of Area" : x.k}</p><p className="mt-1 text-lg font-extrabold">{x.v}</p></div>
         ))}
       </div>
 
@@ -113,16 +113,16 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
         <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="glass p-8 text-center">
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-400" />
           <p className="mt-3 text-lg font-bold">{typeLabel} report for {MONTHS[period.month - 1]} {period.year} has been submitted.</p>
-          <p className="mt-1 text-sm text-white/50">Submitted {new Date(ctx.submitted.at).toLocaleString("en-NG")} · <span className={REPORT_BADGE[(ctx.submitted.status ?? "submitted") as ReportStatus]}>{REPORT_LABEL[(ctx.submitted.status ?? "submitted") as ReportStatus]}</span></p>
+          <p className="mt-1 text-sm text-white/65">Submitted {new Date(ctx.submitted.at).toLocaleString("en-NG")} · <span className={REPORT_BADGE[(ctx.submitted.status ?? "submitted") as ReportStatus]}>{REPORT_LABEL[(ctx.submitted.status ?? "submitted") as ReportStatus]}</span></p>
           {ctx.remittance && <p className="mt-3"><span className={statusBadge[ctx.remittance.status]}>{statusLabel[ctx.remittance.status]}</span></p>}
         </motion.div>
       ) : (
         <>
-          {needRemittance && <div className="glass p-6 text-center text-sm"><p className="font-bold">Record this month's remittance first</p><p className="mt-1 text-white/60">Your activity report opens once the Youth Sunday remittance has been recorded.</p><a className="btn btn-primary mt-4" href={remittanceHref}>Go to remittance</a></div>}
+          {needRemittance && <div className="glass p-6 text-center text-sm"><p className="font-bold">Record this month's remittance first</p><p className="mt-1 text-white/65">Your activity report opens once the Youth Sunday remittance has been recorded.</p><a className="btn btn-primary mt-4" href={remittanceHref}>Go to remittance</a></div>}
           {ctx.type === "parish" && mode === "all" && (
             <div className="glass grid grid-cols-2 gap-1 p-1">
               {[{ n: 1, l: "1 · Finance", i: Banknote }, { n: 2, l: "2 · Activity report", i: ClipboardList }].map((s) => (
-                <button data-needs-online key={s.n} disabled={s.n === 2 && !ctx.remittance} onClick={() => setStep(s.n as 1 | 2)} className={cn("relative rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40", step === s.n ? "text-[#04130d]" : "text-white/60")}>
+                <button data-needs-online key={s.n} disabled={s.n === 2 && !ctx.remittance} onClick={() => setStep(s.n as 1 | 2)} className={cn("relative rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40", step === s.n ? "text-[#04130d]" : "text-white/65")}>
                   {cur === s.n && <motion.span layoutId="wiz" className="absolute inset-0 rounded-xl bg-brand" />}<span className="relative flex items-center justify-center gap-2"><s.i className="h-4 w-4" />{s.l}</span>
                 </button>
               ))}
@@ -133,21 +133,21 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
             {ctx.type === "parish" && cur === 1 && (
               <motion.div key="fin" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
                 {ctx.remittance ? (
-                  <div className="glass p-6"><p className="font-bold">Finance already recorded for this month</p><p className="mt-2 text-sm text-white/60">Required remittance {formatNaira(ctx.remittance.requiredKobo)} · <span className={statusBadge[ctx.remittance.status]}>{statusLabel[ctx.remittance.status]}</span></p><button className="btn btn-primary mt-4" onClick={() => setStep(2)}>Continue to activity report<ArrowRight className="h-4 w-4" /></button></div>
+                  <div className="glass p-6"><p className="font-bold">Finance already recorded for this month</p><p className="mt-2 text-sm text-white/65">Required remittance {formatNaira(ctx.remittance.requiredKobo)} · <span className={statusBadge[ctx.remittance.status]}>{statusLabel[ctx.remittance.status]}</span></p><button className="btn btn-primary mt-4" onClick={() => setStep(2)}>Continue to activity report<ArrowRight className="h-4 w-4" /></button></div>
                 ) : (<>
                   <div className="glass p-5">
                     <p className="mb-3 flex items-center gap-2 font-bold"><Landmark className="h-4 w-4 text-accent" />Pay directly into the official provincial account</p>
                     {ctx.finance.bank.accountNumber ? (
                       <div className="grid gap-3 text-sm sm:grid-cols-3"><div><p className="label">Bank</p><b>{ctx.finance.bank.bankName}</b></div><div><p className="label">Account name</p><b>{ctx.finance.bank.accountName}</b></div><div><p className="label">Account number</p><b className="font-mono text-lg tracking-wider">{ctx.finance.bank.accountNumber}</b></div></div>
                     ) : <p className="badge-warn rounded-xl p-3 text-sm">Bank details haven't been published yet. Please contact the Provincial Finance Administrator.</p>}
-                    {ctx.finance.bank.instructions && <p className="mt-3 text-xs text-white/50">{ctx.finance.bank.instructions}</p>}
+                    {ctx.finance.bank.instructions && <p className="mt-3 text-xs text-white/65">{ctx.finance.bank.instructions}</p>}
                   </div>
                   <div className="glass space-y-4 p-5 sm:p-6">
                     <div><label className="label">Total Youth Sunday Thanksgiving offering collected (₦) <span className="text-accent">*</span></label><input className="input text-lg font-bold" type="number" inputMode="decimal" min={0} step="0.01" value={fin.offering} onChange={(e) => setFin({ ...fin, offering: e.target.value })} placeholder="0.00" /></div>
                     <div className="grid grid-cols-3 gap-3 text-center">
-                      <div className="rounded-xl bg-white/5 p-3"><p className="text-[10px] uppercase tracking-wider text-white/45">Offering</p><p className="mt-1 text-sm font-bold">{formatNaira(offeringKobo)}</p></div>
+                      <div className="rounded-xl bg-white/5 p-3"><p className="text-[10px] uppercase tracking-wider text-white/65">Offering</p><p className="mt-1 text-sm font-bold">{formatNaira(offeringKobo)}</p></div>
                       <motion.div key={required} initial={{ scale: 0.92 }} animate={{ scale: 1 }} className="rounded-xl border border-brand/40 bg-brand/15 p-3"><p className="text-[10px] uppercase tracking-wider text-brand">Remit {pct}%</p><p className="mt-1 text-sm font-black">{formatNaira(required)}</p></motion.div>
-                      <div className="rounded-xl bg-white/5 p-3"><p className="text-[10px] uppercase tracking-wider text-white/45">Parish keeps</p><p className="mt-1 text-sm font-bold">{formatNaira(offeringKobo - required)}</p></div>
+                      <div className="rounded-xl bg-white/5 p-3"><p className="text-[10px] uppercase tracking-wider text-white/65">Parish keeps</p><p className="mt-1 text-sm font-bold">{formatNaira(offeringKobo - required)}</p></div>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div><label className="label">Date of payment <span className="text-accent">*</span></label><input className="input" type="date" max={today()} value={fin.paidAt} onChange={(e) => setFin({ ...fin, paidAt: e.target.value })} /></div>
@@ -158,7 +158,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
                     <div><label className="label">Additional financial remarks</label><textarea className="input" rows={2} value={fin.remarks} onChange={(e) => setFin({ ...fin, remarks: e.target.value })} /></div>
                   </div>
                   <div className="glass space-y-3 p-5 sm:p-6">
-                    <div><p className="font-bold">Other levies & contributions <span className="text-xs font-normal text-white/45">(optional · reported separately from the {pct}%)</span></p></div>
+                    <div><p className="font-bold">Other levies & contributions <span className="text-xs font-normal text-white/65">(optional · reported separately from the {pct}%)</span></p></div>
                     {levies.map((l, i) => (
                       <div key={i} className="space-y-3 rounded-xl border border-white/10 bg-white/[.03] p-4">
                         <div className="flex items-center justify-between"><p className="text-sm font-semibold">Levy {i + 1}</p><button className="btn btn-danger btn-sm !p-1.5" onClick={() => setLevies(levies.filter((_, j) => j !== i))}><Trash2 className="h-3.5 w-3.5" /></button></div>
@@ -171,7 +171,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
                     <button className="btn btn-ghost w-full border-dashed" onClick={() => setLevies([...levies, { category: "levy", description: "", amount: "", paidAt: today(), reference: "", evidenceId: "" }])}><Plus className="h-4 w-4" />Add a levy or contribution</button>
                   </div>
                   <button data-needs-online className="btn btn-primary w-full py-3.5 text-base" disabled={busy} onClick={submitFinance}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}Save finance & continue to activity report</button>
-                  <p className="text-center text-xs text-white/40">You don't need to wait for finance approval to complete your activity report.</p>
+                  <p className="text-center text-xs text-white/65">You don't need to wait for finance approval to complete your activity report.</p>
                 </>)}
               </motion.div>
             )}
@@ -183,7 +183,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
                 <ContactSection value={contact} onChange={setContact} />
                 <button data-needs-online className="btn btn-primary w-full py-3.5 text-base" disabled={busy} onClick={submitReport}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Submit {typeLabel.toLowerCase()} report</button>
                 <button data-needs-online className="btn btn-ghost w-full" disabled={busy} onClick={saveDraft}>Save as draft</button>
-                {ctx.draft && <p className="text-center text-xs text-white/40">A saved draft was loaded. Drafts are not counted as submitted.</p>}
+                {ctx.draft && <p className="text-center text-xs text-white/65">A saved draft was loaded. Drafts are not counted as submitted.</p>}
               </motion.div>
             )}
           </AnimatePresence>
@@ -195,7 +195,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
 
 function Rollup({ type, r }: { type: string; r: any }) {
   const Chip = ({ n, submitted }: { n: string; submitted: boolean }) => <span className={cn("badge", submitted ? "badge-ok" : "badge-warn")}>{submitted ? "✓" : "…"} {n}</span>;
-  const stat = (l: string, v: number) => <div className="rounded-xl bg-white/5 p-3 text-center"><p className="text-2xl font-black">{v}</p><p className="text-[10px] uppercase tracking-wider text-white/45">{l}</p></div>;
+  const stat = (l: string, v: number) => <div className="rounded-xl bg-white/5 p-3 text-center"><p className="text-2xl font-black">{v}</p><p className="text-[10px] uppercase tracking-wider text-white/65">{l}</p></div>;
   return (
     <div className="glass space-y-4 p-5 sm:p-6">
       <p className="font-bold">Auto-filled from the system</p>

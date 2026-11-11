@@ -34,7 +34,7 @@ export function MembersManager({ role }: { role: string }) {
     <>
       <div className="glass mb-4 space-y-3 p-4">
         <div className="flex flex-wrap gap-3">
-          <div className="relative min-w-[220px] flex-1"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" /><input className="input !pl-10" placeholder="Search name, phone, email or member ID…" value={fl.q} onChange={(e) => set({ q: e.target.value })} /></div>
+          <div className="relative min-w-[220px] flex-1"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/65" /><input className="input !pl-10" placeholder="Search name, phone, email or member ID…" value={fl.q} onChange={(e) => set({ q: e.target.value })} /></div>
           <button className="btn btn-primary" onClick={() => setAdd(true)}><Plus className="h-4 w-4" />Add member</button>
           {["super_admin", "provincial_admin"].includes(role) && <button className="btn btn-ghost" onClick={() => setCats(true)}><Settings2 className="h-4 w-4" />Categories</button>}
         </div>
@@ -53,19 +53,19 @@ export function MembersManager({ role }: { role: string }) {
         </div>
       </div>
 
-      <p className="mb-2 text-xs text-white/50">{d ? `${d.total} member${d.total === 1 ? "" : "s"}` : "Loading…"} · Under-18 contact details are visible only to the parish administrator.</p>
+      <p className="mb-2 text-xs text-white/65">{d ? `${d.total} member${d.total === 1 ? "" : "s"}` : "Loading…"} · Under-18 contact details are visible only to the parish administrator.</p>
       <div className="grid gap-2.5">
         {!d && [0, 1, 2].map((i) => <div key={i} className="skeleton h-16" />)}
         {d?.rows.map((m: any) => (
           <button key={m.id} onClick={() => setOpenId(m.id)} className="glass flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition hover:-translate-y-0.5">
             <div className="min-w-0">
               <p className="flex items-center gap-2 truncate font-semibold">{m.name}{m.minor && <span className="badge badge-warn">Under 18</span>}{m.leadership && <span className="badge">{m.leadership.title}</span>}</p>
-              <p className="truncate text-xs text-white/50">{m.restricted ? <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" />Contact protected</span> : m.phone} · {[m.zone, m.area, m.parish].filter(Boolean).join(" → ")}</p>
+              <p className="truncate text-xs text-white/65">{m.restricted ? <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" />Contact protected</span> : m.phone} · {[m.zone, m.area, m.parish].filter(Boolean).join(" → ")}</p>
             </div>
             <div className="flex items-center gap-2"><span className="badge">{m.category}</span><span className={STATUS_BADGE[m.status] ?? "badge"}>{STATUS_LABEL[m.status as keyof typeof STATUS_LABEL] ?? m.status}</span><span className="badge font-mono">{m.memberId}</span></div>
           </button>
         ))}
-        {d?.rows.length === 0 && <div className="glass p-10 text-center text-white/50">No members match.</div>}
+        {d?.rows.length === 0 && <div className="glass p-10 text-center text-white/65">No members match.</div>}
       </div>
       {d && d.pages > 1 && <div className="mt-4 flex items-center justify-center gap-3 text-sm"><button className="btn btn-ghost btn-sm" disabled={fl.page <= 1} onClick={() => setFl({ ...fl, page: fl.page - 1 })}>Previous</button><span>Page {fl.page} of {d.pages}</span><button className="btn btn-ghost btn-sm" disabled={fl.page >= d.pages} onClick={() => setFl({ ...fl, page: fl.page + 1 })}>Next</button></div>}
 
@@ -79,7 +79,7 @@ export function MembersManager({ role }: { role: string }) {
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) { return <div><label className="label">{label}</label>{children}{hint && <p className="hint">{hint}</p>}</div>; }
 
 function Dept({ depts, value, onChange }: { depts: any[]; value: string[]; onChange: (v: string[]) => void }) {
-  return <div className="flex flex-wrap gap-2">{depts.map((x) => { const on = value.includes(x.id); return <button type="button" key={x.id} onClick={() => onChange(on ? value.filter((v) => v !== x.id) : [...value, x.id])} className={cn("rounded-full border px-3 py-1 text-xs font-semibold", on ? "border-brand bg-brand/20 text-brand" : "border-white/15 text-white/60")}>{x.name}</button>; })}{!depts.length && <p className="text-xs text-white/40">No departments yet.</p>}</div>;
+  return <div className="flex flex-wrap gap-2">{depts.map((x) => { const on = value.includes(x.id); return <button type="button" key={x.id} onClick={() => onChange(on ? value.filter((v) => v !== x.id) : [...value, x.id])} className={cn("rounded-full border px-3 py-1 text-xs font-semibold", on ? "border-brand bg-brand/20 text-brand" : "border-white/15 text-white/65")}>{x.name}</button>; })}{!depts.length && <p className="text-xs text-white/65">No departments yet.</p>}</div>;
 }
 
 const isMinorDob = (dob: string) => !!dob && (Date.now() - new Date(dob).getTime()) / 31_557_600_000 < 18;
@@ -150,7 +150,7 @@ function Detail({ id, onClose, role, org, depts, cats, onChanged }: any) {
   return (
     <Modal open={!!id} onClose={onClose} title={m ? `${m.name} · ${m.memberId}` : "Member"} wide>
       {!d && <div className="grid place-items-center py-16"><Loader2 className="h-5 w-5 animate-spin text-brand" /></div>}
-      {m?.restricted && <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm"><p className="flex items-center gap-2 font-semibold"><Lock className="h-4 w-4" />This member is under 18</p><p className="mt-2 text-white/60">Personal and contact details of members under 18 are visible only to their Parish Administrator. You can see where they belong: {[m.zone, m.area, m.parish].filter(Boolean).join(" → ")}, category {m.category}.</p></div>}
+      {m?.restricted && <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm"><p className="flex items-center gap-2 font-semibold"><Lock className="h-4 w-4" />This member is under 18</p><p className="mt-2 text-white/65">Personal and contact details of members under 18 are visible only to their Parish Administrator. You can see where they belong: {[m.zone, m.area, m.parish].filter(Boolean).join(" → ")}, category {m.category}.</p></div>}
       {m && !m.restricted && f && (
         <>
           <div className="mb-4 flex flex-wrap gap-1.5">{tabs.map((t) => <button key={t} onClick={() => setTab(t)} className={cn("rounded-xl px-3.5 py-1.5 text-sm font-semibold", tab === t ? "bg-brand text-[#04130d]" : "bg-white/5 text-white/65")}>{t}</button>)}</div>
@@ -184,14 +184,14 @@ function Detail({ id, onClose, role, org, depts, cats, onChanged }: any) {
 
           {tab === "History" && d.history && (
             <div className="grid gap-4 md:grid-cols-2">
-              <div><p className="mb-2 font-bold">Event registrations ({d.history.events.length})</p><ul className="space-y-1.5 text-sm">{d.history.events.map((e: any) => <li key={e.id} className="flex justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span className="truncate">{e.title}<span className="block text-xs text-white/45">{fmt(e.startsAt)}</span></span><span className={cn("badge self-center", e.attended && "badge-ok")}>{e.attended ? "Attended" : "Registered"}</span></li>)}{!d.history.events.length && <li className="text-white/45">None yet.</li>}</ul></div>
-              <div><p className="mb-2 font-bold">Attendance ({d.history.attendance.length})</p><ul className="space-y-1.5 text-sm">{d.history.attendance.map((a: any) => <li key={a.id} className="flex justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span className="truncate">{a.title}</span><span className="shrink-0 text-xs text-white/45">{fmt(a.at)}</span></li>)}{!d.history.attendance.length && <li className="text-white/45">None yet.</li>}</ul></div>
+              <div><p className="mb-2 font-bold">Event registrations ({d.history.events.length})</p><ul className="space-y-1.5 text-sm">{d.history.events.map((e: any) => <li key={e.id} className="flex justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span className="truncate">{e.title}<span className="block text-xs text-white/65">{fmt(e.startsAt)}</span></span><span className={cn("badge self-center", e.attended && "badge-ok")}>{e.attended ? "Attended" : "Registered"}</span></li>)}{!d.history.events.length && <li className="text-white/65">None yet.</li>}</ul></div>
+              <div><p className="mb-2 font-bold">Attendance ({d.history.attendance.length})</p><ul className="space-y-1.5 text-sm">{d.history.attendance.map((a: any) => <li key={a.id} className="flex justify-between gap-2 rounded-lg bg-white/5 px-3 py-2"><span className="truncate">{a.title}</span><span className="shrink-0 text-xs text-white/65">{fmt(a.at)}</span></li>)}{!d.history.attendance.length && <li className="text-white/65">None yet.</li>}</ul></div>
             </div>
           )}
 
           {tab === "Volunteer" && <Volunteer d={d} onAdd={(v: any) => act({ action: "volunteer_add", ...v }, "Recorded")} busy={busy} />}
           {tab === "Follow-up" && d.followUps && <FollowUp d={d} busy={busy} onAct={act} />}
-          {tab === "Changes" && <ul className="space-y-1.5 text-sm">{d.changes.map((c: any, i: number) => <li key={i} className="rounded-lg bg-white/5 px-3 py-2"><b>{c.field}</b>{c.from || c.to ? <>: <span className="text-white/50">{c.from || "—"}</span> → {c.to || "—"}</> : null}<span className="block text-xs text-white/45">{c.byName ?? "system"} · {new Date(c.at).toLocaleString("en-NG")}{c.reason ? ` · ${c.reason}` : ""}</span></li>)}{!d.changes.length && <li className="text-white/45">No changes recorded.</li>}</ul>}
+          {tab === "Changes" && <ul className="space-y-1.5 text-sm">{d.changes.map((c: any, i: number) => <li key={i} className="rounded-lg bg-white/5 px-3 py-2"><b>{c.field}</b>{c.from || c.to ? <>: <span className="text-white/65">{c.from || "—"}</span> → {c.to || "—"}</> : null}<span className="block text-xs text-white/65">{c.byName ?? "system"} · {new Date(c.at).toLocaleString("en-NG")}{c.reason ? ` · ${c.reason}` : ""}</span></li>)}{!d.changes.length && <li className="text-white/65">No changes recorded.</li>}</ul>}
         </>
       )}
     </Modal>
@@ -204,7 +204,7 @@ function Volunteer({ d, onAdd, busy }: any) {
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-4"><input className="input sm:col-span-2" placeholder="What did they do? (e.g. Ushering at Gratitude)" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} /><input className="input" type="date" max={today()} value={v.at} onChange={(e) => setV({ ...v, at: e.target.value })} /><input className="input" type="number" min={0} placeholder="Hours" value={v.hours} onChange={(e) => setV({ ...v, hours: e.target.value })} /></div>
       <button className="btn btn-primary btn-sm" disabled={busy || v.title.length < 2} onClick={() => { onAdd({ title: v.title, at: v.at, ...(v.hours ? { hours: Number(v.hours) } : {}), note: v.note }); setV({ ...v, title: "", hours: "" }); }}>Record service</button>
-      <ul className="space-y-1.5 text-sm">{d.volunteer.map((x: any) => <li key={x.id} className="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"><span>{x.title}{x.hours ? <span className="text-white/45"> · {x.hours}h</span> : null}</span><span className="text-xs text-white/45">{fmt(x.at)}</span></li>)}{!d.volunteer.length && <li className="text-white/45">No volunteer service recorded.</li>}</ul>
+      <ul className="space-y-1.5 text-sm">{d.volunteer.map((x: any) => <li key={x.id} className="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"><span>{x.title}{x.hours ? <span className="text-white/65"> · {x.hours}h</span> : null}</span><span className="text-xs text-white/65">{fmt(x.at)}</span></li>)}{!d.volunteer.length && <li className="text-white/65">No volunteer service recorded.</li>}</ul>
     </div>
   );
 }
@@ -213,10 +213,10 @@ function FollowUp({ d, onAct, busy }: any) {
   const [v, setV] = useState({ kind: "call", note: "", nextAt: "" });
   return (
     <div className="space-y-4">
-      <p className="text-xs text-white/50">Follow-up notes are private to authorised administrators. The member never sees them.</p>
+      <p className="text-xs text-white/65">Follow-up notes are private to authorised administrators. The member never sees them.</p>
       <div className="grid gap-3 sm:grid-cols-[140px_1fr_160px]"><select className="input" value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value })}>{["call", "visit", "message", "meeting", "other"].map((k) => <option key={k}>{k}</option>)}</select><input className="input" placeholder="What happened or needs to happen?" value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} /><input className="input" type="date" title="Next follow-up" value={v.nextAt} onChange={(e) => setV({ ...v, nextAt: e.target.value })} /></div>
       <button className="btn btn-primary btn-sm" disabled={busy || v.note.length < 2} onClick={() => { onAct({ action: "followup_add", kind: v.kind, note: v.note, ...(v.nextAt ? { nextAt: v.nextAt } : {}) }, "Follow-up recorded"); setV({ ...v, note: "", nextAt: "" }); }}>Add follow-up</button>
-      <ul className="space-y-2 text-sm">{d.followUps.map((x: any) => <li key={x.id} className="rounded-xl bg-white/5 p-3"><div className="flex items-start justify-between gap-3"><p><span className="badge mr-2 capitalize">{x.kind}</span>{x.note}</p>{x.done ? <span className="badge badge-ok">Done</span> : <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onAct({ action: "followup_done", followUpId: x.id }, "Marked done")}>Mark done</button>}</div><p className="mt-1 text-xs text-white/45">{x.byName} · {fmt(x.at)}{x.nextAt && !x.done ? ` · next ${fmt(x.nextAt)}` : ""}{x.outcome ? ` · ${x.outcome}` : ""}</p></li>)}{!d.followUps.length && <li className="text-white/45">No follow-up yet.</li>}</ul>
+      <ul className="space-y-2 text-sm">{d.followUps.map((x: any) => <li key={x.id} className="rounded-xl bg-white/5 p-3"><div className="flex items-start justify-between gap-3"><p><span className="badge mr-2 capitalize">{x.kind}</span>{x.note}</p>{x.done ? <span className="badge badge-ok">Done</span> : <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onAct({ action: "followup_done", followUpId: x.id }, "Marked done")}>Mark done</button>}</div><p className="mt-1 text-xs text-white/65">{x.byName} · {fmt(x.at)}{x.nextAt && !x.done ? ` · next ${fmt(x.nextAt)}` : ""}{x.outcome ? ` · ${x.outcome}` : ""}</p></li>)}{!d.followUps.length && <li className="text-white/65">No follow-up yet.</li>}</ul>
     </div>
   );
 }
@@ -229,7 +229,7 @@ function Categories({ onClose }: { onClose: () => void }) {
   const save = async () => { try { await api("/api/members/categories", { method: "PUT", json: { list } }); toast.ok("Categories saved"); onClose(); } catch (e: any) { toast.err(e.message); } };
   return (
     <Modal open onClose={onClose} title="Membership categories">
-      <p className="mb-3 text-xs text-white/55">Switching a category off hides it from new members; people already in it keep it.</p>
+      <p className="mb-3 text-xs text-white/65">Switching a category off hides it from new members; people already in it keep it.</p>
       <ul className="space-y-2">{list?.map((c, i) => <li key={c.label} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-sm"><span>{c.label}</span><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={c.active} onChange={(e) => setList(list.map((x, j) => (j === i ? { ...x, active: e.target.checked } : x)))} />Active</label></li>)}</ul>
       <div className="mt-3 flex gap-2"><input className="input" placeholder="New category" value={nw} onChange={(e) => setNw(e.target.value)} /><button className="btn btn-ghost" disabled={nw.trim().length < 2} onClick={() => { if (list && !list.some((c) => c.label.toLowerCase() === nw.trim().toLowerCase())) setList([...list, { label: nw.trim(), active: true }]); setNw(""); }}>Add</button></div>
       <button className="btn btn-primary mt-4 w-full" onClick={save}>Save categories</button>

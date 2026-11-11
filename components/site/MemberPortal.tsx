@@ -35,7 +35,7 @@ export function MemberPortal({ view = "overview" }: { view?: MemberView }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  if (err) return <p className="glass mx-auto max-w-lg p-8 text-center text-white/60">{err}</p>;
+  if (err) return <p className="glass mx-auto max-w-lg p-8 text-center text-white/65">{err}</p>;
   if (!d) return <div className="mx-auto max-w-4xl space-y-4"><div className="skeleton h-48" /><div className="skeleton h-48" /></div>;
   const p = d.profile;
   const phoneChanged = f.phone.replace(/\D/g, "") !== (p.phone ?? "").replace(/\D/g, "");
@@ -47,16 +47,16 @@ export function MemberPortal({ view = "overview" }: { view?: MemberView }) {
     <div className="mx-auto grid max-w-5xl gap-5 lg:grid-cols-[340px_1fr]">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass h-fit space-y-4 p-6 text-center">
         <IdCard className="mx-auto h-6 w-6 text-accent" />
-        <div><p className="text-lg font-black">{p.name}</p><p className="text-xs text-white/50">{[p.zone, p.area, p.parish].filter(Boolean).join(" → ")}</p></div>
+        <div><p className="text-lg font-black">{p.name}</p><p className="text-xs text-white/65">{[p.zone, p.area, p.parish].filter(Boolean).join(" → ")}</p></div>
         <div className="flex justify-center"><QrCode value={p.memberId} size={160} /></div>
         <p className="font-mono text-xl font-black tracking-widest text-accent">{p.memberId}</p>
-        <p className="text-xs text-white/40">Use this ID (or your phone number) on any attendance page.</p>
+        <p className="text-xs text-white/65">Use this ID (or your phone number) on any attendance page.</p>
         <dl className="space-y-1 border-t border-white/10 pt-3 text-left text-sm">
-          <div className="flex justify-between"><dt className="text-white/50">Category</dt><dd>{p.category}</dd></div>
-          <div className="flex justify-between"><dt className="text-white/50">Status</dt><dd className="capitalize">{p.status}</dd></div>
-          <div className="flex justify-between"><dt className="text-white/50">Joined</dt><dd>{fmt(p.joinedAt)}</dd></div>
-          {p.departments.length > 0 && <div className="flex justify-between gap-3"><dt className="text-white/50">Departments</dt><dd className="text-right">{p.departments.join(", ")}</dd></div>}
-          {p.leadership && <div className="flex justify-between"><dt className="text-white/50">Role</dt><dd>{p.leadership.title}</dd></div>}
+          <div className="flex justify-between"><dt className="text-white/65">Category</dt><dd>{p.category}</dd></div>
+          <div className="flex justify-between"><dt className="text-white/65">Status</dt><dd className="capitalize">{p.status}</dd></div>
+          <div className="flex justify-between"><dt className="text-white/65">Joined</dt><dd>{fmt(p.joinedAt)}</dd></div>
+          {p.departments.length > 0 && <div className="flex justify-between gap-3"><dt className="text-white/65">Departments</dt><dd className="text-right">{p.departments.join(", ")}</dd></div>}
+          {p.leadership && <div className="flex justify-between"><dt className="text-white/65">Role</dt><dd>{p.leadership.title}</dd></div>}
         </dl>
         <button className="btn btn-ghost btn-sm" onClick={async () => { await signOutEverywhereLocal(); router.push("/"); router.refresh(); }}><LogOut className="h-3.5 w-3.5" />Sign out</button>
       </motion.div>
@@ -64,7 +64,7 @@ export function MemberPortal({ view = "overview" }: { view?: MemberView }) {
       <div className="space-y-5">
         <div className="glass flex gap-1 overflow-x-auto p-1">
           {([["overview", "/member", "Overview"], ["profile", "/member/profile", "Profile"], ["events", "/member/events", "Events"], ["attendance", "/member/attendance", "Attendance"], ["notifications", "/member/notifications", "Notifications"]] as const).map(([k, href, label]) => (
-            <Link key={k} href={href} className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold ${view === k ? "bg-brand/20 text-brand" : "text-white/60 hover:text-white"}`}>{label}</Link>
+            <Link key={k} href={href} className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold ${view === k ? "bg-brand/20 text-brand" : "text-white/65 hover:text-white"}`}>{label}</Link>
           ))}
         </div>
         {(view === "overview" || view === "profile") && (<>
@@ -73,7 +73,7 @@ export function MemberPortal({ view = "overview" }: { view?: MemberView }) {
         {(view === "profile") && (<>
         <div className="glass p-5">
           <p className="mb-1 font-bold">My details</p>
-          <p className="mb-3 text-xs text-white/50">Your parish, category and status are managed by your parish administrator. Only you and authorised administrators of your own parish, area or zone can see these details.</p>
+          <p className="mb-3 text-xs text-white/65">Your parish, category and status are managed by your parish administrator. Only you and authorised administrators of your own parish, area or zone can see these details.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div><label className="label">Name</label><input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
             <div><label className="label">Email</label><input className="input" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
@@ -89,25 +89,25 @@ export function MemberPortal({ view = "overview" }: { view?: MemberView }) {
         {(view === "overview" || view === "notifications") && (<>
         <div className="glass p-5">
           <div className="mb-3 flex items-center justify-between"><p className="flex items-center gap-2 font-bold"><Bell className="h-4 w-4 text-accent" />Notifications{notes?.unread > 0 && <span className="badge badge-warn">{notes.unread} new</span>}</p>{notes?.unread > 0 && <button className="btn btn-ghost btn-sm" onClick={read}>Mark all read</button>}</div>
-          <ul className="space-y-1.5 text-sm">{notes?.rows.slice(0, view === "notifications" ? 60 : 6).map((n: any) => <li key={n.id}><Link href={n.link || "#"} className={`block rounded-lg px-3 py-2 ${n.read ? "bg-white/5" : "bg-brand/10"}`}><b>{n.title}</b>{n.body && <span className="block text-xs text-white/55">{n.body}</span>}</Link></li>)}{!notes?.rows.length && <li className="text-white/45">No notifications yet.</li>}</ul>
+          <ul className="space-y-1.5 text-sm">{notes?.rows.slice(0, view === "notifications" ? 60 : 6).map((n: any) => <li key={n.id}><Link href={n.link || "#"} className={`block rounded-lg px-3 py-2 ${n.read ? "bg-white/5" : "bg-brand/10"}`}><b>{n.title}</b>{n.body && <span className="block text-xs text-white/65">{n.body}</span>}</Link></li>)}{!notes?.rows.length && <li className="text-white/65">No notifications yet.</li>}</ul>
         </div>
         </>)}
         {(view === "overview" || view === "events") && (<>
         <div className="glass p-5">
           <p className="mb-3 flex items-center gap-2 font-bold"><CalendarCheck className="h-4 w-4 text-accent" />Events open for registration</p>
-          <div className="space-y-2">{open?.map((e) => <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3 text-sm"><span className="min-w-0"><b className="block truncate">{e.title}</b><span className="text-xs text-white/45">{fmt(e.startsAt)}{e.venue ? ` · ${e.venue}` : ""}</span></span>{e.reference ? <Link className="badge badge-ok" href={`/events/${e.id}/ticket/${e.reference}`}>Registered · ticket</Link> : <button className="btn btn-primary btn-sm" onClick={() => { setReg(e); setAns({}); }}>Register</button>}</div>)}{open?.length === 0 && <p className="text-sm text-white/45">No events are open right now. <Link className="text-brand underline" href="/events">See all events</Link></p>}</div>
+          <div className="space-y-2">{open?.map((e) => <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3 text-sm"><span className="min-w-0"><b className="block truncate">{e.title}</b><span className="text-xs text-white/65">{fmt(e.startsAt)}{e.venue ? ` · ${e.venue}` : ""}</span></span>{e.reference ? <Link className="badge badge-ok" href={`/events/${e.id}/ticket/${e.reference}`}>Registered · ticket</Link> : <button className="btn btn-primary btn-sm" onClick={() => { setReg(e); setAns({}); }}>Register</button>}</div>)}{open?.length === 0 && <p className="text-sm text-white/65">No events are open right now. <Link className="text-brand underline" href="/events">See all events</Link></p>}</div>
         </div>
         </>)}
         {(view === "events") && (<>
         <div className="glass p-5"><p className="mb-3 font-bold">My events</p>
-          <div className="space-y-2">{d.events.map((e: any) => <Link key={e.id} href={`/events/${e.eventId}/ticket/${e.reference}`} className="glass-hover flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3 text-sm"><span className="min-w-0"><b className="block truncate">{e.title}</b><span className="text-xs text-white/45">{fmt(e.startsAt)}</span></span><span className={`badge ${e.attended ? "badge-ok" : ""}`}>{e.attended ? "Attended" : "View ticket"}</span></Link>)}{d.events.length === 0 && <p className="text-sm text-white/45">You haven't registered for any events yet.</p>}</div></div>
+          <div className="space-y-2">{d.events.map((e: any) => <Link key={e.id} href={`/events/${e.eventId}/ticket/${e.reference}`} className="glass-hover flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3 text-sm"><span className="min-w-0"><b className="block truncate">{e.title}</b><span className="text-xs text-white/65">{fmt(e.startsAt)}</span></span><span className={`badge ${e.attended ? "badge-ok" : ""}`}>{e.attended ? "Attended" : "View ticket"}</span></Link>)}{d.events.length === 0 && <p className="text-sm text-white/65">You haven't registered for any events yet.</p>}</div></div>
         </>)}
         {(view === "attendance") && (<>
         <div className="glass p-5"><p className="mb-3 font-bold">My attendance</p>
-          <ul className="space-y-1.5 text-sm">{d.attendance.map((a: any) => <li key={a.id} className="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"><span className="truncate">{a.title}</span><span className="shrink-0 text-xs text-white/45">{fmt(a.at)}</span></li>)}{d.attendance.length === 0 && <li className="text-white/45">No attendance recorded yet.</li>}</ul></div>
+          <ul className="space-y-1.5 text-sm">{d.attendance.map((a: any) => <li key={a.id} className="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"><span className="truncate">{a.title}</span><span className="shrink-0 text-xs text-white/65">{fmt(a.at)}</span></li>)}{d.attendance.length === 0 && <li className="text-white/65">No attendance recorded yet.</li>}</ul></div>
         </>)}
         {(view === "profile") && (<>
-        {d.volunteer.length > 0 && <div className="glass p-5"><p className="mb-3 flex items-center gap-2 font-bold"><HeartHandshake className="h-4 w-4 text-accent" />My service</p><ul className="space-y-1.5 text-sm">{d.volunteer.map((v: any) => <li key={v.id} className="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"><span>{v.title}{v.hours ? ` · ${v.hours}h` : ""}</span><span className="text-xs text-white/45">{fmt(v.at)}</span></li>)}</ul></div>}
+        {d.volunteer.length > 0 && <div className="glass p-5"><p className="mb-3 flex items-center gap-2 font-bold"><HeartHandshake className="h-4 w-4 text-accent" />My service</p><ul className="space-y-1.5 text-sm">{d.volunteer.map((v: any) => <li key={v.id} className="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"><span>{v.title}{v.hours ? ` · ${v.hours}h` : ""}</span><span className="text-xs text-white/65">{fmt(v.at)}</span></li>)}</ul></div>}
         </>)}
         {(view === "profile") && (<>
         <ChangePassword />

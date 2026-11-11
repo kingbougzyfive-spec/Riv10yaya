@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { ROLES, ROLE_LABELS, type Role } from "@/lib/roles";
 
@@ -27,7 +28,7 @@ export function UsersManager({ meId }: { meId: string }) {
           <motion.button key={u.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }} onClick={() => setDlg({ edit: u })} className="glass glass-hover flex items-center justify-between gap-4 p-4 text-left">
             <div className="flex min-w-0 items-center gap-3">
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand/20 font-black text-brand">{u.name.slice(0, 1).toUpperCase()}</div>
-              <div className="min-w-0"><p className="truncate font-semibold">{u.name}{u.id === meId && <span className="ml-2 text-xs text-white/40">(you)</span>}</p><p className="truncate text-xs text-white/45">{u.email}{u.scopeLabel ? ` · ${u.scopeLabel}` : ""}</p></div>
+              <div className="min-w-0"><p className="truncate font-semibold">{u.name}{u.id === meId && <span className="ml-2 text-xs text-white/65">(you)</span>}</p><p className="truncate text-xs text-white/65">{u.email}{u.scopeLabel ? ` · ${u.scopeLabel}` : ""}</p></div>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1"><span className="badge">{ROLE_LABELS[u.role]}</span><span className={`badge ${u.active ? "badge-ok" : "badge-bad"}`}>{u.active ? "Active" : "Disabled"}</span></div>
           </motion.button>
@@ -40,6 +41,7 @@ export function UsersManager({ meId }: { meId: string }) {
 
 function UserDialog({ edit, org, meId, onClose, onDone }: { edit?: U; org: Org; meId: string; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [f, setF] = useState({ name: edit?.name ?? "", email: edit?.email ?? "", phone: edit?.phone ?? "", role: (edit?.role ?? "parish_admin") as Role, zone: edit?.zone ?? "", area: edit?.area ?? "", parish: edit?.parish ?? "", password: "", active: edit?.active ?? true });
   const [busy, setBusy] = useState(false);
   const needsZone = f.role === "zonal_admin";
@@ -48,6 +50,8 @@ function UserDialog({ edit, org, meId, onClose, onDone }: { edit?: U; org: Org; 
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (edit && edit.active && !f.active && !(await confirm({ title: `Disable ${edit.name}?`, message: "They will be signed out and unable to sign in until re-enabled.", confirmLabel: "Disable user" }))) return;
+    if (edit && edit.role !== f.role && !(await confirm({ title: "Change this user's role?", message: "Their permissions change immediately. This is recorded in the audit log.", confirmLabel: "Change role", tone: "default" }))) return;
     setBusy(true);
     try {
       if (edit) {

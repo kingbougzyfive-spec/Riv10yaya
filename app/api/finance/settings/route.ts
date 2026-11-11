@@ -3,13 +3,14 @@ import { handle, audit } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
 import { getFinance, saveFinance } from "@/lib/finance";
 import { can, PERMS } from "@/lib/rbac";
+import { aiConfigured } from "@/lib/ai-receipt";
 
 export const dynamic = "force-dynamic";
 
 export const GET = handle(async () => {
   const user = await requireApiUser(PERMS.finance);
   const s = await getFinance();
-  return { ...s, canEditPercent: can(user.role, "percentEdit"), canEditBank: can(user.role, "bankEdit") };
+  return { ...s, canEditPercent: can(user.role, "percentEdit"), canEditBank: can(user.role, "bankEdit"), aiAvailable: aiConfigured() };
 });
 
 const schema = z.object({
