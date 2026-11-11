@@ -20,7 +20,12 @@ export function phoneKey(raw: string): string {
 }
 export const validPhone = (raw: string) => /^(?:(?:\+?234|0)[789][01]\d{8}|\+\d{8,15})$/.test(raw.replace(/[\s()-]/g, ""));
 
-export const appUrl = () => (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+/** Public address for QR codes and email links. Vercel provides its own host variables, so nothing needs to be set there. */
+export const appUrl = () => {
+  const e = process.env;
+  const v = e.NEXT_PUBLIC_APP_URL || (e.VERCEL_PROJECT_PRODUCTION_URL ? `https://${e.VERCEL_PROJECT_PRODUCTION_URL}` : e.VERCEL_URL ? `https://${e.VERCEL_URL}` : "http://localhost:3000");
+  return v.replace(/\/$/, "");
+};
 
 /** Simple per-IP throttle for public endpoints (per server instance). */
 const hits = new Map<string, number[]>();

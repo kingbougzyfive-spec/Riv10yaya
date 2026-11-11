@@ -202,3 +202,10 @@ The site is an installable Progressive Web App: manifest, standalone display, th
 
 ## UI system and requirements status
 Shared components live in `components/ui` (`DataTable`, `StatusBadge`, `ConfirmDialog` via `useConfirm`/`useTextPrompt`, `EmptyState`, `Field`). Pure logic is in `lib/table.ts` and `lib/status.ts`. `node scripts/check-ui.mjs` enforces no native dialogs, a contrast floor and no hardcoded money. `docs/REQUIREMENTS-STATUS.md` lists each requirement honestly, including what is unverified.
+
+## Zero-configuration deployment (what is built in, and the risks)
+- **Database:** `lib/db-default.ts` holds a built-in MongoDB connection string used only when `MONGODB_URI` is not set. It is a live credential in source code: keep the GitHub repository **private**, and rotate the Atlas password if the code is ever shared. Setting `MONGODB_URI` overrides it.
+- **Session secret:** if `APP_SECRET` is not set, a random one is generated once and stored in the database (`lib/secret.ts`).
+- **App address:** falls back to Vercel's own host variables.
+- **First administrator:** with no `BOOTSTRAP_ADMIN_*`/`SETUP_TOKEN`, the `/setup` page is open until the first account exists. Open it yourself immediately after the first deploy.
+- Still optional but needed for their features: `CRON_SECRET` (daily reminders, Sheets sync), `ANTHROPIC_API_KEY` (AI receipt reading), `RESEND_API_KEY`, VAPID keys, Google credentials.

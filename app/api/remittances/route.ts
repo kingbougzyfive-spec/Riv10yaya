@@ -1,3 +1,6 @@
+import { after } from "next/server";
+import { aiConfigured } from "@/lib/ai-receipt";
+import { AUTO_ACTOR, runAnalysis } from "@/lib/receipt-analysis";
 import { financeTeam, notifyUsers } from "@/lib/notify";
 import { z } from "zod";
 import mongoose from "mongoose";
@@ -13,6 +16,7 @@ import { PERMS } from "@/lib/rbac";
 import { recordScope, resolveIdentity } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // the automatic AI receipt reading runs after the response is sent
 const oid = z.string().refine((v) => mongoose.isValidObjectId(v), "Upload the payment evidence first");
 const date = z.string().refine((v) => !Number.isNaN(Date.parse(v)) && Date.parse(v) <= Date.now() + 86_400_000, "Payment date can't be in the future");
 const naira = z.number().positive("Enter an amount above zero").max(1_000_000_000);
@@ -98,6 +102,9 @@ export const POST = handle(async (req) => {
     if (lv.checks) await lv.save();
   }
   await notifyUsers((await financeTeam()).filter((x) => x !== user.id), { title: `Payment evidence uploaded: ${id.names.parish} · ${i.month}/${i.year}`, body: `${i.levies.length ? `Includes ${i.levies.length} levy/contribution item(s). ` : ""}Waiting for verification.`, link: "/admin/finance", event: "payment_uploaded" });
+  // AI examines the receipt automatically, after the parish already has its answer. The reading is advisory only:
+  // it never changes a status, and the parish does not wait for it or for finance before writing the activity report.
+  if (aiConfigured()) after(async () => { try { await runAnalysis(String(yst._id), null, AUTO_ACTOR); } catch (e) { console.error("automatic AI receipt reading failed", (e as Error)?.message); } });
   await audit(user, "remittance.submit", `${id.names.parish} ${i.month}/${i.year}`, { offeringKobo, requiredKobo, percentBp }, req);
   return { id: String(yst._id), requiredKobo, percentBp };
 });

@@ -1,3 +1,4 @@
+import { ensureAppSecret } from "./secret";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
@@ -8,9 +9,10 @@ import type { Role } from "./roles";
 const COOKIE = "yaya_session";
 const MAX_AGE = 60 * 60 * 12; // 12 hours
 
+async function ensureSecret() { await ensureAppSecret(); return secret(); }
 function secret() {
   const s = process.env.APP_SECRET;
-  if (!s || s.length < 16) throw new ApiError(500, "APP_SECRET is not configured. Add it to .env.local (see .env.example).");
+  if (!s || s.length < 16) throw new ApiError(500, "APP_SECRET is not configured. It is normally created automatically in the database.");
   return new TextEncoder().encode(s);
 }
 
@@ -26,7 +28,7 @@ export async function createSession(userId: string, role: Role, sv = 0) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
-    .sign(secret());
+    .sign(await ensureSecret());
   const jar = await cookies();
   jar.set(COOKIE, token, {
     httpOnly: true,
@@ -67,7 +69,7 @@ export async function getUser(): Promise<SessionUser | null> {
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secret());
+    const { payload } = await jwtVerify(token, await ensureSecret());
     const { User } = await getDb();
     const u = await User.findById(payload.uid).lean<any>();
     if (!u || !u.active) return null;

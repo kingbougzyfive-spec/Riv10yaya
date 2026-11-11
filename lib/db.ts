@@ -1,3 +1,5 @@
+import { ensureAppSecret } from "./secret";
+import { DEFAULT_MONGODB_URI } from "./db-default";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -94,7 +96,8 @@ function envConnections(): ResolvedConn[] {
   const push = (id: string, label: string, uri: string | undefined, priority: number) => {
     if (uri && uri.trim()) out.push({ id, label, uri: uri.trim(), priority, enabled: true, source: "env" });
   };
-  push("env-primary", "Environment primary", process.env.MONGODB_URI, 0);
+  const fromEnv = !!process.env.MONGODB_URI?.trim();
+  push("env-primary", fromEnv ? "Environment primary" : "Built-in default", fromEnv ? process.env.MONGODB_URI : DEFAULT_MONGODB_URI, 0);
   for (let i = 1; i <= 3; i++) push(`env-backup-${i}`, `Environment backup ${i}`, process.env[`MONGODB_URI_BACKUP_${i}`], 100 + i);
   return out;
 }
@@ -289,6 +292,7 @@ async function hydrateFromDb(models: Models) {
 }
 
 export async function addConnection(input: { label: string; uri: string; priority?: number; makeActive?: boolean }) {
+  await ensureAppSecret();
   const uri = input.uri.trim();
   const dupe = listConnections().find((c) => c.uri === uri);
   if (dupe) throw new Error(`This connection string is already saved as "${dupe.label}".`);
