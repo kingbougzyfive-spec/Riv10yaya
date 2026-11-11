@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export function JoinForm() {
   const toast = useToast();
@@ -17,16 +18,16 @@ export function JoinForm() {
   const parishes = org?.parishes.filter((p: any) => p.zone === f.zone && (zone?.hasAreas ? p.area === f.area : true)) ?? [];
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true);
-    try { await api("/api/public/join", { method: "POST", json: { name: f.name, phone: f.phone, email: f.email, password: f.password, parish: f.parish, dob: f.dob, memberId: f.memberId, privacy: f.privacy, ...(minor ? { guardian: { name: f.gName, phone: f.gPhone, relationship: f.gRel }, guardianConsent: f.gConsent } : {}) } }); toast.ok("Welcome! Your account is ready."); router.push("/member"); router.refresh(); }
+    try { await api("/api/public/join", { method: "POST", json: { name: f.name, phone: f.phone, email: f.email, password: f.password, ...(f.parish ? { parish: f.parish } : {}), dob: f.dob, memberId: f.memberId, privacy: f.privacy, ...(minor ? { guardian: { name: f.gName, phone: f.gPhone, relationship: f.gRel }, guardianConsent: f.gConsent } : {}) } }); toast.ok("Welcome! Your account is ready."); router.push("/member"); router.refresh(); }
     catch (er: any) { toast.err(er.message); setBusy(false); }
   }
   return (
     <form onSubmit={submit} className="glass mx-auto max-w-lg space-y-4 p-6 sm:p-8">
       <div className="grid gap-4 sm:grid-cols-2"><div><label className="label">Full name</label><input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div><div><label className="label">Phone</label><input className="input" type="tel" required value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div></div>
       <div><label className="label">Email</label><input className="input" type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
-      <div><label className="label">Password</label><input className="input" type="password" minLength={10} required value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
+      <div><label className="label">Password</label><PasswordInput className="input" minLength={10} required value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
       <div><label className="label">Date of birth</label><input className="input" type="date" required max={new Date().toISOString().slice(0, 10)} value={f.dob} onChange={(e) => setF({ ...f, dob: e.target.value })} /></div>
-      <div><label className="label">Member ID <span className="font-normal text-white/65">(only if your parish already registered you)</span></label><input className="input font-mono uppercase" placeholder="YM-XXXXXX" value={f.memberId} onChange={(e) => setF({ ...f, memberId: e.target.value })} /></div>
+      <div><label className="label">Member ID <span className="font-normal text-white/65">(optional, only if your parish already gave you one)</span></label><input className="input font-mono uppercase" placeholder="YM-XXXXXX" value={f.memberId} onChange={(e) => setF({ ...f, memberId: e.target.value })} /></div>
       {minor && (
         <div className="space-y-3 rounded-2xl border border-accent/40 bg-accent/10 p-4">
           <p className="text-sm font-semibold">You are under 18, so a parent or guardian must agree.</p>
@@ -36,12 +37,12 @@ export function JoinForm() {
         </div>
       )}
       {org && (<>
-        <div><label className="label">Zone</label><select className="input" required value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value, area: "", parish: "" })}><option value="">Select zone…</option>{org.zones.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}</select></div>
-        {zone?.hasAreas && <div><label className="label">Area</label><select className="input" required value={f.area} onChange={(e) => setF({ ...f, area: e.target.value, parish: "" })}><option value="">Select area…</option>{org.areas.filter((a: any) => a.zone === f.zone).map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>}
-        {zone && (!zone.hasAreas || f.area) && <div><label className="label">Parish</label><select className="input" required value={f.parish} onChange={(e) => setF({ ...f, parish: e.target.value })}><option value="">Select parish…</option>{parishes.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>}
+        <div><label className="label">Zone <span className="font-normal text-white/65">(optional)</span></label><select className="input" value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value, area: "", parish: "" })}><option value="">Not sure / skip</option>{org.zones.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}</select></div>
+        {zone?.hasAreas && <div><label className="label">Area <span className="font-normal text-white/65">(optional)</span></label><select className="input" value={f.area} onChange={(e) => setF({ ...f, area: e.target.value, parish: "" })}><option value="">Not sure / skip</option>{org.areas.filter((a: any) => a.zone === f.zone).map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>}
+        {zone && (!zone.hasAreas || f.area) && <div><label className="label">Parish <span className="font-normal text-white/65">(optional)</span></label><select className="input" value={f.parish} onChange={(e) => setF({ ...f, parish: e.target.value })}><option value="">Not sure / skip</option>{parishes.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>}
       </>)}
       <label className="flex items-start gap-2 text-sm text-white/70"><input type="checkbox" className="mt-1" required checked={f.privacy} onChange={(e) => setF({ ...f, privacy: e.target.checked })} />I agree that my parish and church administrators may keep and use my details to run church activities. Only authorised administrators in my own parish, area or zone can see them.</label>
-      <button className="btn btn-primary w-full py-3" disabled={busy || !f.parish || !f.privacy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}Create my account</button>
+      <button className="btn btn-primary w-full py-3" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}Create my account</button>
     </form>
   );
 }

@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 import { AuthShell } from "@/components/AuthShell";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 function Form() {
   const toast = useToast();
@@ -24,8 +25,8 @@ function Form() {
   if (!token) return <p className="text-sm text-white/65">This link is missing its token. <Link href="/forgot-password" className="text-brand underline">Request a new one</Link>.</p>;
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div><label className="label">New password</label><input className="input" type="password" minLength={10} required autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /><p className="hint">At least 10 characters.</p></div>
-      <div><label className="label">Repeat password</label><input className="input" type="password" required autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} /></div>
+      <div><label className="label">New password</label><PasswordInput className="input" minLength={10} required autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /><p className="hint">At least 10 characters.</p></div>
+      <div><label className="label">Repeat password</label><PasswordInput className="input" required autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} /></div>
       <button className="btn btn-primary w-full py-3" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}Set new password</button>
     </form>
   );

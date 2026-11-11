@@ -337,9 +337,9 @@ const memberSchema = new Schema(
     /** Earlier phone keys, so attendance and registration history stays attached after a number changes. */
     oldPhoneKeys: [String],
     email: String,
-    zone: { type: Schema.Types.ObjectId, ref: "Zone", required: true, index: true },
+    zone: { type: Schema.Types.ObjectId, ref: "Zone", index: true },
     area: { type: Schema.Types.ObjectId, ref: "Area", default: null, index: true },
-    parish: { type: Schema.Types.ObjectId, ref: "Parish", required: true, index: true },
+    parish: { type: Schema.Types.ObjectId, ref: "Parish", index: true }, // optional: a member may join before being placed in a parish
     active: { type: Boolean, default: true }, // derived from status; kept for the attendance code
     status: { type: String, enum: ["active", "inactive", "visitor", "transferred"], default: "active", index: true },
     category: { type: String, default: "Youth", index: true },

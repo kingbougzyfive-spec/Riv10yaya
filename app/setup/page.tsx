@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AuthShell } from "@/components/AuthShell";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function SetupPage() {
       </div>
       <AnimatePresence mode="wait">
         {needsToken && step < 2 && (
-          <div className="mb-4"><label className="label">Setup code</label><input className="input" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="From your SETUP_TOKEN setting" /></div>
+          <div className="mb-4"><label className="label">Setup code</label><PasswordInput className="input" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="From your SETUP_TOKEN setting" /></div>
         )}
         {step === 0 && (
           <motion.div key="s0" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-4">
@@ -88,7 +89,7 @@ export default function SetupPage() {
           <motion.form key="s1" onSubmit={createAdmin} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-4">
             <div><label className="label">Full name</label><input className="input" required value={admin.name} onChange={(e) => setAdmin({ ...admin, name: e.target.value })} /></div>
             <div><label className="label">Email</label><input className="input" type="email" required value={admin.email} onChange={(e) => setAdmin({ ...admin, email: e.target.value })} /></div>
-            <div><label className="label">Password</label><input className="input" type="password" minLength={10} required value={admin.password} onChange={(e) => setAdmin({ ...admin, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
+            <div><label className="label">Password</label><PasswordInput className="input" minLength={10} required value={admin.password} onChange={(e) => setAdmin({ ...admin, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
             <button className="btn btn-primary w-full py-3" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}Create Super Administrator</button>
           </motion.form>
         )}

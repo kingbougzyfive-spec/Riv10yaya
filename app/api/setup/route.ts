@@ -9,6 +9,9 @@ import { addConnection, getDb, isDatabaseConfigured, resetConnection, testUri, A
 
 export const dynamic = "force-dynamic";
 
+/** Setup is complete once an administrator exists. Member sign-ups must not lock the first-run screen. */
+const hasAdmin = async (User: any) => (await User.countDocuments({ role: { $ne: "member" } })) > 0;
+
 /** First-run status. Public, but reveals only booleans. */
 export const GET = handle(async () => {
   const needsToken = !!process.env.SETUP_TOKEN;
@@ -16,7 +19,7 @@ export const GET = handle(async () => {
   if (!isDatabaseConfigured()) return { hasDb: false, hasUsers: false, needsToken, bootstrap };
   try {
     const { User } = await getDb();
-    return { hasDb: true, hasUsers: (await User.estimatedDocumentCount()) > 0, needsToken, bootstrap };
+    return { hasDb: true, hasUsers: await hasAdmin(User), needsToken, bootstrap };
   } catch (e) {
     if (e instanceof AllDatabasesFailedError) return { hasDb: true, hasUsers: false, dbError: (e as Error).message, needsToken };
     throw e;
@@ -55,7 +58,7 @@ export const POST = handle(async (req) => {
     // First-run only: once the system has users, connections are managed from Admin → Database by the Super Admin.
     if (isDatabaseConfigured()) {
       const { User } = await getDb();
-      if ((await User.estimatedDocumentCount()) > 0) throw new ApiError(403, "Setup is already complete.");
+      if (await hasAdmin(User)) throw new ApiError(403, "Setup is already complete.");
     }
     const result = await testUri(input.uri);
     if (input.test) return result;
@@ -70,7 +73,8 @@ export const POST = handle(async (req) => {
     const input = adminSchema.parse(body);
     const db0 = await getDb();
     const { User } = db0;
-    if ((await User.estimatedDocumentCount()) > 0) throw new ApiError(403, "Setup is already complete.");
+    if (await hasAdmin(User)) throw new ApiError(403, "Setup is already complete.");
+    if (await User.exists({ email: input.email.toLowerCase() })) throw new ApiError(409, "That email already has an account (for example a member sign-up). Use a different email for the Super Administrator.");
     if (process.env.BOOTSTRAP_ADMIN_EMAIL && process.env.BOOTSTRAP_ADMIN_PASSWORD) throw new ApiError(403, "This deployment uses a bootstrap administrator. Sign in with it instead.");
     const problem = passwordProblem(input.password, { email: input.email, name: input.name });
     if (problem) throw new ApiError(422, problem);

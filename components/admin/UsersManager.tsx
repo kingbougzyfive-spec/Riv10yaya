@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { ROLES, ROLE_LABELS, type Role } from "@/lib/roles";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 type U = { id: string; name: string; email: string; phone?: string; role: Role; active: boolean; zone: string; area: string; parish: string; scopeLabel: string; lastLoginAt?: string };
 type Org = { zones: { id: string; name: string; hasAreas: boolean }[]; areas: { id: string; name: string; zone: string }[]; parishes: { id: string; name: string; zone: string; area: string | null }[] };
@@ -74,7 +75,7 @@ function UserDialog({ edit, org, meId, onClose, onDone }: { edit?: U; org: Org; 
         {needsZone && <div><label className="label">Zone they manage</label><select className="input" required value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value })}><option value="">Select…</option>{org.zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}</select></div>}
         {needsArea && <div><label className="label">Area they manage</label><select className="input" required value={f.area} onChange={(e) => setF({ ...f, area: e.target.value })}><option value="">Select…</option>{org.areas.map((a) => <option key={a.id} value={a.id}>{org.zones.find((z) => z.id === a.zone)?.name} → {a.name}</option>)}</select></div>}
         {needsParish && <div><label className="label">Parish they manage</label><select className="input" required value={f.parish} onChange={(e) => setF({ ...f, parish: e.target.value })}><option value="">Select…</option>{org.parishes.map((p) => <option key={p.id} value={p.id}>{org.zones.find((z) => z.id === p.zone)?.name} → {p.area ? org.areas.find((a) => a.id === p.area)?.name + " → " : ""}{p.name}</option>)}</select></div>}
-        <div><label className="label">{edit ? "New password (leave blank to keep)" : "Password"}</label><input className="input" type="password" minLength={10} required={!edit} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
+        <div><label className="label">{edit ? "New password (leave blank to keep)" : "Password"}</label><PasswordInput className="input" minLength={10} required={!edit} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
         {edit && edit.id !== meId && (
           <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-white/5 p-3 text-sm"><input type="checkbox" className="h-4 w-4 accent-emerald-500" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />Account is active (untick to block sign-in)</label>
         )}

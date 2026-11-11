@@ -14,7 +14,7 @@ const schema = z.object({
   phone: z.string().trim().refine(validPhone, "Enter a valid phone number"),
   email: z.string().trim().email(),
   password: z.string().min(10, "Use at least 10 characters").max(100),
-  parish: z.string().refine((v) => mongoose.isValidObjectId(v), "Choose your parish"),
+  parish: z.string().optional().default("").refine((v) => v === "" || mongoose.isValidObjectId(v), "That parish isn't valid"),
   dob: z.string().refine((v) => !Number.isNaN(Date.parse(v)) && Date.parse(v) < Date.now(), "Enter your date of birth"),
   memberId: z.string().trim().max(20).optional().default(""),
   guardian: z.object({ name: z.string().trim().min(2).max(100), phone: z.string().trim().refine(validPhone, "Enter a valid guardian phone"), relationship: z.string().trim().min(2).max(40) }).optional(),
@@ -28,8 +28,9 @@ export const POST = handle(async (req) => {
   await rateLimit(`join:${ip}`, 5, 10 * MIN, "Too many attempts. Please try again later.");
   const i = schema.parse(await req.json());
   const { Member, Parish, User } = await getDb();
-  const p = await Parish.findOne({ _id: i.parish, active: true }, { zone: 1, area: 1 }).lean<any>();
-  if (!p) throw new ApiError(400, "That parish doesn't exist.");
+  // Parish is optional: someone can join first and be placed in a parish later by an administrator.
+  const p = i.parish ? await Parish.findOne({ _id: i.parish, active: true }, { zone: 1, area: 1 }).lean<any>() : null;
+  if (i.parish && !p) throw new ApiError(400, "That parish doesn't exist.");
   const key = phoneKey(i.phone);
   const email = i.email.toLowerCase();
   if (await User.exists({ email })) throw new ApiError(409, "An account with this email already exists. Try signing in.");
@@ -44,7 +45,7 @@ export const POST = handle(async (req) => {
     if (minor && (!i.guardian || !i.guardianConsent)) throw new ApiError(422, "If you are under 18, a parent or guardian's details and their consent are needed.");
     const now = new Date();
     m = await Member.create({
-      memberId: memberId(), name: i.name, phone: i.phone, phoneKey: key, email, zone: p.zone, area: p.area ?? null, parish: p._id, dob: new Date(i.dob),
+      memberId: memberId(), name: i.name, phone: i.phone, phoneKey: key, email, ...(p ? { zone: p.zone, area: p.area ?? null, parish: p._id } : {}), dob: new Date(i.dob),
       consent: { privacyAt: now, by: "self" },
       // Guardian consent is recorded as given, but stays unverified until the parish administrator confirms it.
       guardian: minor ? { ...i.guardian, consentAt: now } : undefined,

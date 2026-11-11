@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AuthShell } from "@/components/AuthShell";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function LoginPage() {
     <AuthShell title="Welcome back" subtitle="Sign in to manage your organisation.">
       <form onSubmit={submit} className="space-y-4">
         <div><label className="label">Email</label><input className="input" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" /></div>
-        <div><label className="label">Password</label><input className="input" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+        <div><label className="label">Password</label><PasswordInput className="input" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
         <button className="btn btn-primary w-full py-3" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}Sign in</button>
         <p className="text-center text-xs"><Link href="/forgot-password" className="text-white/65 hover:text-white">Forgot your password?</Link></p>
         <p className="text-center text-xs text-white/65"><Link href="/join" className="text-brand hover:underline">New member? Create an account</Link> · <Link href="/" className="hover:text-white">← Website</Link></p>

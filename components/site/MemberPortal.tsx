@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
 import { signOutEverywhereLocal } from "@/lib/session-client";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 const fmt = (v?: string) => (v ? new Date(v).toLocaleDateString("en-NG", { dateStyle: "medium" }) : "");
 
@@ -78,7 +79,7 @@ export function MemberPortal({ view = "overview" }: { view?: MemberView }) {
             <div><label className="label">Name</label><input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
             <div><label className="label">Email</label><input className="input" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
             <div><label className="label">Phone</label><input className="input" type="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
-            {phoneChanged && <div><label className="label">Current password</label><input className="input" type="password" autoComplete="current-password" value={f.currentPassword} onChange={(e) => setF({ ...f, currentPassword: e.target.value })} /><p className="hint">Needed to change your phone number.</p></div>}
+            {phoneChanged && <div><label className="label">Current password</label><PasswordInput className="input" autoComplete="current-password" value={f.currentPassword} onChange={(e) => setF({ ...f, currentPassword: e.target.value })} /><p className="hint">Needed to change your phone number.</p></div>}
           </div>
           <button className="btn btn-primary mt-4" disabled={busy} onClick={save}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}Save</button>
         </div>
