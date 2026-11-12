@@ -112,6 +112,9 @@ export async function requirePageUser(roles?: readonly Role[]): Promise<SessionU
     const here = (await headers()).get("x-path") || "";
     if (here !== target) redirect(`${target}?force=1`);
   }
-  if (roles && !roles.includes(user.role)) redirect("/admin?denied=1");
+  if (roles && !roles.includes(user.role)) {
+    // Send people somewhere they ARE allowed. Redirecting a member to /admin?denied=1 looped forever, because /admin refuses them too.
+    redirect(user.role === "member" ? "/member" : user.role === "parish_admin" ? "/portal" : "/admin?denied=1");
+  }
   return user;
 }
