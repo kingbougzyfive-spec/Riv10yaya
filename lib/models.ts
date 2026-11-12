@@ -44,12 +44,16 @@ const adminRequestSchema = new Schema(
     phone: { type: String, trim: true },
     passwordHash: { type: String, required: true },
     level: { type: String, enum: ["zone", "area", "parish"], required: true },
-    /** Existing records they picked. For a zone request this is the zone; for an area request, its zone (and the area if listed); for a parish, its zone, area and parish if listed. */
+    /** What they typed. Matched to existing records by name when reviewed; anything that does not match is created on approval. */
+    zoneName: { type: String, trim: true },
+    areaName: { type: String, trim: true },
+    parishName: { type: String, trim: true },
+    /** The name of the unit they will administer (zone, area or parish name), for display. */
+    orgName: { type: String, trim: true },
+    /** Older requests picked existing records from a list. */
     zone: { type: Schema.Types.ObjectId, ref: "Zone" },
     area: { type: Schema.Types.ObjectId, ref: "Area" },
     parish: { type: Schema.Types.ObjectId, ref: "Parish" },
-    /** The name they typed when their zone, area or parish is not on the list yet (created on approval). */
-    orgName: { type: String, trim: true },
     status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending", index: true },
     reviewedBy: String,
     reviewedAt: Date,

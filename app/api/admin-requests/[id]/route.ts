@@ -2,12 +2,14 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { audit, handle, keyOf } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
+import { matchTyped } from "@/lib/admin-request";
 import { getDb } from "@/lib/db";
 import { sendMail } from "@/lib/mail";
 import { PERMS } from "@/lib/rbac";
 
 export const dynamic = "force-dynamic";
-const schema = z.object({ action: z.enum(["approve", "reject"]), reason: z.string().trim().max(300).optional() });
+const oid = z.string().refine((v) => mongoose.isValidObjectId(v), "Invalid id").optional();
+const schema = z.object({ action: z.enum(["approve", "reject"]), reason: z.string().trim().max(300).optional(), zone: oid, area: oid, parish: oid });
 const ROLE = { zone: "zonal_admin", area: "area_admin", parish: "parish_admin" } as const;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 
@@ -31,40 +33,35 @@ export const PATCH = handle(async (req, ctx: { params: Promise<{ id: string }> }
   }
 
   if (await User.exists({ email: r.email })) throw new ApiError(409, "That email already has an account. Reject this request instead.");
+  const zoneName = r.zoneName || "", areaName = r.areaName || "", parishName = r.parishName || "";
+  const m = await matchTyped({ level: r.level, zoneName, areaName, parishName, zone: r.zone, area: r.area, parish: r.parish }, { zone: i.zone, area: i.area, parish: i.parish });
   const name = (r.orgName || "").trim();
-  let zoneId = r.zone ? String(r.zone) : "", areaId: string | null = r.area ? String(r.area) : null, parishId: string | null = null;
+  if (i.zone && !m.zone) throw new ApiError(400, "The zone you chose doesn't exist.");
+  if (i.area && !m.area) throw new ApiError(400, "The area you chose isn't in that zone.");
+  if (i.parish && !m.parish) throw new ApiError(400, "The parish you chose isn't in that zone or area.");
 
-  // Use the organisation they picked, or create the one they typed (re-using an existing record with the same name).
-  if (r.level === "zone") {
-    if (!zoneId) {
-      const z = (await Zone.findOne({ nameKey: keyOf(name) })) || (await Zone.create({ name, nameKey: keyOf(name), hasAreas: true }));
-      zoneId = String(z._id);
-    }
-    areaId = null;
-  } else {
-    const zone: any = await Zone.findById(zoneId).lean();
-    if (!zone) throw new ApiError(400, "Their zone no longer exists.");
-    if (r.level === "area") {
-      if (!zone.hasAreas) throw new ApiError(400, `"${zone.name}" has no areas, so an area administrator can't be linked to it.`);
-      if (!areaId) {
-        const a = (await Area.findOne({ zone: zoneId, nameKey: keyOf(name) })) || (await Area.create({ name, nameKey: keyOf(name), zone: zoneId }));
-        areaId = String(a._id);
-      }
-    } else {
-      if (zone.hasAreas && !areaId) throw new ApiError(400, "This parish's area is missing. Reject the request and ask them to register again.");
-      if (!zone.hasAreas) areaId = null;
-      if (r.parish) parishId = String(r.parish);
-      else {
-        const p = (await Parish.findOne({ zone: zoneId, area: areaId, nameKey: keyOf(name) })) || (await Parish.create({ name, nameKey: keyOf(name), zone: zoneId, area: areaId }));
-        parishId = String(p._id);
-      }
-    }
+  // Use what matched (or what the Super Administrator linked), and create whatever is new.
+  let zone: any = m.zone, area: any = m.area, parish: any = m.parish;
+  if (!zone) {
+    if (zoneName.length < 2) throw new ApiError(400, "This request has no zone name.");
+    // A new zone has areas when they typed an area, or when they lead an area; a parish with no area means a standalone zone.
+    zone = await Zone.create({ name: zoneName, nameKey: keyOf(zoneName), hasAreas: r.level === "zone" ? true : !!areaName });
   }
+  if (r.level !== "zone" && zone.hasAreas && !area) {
+    if (areaName.length < 2) throw new ApiError(400, "This parish's area name is missing. Reject the request and ask them to register again.");
+    area = await Area.create({ name: areaName, nameKey: keyOf(areaName), zone: zone._id });
+  }
+  if (r.level === "area" && !zone.hasAreas) throw new ApiError(400, `"${zone.name}" has no areas, so an area administrator can't be linked to it.`);
+  if (r.level === "parish" && !parish) {
+    if (parishName.length < 2) throw new ApiError(400, "This request has no parish name.");
+    parish = await Parish.create({ name: parishName, nameKey: keyOf(parishName), zone: zone._id, area: zone.hasAreas ? area._id : null });
+  }
+  const zoneId = String(zone._id), areaId = area && zone.hasAreas ? String(area._id) : null, parishId = parish ? String(parish._id) : null;
 
   const role = ROLE[r.level as keyof typeof ROLE];
   const u = await User.create({
     name: r.name, email: r.email, phone: r.phone || undefined, role, passwordHash: r.passwordHash,
-    zone: zoneId, area: r.level === "zone" ? undefined : areaId || undefined, parish: parishId || undefined,
+    zone: zoneId, area: r.level === "zone" ? undefined : areaId || undefined, parish: r.level === "parish" ? parishId || undefined : undefined,
     mustChangePassword: false, // they chose this password themselves
   });
   r.status = "approved"; r.reviewedBy = actor.name; r.reviewedAt = new Date(); r.userId = u._id;
