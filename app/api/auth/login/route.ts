@@ -28,6 +28,16 @@ export const POST = handle(async (req) => {
   await ensureBootstrapAdmin();
   const { User } = await getDb();
   const user = await User.findOne({ email: lower });
+  if (!user) {
+    // Someone who registered as a zone, area or parish administrator but has not been approved yet.
+    const { AdminRequest } = await getDb();
+    const req0 = await AdminRequest.findOne({ email: lower }).sort({ createdAt: -1 }).lean<any>();
+    if (req0 && req0.status !== "approved" && (await verifyPassword(password, req0.passwordHash))) {
+      throw new ApiError(403, req0.status === "pending"
+        ? "Your registration is waiting for the Super Administrator's approval. You'll be able to sign in once it is approved."
+        : `Your registration was not approved${req0.reason ? `: ${req0.reason}` : ""}. Please contact the Super Administrator.`);
+    }
+  }
   const valid = await verifyPassword(password, user?.passwordHash || (await DUMMY()));
   const ok = !!user && user.active && valid;
   if (!ok || !user) {

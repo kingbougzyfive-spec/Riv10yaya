@@ -17,7 +17,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const user = await requirePageUser(PERMS.adminArea);
   if (user.role === "parish_admin") redirect("/portal"); // parish administrators work from their own portal
   const sp = await searchParams;
-  const { Zone, Area, Parish, User, Media, Audit, Announcement, Department } = await getDb();
+  const { Zone, Area, Parish, User, Media, Audit, Announcement, Department, AdminRequest } = await getDb();
+  const waiting = can(user.role, "users") ? await AdminRequest.countDocuments({ status: "pending" }) : 0;
   const [zones, areas, parishes, users, media, recent, sampleZones, sampleOther] = await Promise.all([
     Zone.countDocuments(), Area.countDocuments(), Parish.countDocuments(), can(user.role, "users") ? User.countDocuments() : Promise.resolve(0), Media.countDocuments(),
     can(user.role, "audit") ? Audit.find().sort({ createdAt: -1 }).limit(6).lean<any[]>() : Promise.resolve([]),
@@ -56,6 +57,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     <>
       <PageHeader title={`Hello, ${user.name.split(" ")[0]}`} subtitle={`You're signed in as ${ROLE_LABELS[user.role]}.`} />
       {sp.denied && <p className="badge-warn mb-4 rounded-xl p-3 text-sm">You don't have access to that page.</p>}
+      {waiting > 0 && <Link href="/admin/requests" className="badge-warn mb-4 block rounded-xl p-3 text-sm font-medium hover:opacity-90">{waiting} administrator registration{waiting > 1 ? "s are" : " is"} waiting for your approval. Review {waiting > 1 ? "them" : "it"}</Link>}
       {user.role === "super_admin" && zones === 0 && <SeedButton />}
       {user.role === "super_admin" && sampleZones + sampleOther > 0 && <SampleBanner real={zones - sampleZones} />}
       {todo && (

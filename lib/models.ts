@@ -36,6 +36,29 @@ const userSchema = new Schema(
   opts,
 );
 
+/** A zone, area or parish administrator asking for an account. No User exists until the Super Administrator approves it. */
+const adminRequestSchema = new Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, lowercase: true, trim: true, index: true },
+    phone: { type: String, trim: true },
+    passwordHash: { type: String, required: true },
+    level: { type: String, enum: ["zone", "area", "parish"], required: true },
+    /** Existing records they picked. For a zone request this is the zone; for an area request, its zone (and the area if listed); for a parish, its zone, area and parish if listed. */
+    zone: { type: Schema.Types.ObjectId, ref: "Zone" },
+    area: { type: Schema.Types.ObjectId, ref: "Area" },
+    parish: { type: Schema.Types.ObjectId, ref: "Parish" },
+    /** The name they typed when their zone, area or parish is not on the list yet (created on approval). */
+    orgName: { type: String, trim: true },
+    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending", index: true },
+    reviewedBy: String,
+    reviewedAt: Date,
+    reason: String,
+    userId: { type: Schema.Types.ObjectId, ref: "User" },
+  },
+  opts,
+);
+
 const zoneSchema = new Schema(
   {
     /** true only for rows created by the optional "sample data" button, so they can be told apart from (and removed without touching) real records */
@@ -750,12 +773,13 @@ for (const op of ["deleteOne", "deleteMany", "findOneAndDelete"] as const) bankR
 reportingPeriodSchema.pre("deleteOne", refuse("Reporting periods") as any);
 reportingPeriodSchema.pre("deleteMany", refuse("Reporting periods") as any);
 
-export const SYNC_COLLECTIONS = ["User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "SheetSyncLog", "AiLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument", "Role", "Permission", "ReportingPeriod", "AdditionalLevy", "Contribution", "PaymentTransaction", "FinancialApproval", "BankReconciliationRecord"] as const;
+export const SYNC_COLLECTIONS = ["AdminRequest", "User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "SheetSyncLog", "AiLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument", "Role", "Permission", "ReportingPeriod", "AdditionalLevy", "Contribution", "PaymentTransaction", "FinancialApproval", "BankReconciliationRecord"] as const;
 /** Collections that stay on the running database only (not copied to backup databases). */
 export const LOCAL_ONLY = ["RateLimit", "ErrorLog"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number] | (typeof LOCAL_ONLY)[number];
 
 const schemas: Record<ModelName, Schema> = {
+  AdminRequest: adminRequestSchema,
   User: userSchema,
   Zone: zoneSchema,
   Area: areaSchema,

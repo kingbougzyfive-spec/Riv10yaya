@@ -35,7 +35,7 @@ export default function LoginPage() {
         <div><label className="label">Password</label><PasswordInput className="input" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
         <button className="btn btn-primary w-full py-3" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}Sign in</button>
         <p className="text-center text-xs"><Link href="/forgot-password" className="text-white/65 hover:text-white">Forgot your password?</Link></p>
-        <p className="text-center text-xs text-white/65"><Link href="/join" className="text-brand hover:underline">New member? Create an account</Link> · <Link href="/" className="hover:text-white">← Website</Link></p>
+        <p className="text-center text-xs text-white/65"><Link href="/join" className="text-brand hover:underline">New member? Create an account</Link>  ·  <Link href="/register-admin" className="text-brand hover:underline">Zone, area or parish leader? Register</Link> · <Link href="/" className="hover:text-white">← Website</Link></p>
       </form>
     </AuthShell>
   );

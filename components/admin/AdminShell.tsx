@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { ListChecks, Scale, Settings, UsersRound, CalendarClock, FileText, Wallet, Ticket, BarChart3, FileDown, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, ShieldCheck, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
+import { UserPlus, ListChecks, Scale, Settings, UsersRound, CalendarClock, FileText, Wallet, Ticket, BarChart3, FileDown, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, ShieldCheck, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -16,6 +16,7 @@ const ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, perm: "adminArea" as const },
   { href: "/admin/organizations", label: "Organisations", icon: Building2, perm: "orgView" as const },
   { href: "/admin/users", label: "Users & Roles", icon: Users, perm: "users" as const },
+  { href: "/admin/requests", label: "Admin requests", icon: UserPlus, perm: "users" as const },
   { href: "/admin/members", label: "Members", icon: UserRound, perm: "members" as const },
   { href: "/admin/events", label: "Events", icon: CalendarDays, perm: "attendanceView" as const },
   { href: "/admin/registrations", label: "Registrations", icon: Ticket, perm: "attendanceView" as const },
@@ -49,7 +50,7 @@ export type NavItem = { href: string; label: string; icon: any; group?: string }
 /** Sidebar sections, in display order. Items keep their order within a section. */
 const GROUP_OF: Record<string, string> = {
   "/admin": "Overview", "/admin/analytics": "Overview",
-  "/admin/organizations": "People & Structure", "/admin/users": "People & Structure", "/admin/members": "People & Structure", "/admin/leadership": "People & Structure", "/admin/departments": "People & Structure",
+  "/admin/organizations": "People & Structure", "/admin/users": "People & Structure", "/admin/requests": "People & Structure", "/admin/members": "People & Structure", "/admin/leadership": "People & Structure", "/admin/departments": "People & Structure",
   "/admin/events": "Events", "/admin/registrations": "Events", "/admin/attendance": "Events",
   "/admin/reports": "Reports & Finance", "/admin/remittances": "Reports & Finance", "/admin/finance": "Reports & Finance", "/admin/reconciliation": "Reports & Finance", "/admin/exports": "Reports & Finance",
   "/admin/committees": "Governance", "/admin/tasks": "Governance", "/admin/meetings": "Governance", "/admin/documents": "Governance",
