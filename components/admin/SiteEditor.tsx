@@ -61,7 +61,7 @@ export function SiteEditor({ initial, updatedAt }: { initial: SiteData; updatedA
         <TextField label="Organisation name" value={draft.brand.name} onChange={(v) => upd("brand", { name: v })} max={80} />
         <TextField label="Short name" hint="Shown in the header and on the installed app icon." value={draft.brand.shortName} onChange={(v) => upd("brand", { shortName: v })} max={30} />
         <TextField label="Tagline" value={draft.brand.tagline} onChange={(v) => upd("brand", { tagline: v })} max={160} />
-        <ImageField label="Logo" hint="Transparent PNG or SVG works best." value={draft.brand.logoId} onChange={(v) => upd("brand", { logoId: v })} />
+        <ImageField label="Logo" hint="Upload a PNG, JPG or WebP (a transparent PNG looks best), up to 4 MB. Press Change, then upload a new image or pick one you uploaded before. Press Publish to put it live." value={draft.brand.logoId} onChange={(v) => upd("brand", { logoId: v })} />
         <div className="grid gap-4 sm:grid-cols-2">
           <ColorField label="Primary colour" hint="Buttons, highlights" value={draft.brand.primary} onChange={(v) => upd("brand", { primary: v })} />
           <ColorField label="Accent colour" hint="Gradients, badges" value={draft.brand.accent} onChange={(v) => upd("brand", { accent: v })} />

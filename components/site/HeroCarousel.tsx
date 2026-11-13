@@ -49,12 +49,17 @@ export function HeroCarousel({ site }: { site: SiteData }) {
                   <div className="absolute inset-0" style={{ background: `radial-gradient(60% 80% at 82% 18%, rgb(var(--accent) / .55), transparent 60%), radial-gradient(70% 90% at 12% 88%, rgb(var(--brand) / .7), transparent 60%), linear-gradient(135deg, #07241d, #0b1220)` }} />
                 )}
                 <div className="absolute inset-0" style={{ background: img ? "linear-gradient(90deg, rgba(0,0,0,.78), rgba(0,0,0,.35) 65%, rgba(0,0,0,.15))" : "linear-gradient(90deg, rgba(0,0,0,.25), transparent)" }} />
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+                  <span className="hero-shape" style={{ width: 280, height: 280, right: "6%", top: "6%", background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), rgba(255,255,255,0) 70%)" }} />
+                  <span className="hero-shape" style={{ width: 150, height: 150, right: "28%", bottom: "12%", animationDuration: "9s", animationDelay: "-4s", background: "radial-gradient(circle at 35% 35%, rgb(var(--accent) / .4), transparent 70%)" }} />
+                  <span className="hero-ring" style={{ width: 220, height: 220, right: "10%", bottom: "-60px" }} />
+                </div>
                 <div className="relative z-10 w-full max-w-2xl px-6 pb-16 pt-12 sm:px-12" style={{ color: WHITE }}>
-                  {s.badge && <span className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold" style={{ borderColor: "rgba(255,255,255,.3)", background: "rgba(255,255,255,.14)" }}><span className="h-2 w-2 rounded-full bg-accent" />{s.badge}</span>}
-                  <h1 className="mt-5 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl" style={{ textShadow: "0 2px 18px rgba(0,0,0,.35)" }}>{s.title}</h1>
-                  {s.subtitle && <p className="mt-4 max-w-xl text-base leading-relaxed sm:text-lg" style={{ color: "rgba(255,255,255,.86)" }}>{s.subtitle}</p>}
-                  <div className="mt-7 flex flex-wrap gap-3">
-                    {s.ctaText && <Link tabIndex={on ? 0 : -1} href={s.ctaLink || "/"} className="btn btn-primary px-6 py-3">{s.ctaText}<ArrowRight className="h-4 w-4" /></Link>}
+                  {s.badge && <span className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold ${on ? "rise" : ""}`} style={{ borderColor: "rgba(255,255,255,.3)", background: "rgba(255,255,255,.14)", ["--d" as string]: ".05s" } as React.CSSProperties}><span className="h-2 w-2 rounded-full bg-accent" />{s.badge}</span>}
+                  <h1 className={`mt-5 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl ${on ? "rise" : ""}`} style={{ textShadow: "0 2px 18px rgba(0,0,0,.35)", ["--d" as string]: ".18s" } as React.CSSProperties}>{s.title}</h1>
+                  {s.subtitle && <p className={`mt-4 max-w-xl text-base leading-relaxed sm:text-lg ${on ? "rise" : ""}`} style={{ color: "rgba(255,255,255,.86)", ["--d" as string]: ".34s" } as React.CSSProperties}>{s.subtitle}</p>}
+                  <div className={`mt-7 flex flex-wrap gap-3 ${on ? "rise" : ""}`} style={{ ["--d" as string]: ".5s" } as React.CSSProperties}>
+                    {s.ctaText && <Link tabIndex={on ? 0 : -1} href={s.ctaLink || "/"} className="btn btn-primary btn-shine px-6 py-3">{s.ctaText}<ArrowRight className="h-4 w-4" /></Link>}
                     {s.secondaryText && <Link tabIndex={on ? 0 : -1} href={s.secondaryLink || "/"} className="btn px-6 py-3" style={{ border: "1px solid rgba(255,255,255,.45)", color: WHITE, background: "transparent" }}>{s.secondaryText}</Link>}
                   </div>
                 </div>

@@ -8,6 +8,7 @@ import { mediaUrl, type SiteData } from "@/lib/site-types";
 import { Reveal } from "@/components/ui/Reveal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { HeroCarousel } from "./HeroCarousel";
+import { CountUp, TitleBar } from "./Motion";
 
 export const NAV = [
   { href: "/", label: "Home" },
@@ -25,10 +26,10 @@ export function Logo({ site, size = 40 }: { site: SiteData; size?: number }) {
   const url = mediaUrl(site.brand.logoId);
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt={`${site.brand.name} logo`} style={{ height: size, width: "auto", maxWidth: size * 3 }} className="object-contain drop-shadow-lg" />
+    <img src={url} alt={`${site.brand.name} logo`} style={{ height: size, width: "auto", maxWidth: size * 3 }} className="logo-glow object-contain" />
   ) : (
     <div
-      className="grid place-items-center rounded-2xl font-black text-[#04130d] shadow-lg"
+      className="logo-glow grid place-items-center rounded-2xl font-black text-[#04130d] shadow-lg"
       style={{ height: size, width: size, background: "linear-gradient(135deg, rgb(var(--brand)), rgb(var(--accent)))", fontSize: size * 0.42 }}
     >
       {site.brand.name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() || "R"}
@@ -110,7 +111,7 @@ export function Stats({ site, live }: { site: SiteData; live?: { zones: number; 
       <div className="glass grid grid-cols-2 gap-px overflow-hidden p-0 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((s, i) => (
           <Reveal key={i} delay={i * 0.06} className="bg-white/[.02] p-6 text-center">
-            <p className="gradient-text text-3xl font-black sm:text-4xl">{s.value}</p>
+            <p className="gradient-text text-3xl font-black sm:text-4xl"><CountUp value={s.value} /></p>
             <p className="mt-1 text-xs uppercase tracking-widest text-white/65">{s.label}</p>
           </Reveal>
         ))}
@@ -125,6 +126,7 @@ export function SectionTitle({ eyebrow, title, children }: { eyebrow?: string; t
       {eyebrow && <p className="mb-2 text-xs font-bold uppercase tracking-[.2em] text-accent">{eyebrow}</p>}
       <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl">{title}</h2>
       {children && <p className="mt-3 text-white/65">{children}</p>}
+      <TitleBar />
     </Reveal>
   );
 }
@@ -161,7 +163,7 @@ export function MissionVision({ site }: { site: SiteData }) {
       {cards.map((c, i) => (
         <Reveal key={c.title} delay={i * 0.1}>
           <div className="glass glass-hover h-full p-7">
-            <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-brand/20 text-brand"><c.icon className="h-6 w-6" /></div>
+            <div className="icon-wobble mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-brand/20 text-brand"><c.icon className="h-6 w-6" /></div>
             <h3 className="text-xl font-bold">{c.title}</h3>
             <p className="mt-2 whitespace-pre-line leading-relaxed text-white/65">{c.text}</p>
           </div>

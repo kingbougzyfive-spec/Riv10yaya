@@ -47,7 +47,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     ...(can(user.role, "users") ? [{ label: "Users", value: users, icon: Users }] : []),
   ];
   const actions = [
-    { href: "/admin/site", label: "Edit website", desc: "Logo, text, colours, photos", icon: Palette, perm: "siteEdit" as const },
+    { href: "/admin/site", label: "Change logo & website", desc: "Logo, text, colours, photos", icon: Palette, perm: "siteEdit" as const },
     { href: "/admin/media", label: "Upload images", desc: "Logos, flyers, gallery", icon: ImageIcon, perm: "media" as const },
     { href: "/admin/organizations", label: "Zones & parishes", desc: "Build the hierarchy", icon: Building2, perm: "orgView" as const },
     { href: "/admin/database", label: "Databases", desc: "Add URIs, set failover", icon: Database, perm: "database" as const },

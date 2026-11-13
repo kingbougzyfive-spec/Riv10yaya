@@ -113,3 +113,23 @@ html[data-offline="1"] [data-needs-online] { opacity: .45; pointer-events: none;
   .dt-cards td { display: flex; justify-content: space-between; gap: 1rem; padding: .35rem 0; text-align: right; border: 0; }
   .dt-cards td::before { content: attr(data-label); font-size: .75rem; color: rgb(var(--fg) / .65); text-align: left; }
 }
+
+/* ---- Home page motion (all of it is switched off for people who prefer reduced motion, see the rule above) ---- */
+@keyframes riseIn { from { opacity: 0; transform: translateY(22px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+.rise { animation: riseIn .85s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0s); }
+@keyframes drift { 0%, 100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); } 50% { transform: translate3d(26px,-34px,0) rotate(10deg) scale(1.06); } }
+.hero-shape { position: absolute; border-radius: 9999px; pointer-events: none; animation: drift 13s ease-in-out infinite; }
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+.hero-ring { position: absolute; border-radius: 9999px; pointer-events: none; border: 1.5px dashed rgba(255,255,255,.28); animation: spinSlow 40s linear infinite; }
+@keyframes shineSweep { from { transform: translateX(-130%) skewX(-20deg); } to { transform: translateX(330%) skewX(-20deg); } }
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 35%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.38), transparent); transform: translateX(-130%) skewX(-20deg); animation: shineSweep 3.6s ease-in-out 1.4s infinite; pointer-events: none; }
+@keyframes logoGlow { 0%, 100% { filter: drop-shadow(0 0 0 rgb(var(--accent) / 0)); } 50% { filter: drop-shadow(0 0 10px rgb(var(--accent) / .55)); } }
+.logo-glow { animation: logoGlow 4.5s ease-in-out infinite; transition: transform .4s cubic-bezier(.2,.7,.2,1); }
+a:hover > .logo-glow, .logo-glow:hover { transform: scale(1.08) rotate(-2deg); }
+@keyframes wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-10deg) scale(1.1); } 60% { transform: rotate(8deg) scale(1.1); } }
+.glass-hover:hover .icon-wobble { animation: wobble .7s ease; }
+.icon-wobble { transition: background-color .3s, transform .3s; }
+.glass-hover:hover .icon-wobble { background-color: rgb(var(--brand) / .32); }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+.bob { animation: bob 1.8s ease-in-out infinite; }

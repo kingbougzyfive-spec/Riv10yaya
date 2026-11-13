@@ -8,6 +8,7 @@ import { AnnouncementsList } from "./Lists";
 import { EventsList } from "./Events";
 import { NextProgramme, type NextEvent } from "./NextProgramme";
 import Link from "next/link";
+import { ScrollProgress } from "./Motion";
 
 export type Counts = { zones: number; areas: number; parishes: number } | null;
 
@@ -20,6 +21,7 @@ export function Frame({ site, current, preview, children }: { site: SiteData; cu
       }}
     >
       <SiteNav site={site} current={current} />
+      {!preview && <ScrollProgress />}
       <main id="content">{children}</main>
       <SiteFooter site={site} />
     </div>
