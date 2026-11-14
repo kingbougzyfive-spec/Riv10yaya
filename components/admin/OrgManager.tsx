@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { ArrowRightLeft, Building2, ChevronDown, Layers, Loader2, MapPin, Pencil, Plus, Power, Search, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Building2, ChevronDown, Layers, Loader2, MapPin, Pencil, Plus, Power, Search, Trash2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -26,6 +26,16 @@ export function OrgManager({ canManage }: { canManage: boolean }) {
   const [dlg, setDlg] = useState<Dlg>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
+  const [syncing, setSyncing] = useState(false);
+  async function syncList() {
+    setSyncing(true);
+    try {
+      const r = await api("/api/org/import", { method: "POST" });
+      toast.ok(r.zones + r.areas + r.parishes === 0 ? "Already up to date. Nothing was missing." : `Added ${r.zones} zone${r.zones === 1 ? "" : "s"}, ${r.areas} area${r.areas === 1 ? "" : "s"} and ${r.parishes} parish${r.parishes === 1 ? "" : "es"}.`);
+      await load();
+    } catch (e: any) { toast.err(e.message); }
+    setSyncing(false);
+  }
   const load = useCallback(() => api("/api/org").then(setData).catch((e) => toast.err(e.message)), [toast]);
   useEffect(() => { load(); }, [load]);
 
@@ -66,6 +76,7 @@ export function OrgManager({ canManage }: { canManage: boolean }) {
     <>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="relative min-w-[200px] flex-1"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/65" /><input className="input !pl-10" placeholder="Search zone, area or parish…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        {canManage && <button className="btn btn-ghost" disabled={syncing} onClick={syncList} title="Adds any Rivers Province 10 zone, area or parish that is missing. Never changes what you already have."><RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />{syncing ? "Updating…" : "Update from official list"}</button>}
         {canManage && <button className="btn btn-primary" onClick={() => setDlg({ kind: "zone" })}><Plus className="h-4 w-4" />Add zone</button>}
       </div>
       {tree.length === 0 && <div className="glass p-10 text-center text-white/65">{data.zones.length ? "Nothing matches your search." : "No zones yet. Add your first zone to start building the structure."}</div>}

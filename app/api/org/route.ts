@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { handle, audit, keyOf } from "@/lib/api";
 import { ApiError, requireApiUser, type SessionUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { ensureStructure } from "@/lib/structure-seed";
 import { PERMS } from "@/lib/rbac";
 
 /** Plain copy of an organisation record for the audit trail (no transfer history, which can be long). */
@@ -53,6 +54,7 @@ function scopeFilter(u: SessionUser) {
 
 export const GET = handle(async () => {
   const user = await requireApiUser(PERMS.orgView);
+  await ensureStructure();
   const { Zone, Area, Parish } = await getDb();
   let zf: any = {}, af: any = {}, pf: any = {};
   if (scopeFilter(user) === null) {

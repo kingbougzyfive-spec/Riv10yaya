@@ -202,7 +202,31 @@ async function connectFirstHealthy(): Promise<{ conn: Connection; id: string }> 
 }
 
 /** Returns models bound to the healthy connection, failing over when needed. */
+let structureFailedAt = 0;
+/**
+ * The connection plus every model, with the official Rivers Province 10 zone / area / parish list guaranteed to be loaded.
+ * Every page, form, report and export gets its data through here, so none of them can ever see an empty list.
+ * If loading the list fails for any reason the app carries on as normal and tries again 30 seconds later.
+ */
 export async function getDb(): Promise<Models> {
+  const models = await getDbRaw();
+  if (Date.now() - structureFailedAt > 30_000) {
+    try {
+      const { structureLoaded, ensureStructure } = await import("./structure-seed");
+      if (!structureLoaded()) {
+        await ensureStructure();
+        if (!structureLoaded()) structureFailedAt = Date.now(); // another instance is still loading it: look again shortly
+      }
+    } catch (e) {
+      structureFailedAt = Date.now();
+      console.error("The official zone, area and parish list could not be loaded yet:", e);
+    }
+  }
+  return models;
+}
+
+/** The connection and models only. The structure loader itself uses this, so it cannot wait on itself. */
+export async function getDbRaw(): Promise<Models> {
   const healthy = cache.conn && cache.conn.readyState === 1;
 
   if (healthy) {

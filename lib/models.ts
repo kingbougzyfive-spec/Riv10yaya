@@ -69,6 +69,8 @@ const zoneSchema = new Schema(
     isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     nameKey: { type: String, required: true, unique: true },
+    /** the province's own reference, e.g. ZN0000006338 */
+    code: String,
     /** false => standalone zone: parishes sit directly under it */
     hasAreas: { type: Boolean, default: true },
     active: { type: Boolean, default: true },
@@ -83,6 +85,7 @@ const areaSchema = new Schema(
     isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     nameKey: { type: String, required: true },
+    code: String, // the province's own reference, e.g. AR0000006338
     zone: { type: Schema.Types.ObjectId, ref: "Zone", required: true, index: true },
     active: { type: Boolean, default: true },
   },
@@ -96,6 +99,8 @@ const parishSchema = new Schema(
     isSample: { type: Boolean, default: false, index: true },
     name: { type: String, required: true, trim: true },
     nameKey: { type: String, required: true },
+    code: String, // the parish code from the province's records
+    pastorPhone: String,
     zone: { type: Schema.Types.ObjectId, ref: "Zone", required: true, index: true },
     /** null for parishes directly under a standalone zone */
     area: { type: Schema.Types.ObjectId, ref: "Area", default: null, index: true },

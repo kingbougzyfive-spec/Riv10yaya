@@ -1,10 +1,12 @@
 import { handle } from "@/lib/api";
 import { getDb } from "@/lib/db";
+import { ensureStructure } from "@/lib/structure-seed";
 
 export const dynamic = "force-dynamic";
 
 /** Names only, for registration dropdowns. No contact data. */
 export const GET = handle(async () => {
+  await ensureStructure();
   const { Zone, Area, Parish } = await getDb();
   const [z, a, p] = await Promise.all([Zone.find({ active: true }).sort({ name: 1 }).lean<any[]>(), Area.find({ active: true }).sort({ name: 1 }).lean<any[]>(), Parish.find({ active: true }).sort({ name: 1 }).lean<any[]>()]);
   return {
