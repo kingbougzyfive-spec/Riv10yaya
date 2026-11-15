@@ -33,11 +33,7 @@ const patchSchema = z.object({
   password: passwordField.optional(),
 });
 
-function needScope(role: string, v: { zone?: string; area?: string; parish?: string }) {
-  if (role === "zonal_admin" && !v.zone) throw new ApiError(400, "Choose the zone this administrator manages.");
-  if (role === "area_admin" && !v.area) throw new ApiError(400, "Choose the area this administrator manages.");
-  if (role === "parish_admin" && !v.parish) throw new ApiError(400, "Choose the parish this administrator manages.");
-}
+// Linking an administrator to a zone, area or parish is optional. Until linked they can sign in but see no organisation data (recordScope and resolveIdentity return nothing).
 const clean = (v?: string) => (v ? v : undefined);
 
 export const GET = handle(async () => {
@@ -51,6 +47,7 @@ export const GET = handle(async () => {
     users: users.map((u) => ({
       id: String(u._id), name: u.name, email: u.email, phone: u.phone, role: u.role, active: u.active, lastLoginAt: u.lastLoginAt,
       zone: u.zone ? String(u.zone) : "", area: u.area ? String(u.area) : "", parish: u.parish ? String(u.parish) : "",
+      unlinked: (u.role === "zonal_admin" && !u.zone) || (u.role === "area_admin" && !u.area) || (u.role === "parish_admin" && !u.parish),
       scopeLabel: [u.zone && z.get(String(u.zone)), u.area && a.get(String(u.area)), u.parish && p.get(String(u.parish))].filter(Boolean).join(" → "),
     })),
   };
@@ -59,7 +56,6 @@ export const GET = handle(async () => {
 export const POST = handle(async (req) => {
   const actor = await requireApiUser(PERMS.users);
   const i = createSchema.parse(await req.json());
-  needScope(i.role, i);
   const { User } = await getDb();
   const u = await User.create({
     name: i.name, email: i.email, phone: i.phone || undefined, role: i.role,
@@ -92,7 +88,6 @@ export const PATCH = handle(async (req) => {
   if (i.zone !== undefined) u.zone = clean(i.zone) as any;
   if (i.area !== undefined) u.area = clean(i.area) as any;
   if (i.parish !== undefined) u.parish = clean(i.parish) as any;
-  needScope(u.role, { zone: u.zone && String(u.zone), area: u.area && String(u.area), parish: u.parish && String(u.parish) });
   if (i.active !== undefined) u.active = i.active;
   if (i.password) { u.passwordHash = await hashPassword(i.password); u.mustChangePassword = true; u.passwordChangedAt = new Date(); }
   const after = { name: u.name, phone: u.phone ?? null, role: u.role, zone: u.zone ? String(u.zone) : null, area: u.area ? String(u.area) : null, parish: u.parish ? String(u.parish) : null, active: u.active };

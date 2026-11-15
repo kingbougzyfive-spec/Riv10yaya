@@ -2,14 +2,14 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { audit, handle, keyOf } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
-import { matchTyped } from "@/lib/admin-request";
+import { chainFor, matchTyped } from "@/lib/admin-request";
 import { getDb } from "@/lib/db";
 import { sendMail } from "@/lib/mail";
 import { PERMS } from "@/lib/rbac";
 
 export const dynamic = "force-dynamic";
 const oid = z.string().refine((v) => mongoose.isValidObjectId(v), "Invalid id").optional();
-const schema = z.object({ action: z.enum(["approve", "reject"]), reason: z.string().trim().max(300).optional(), zone: oid, area: oid, parish: oid });
+const schema = z.object({ action: z.enum(["approve", "reject"]), reason: z.string().trim().max(300).optional(), zone: oid, area: oid, parish: oid, unit: oid });
 const ROLE = { zone: "zonal_admin", area: "area_admin", parish: "parish_admin" } as const;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 
@@ -34,8 +34,13 @@ export const PATCH = handle(async (req, ctx: { params: Promise<{ id: string }> }
 
   if (await User.exists({ email: r.email })) throw new ApiError(409, "That email already has an account. Reject this request instead.");
   const zoneName = r.zoneName || "", areaName = r.areaName || "", parishName = r.parishName || "";
-  const m = await matchTyped({ level: r.level, zoneName, areaName, parishName, zone: r.zone, area: r.area, parish: r.parish }, { zone: i.zone, area: i.area, parish: i.parish });
-  const name = (r.orgName || "").trim();
+  // The Super Administrator can assign the zone / area / parish (needed when the person did not choose one).
+  const assigned = i.unit ? await chainFor(r.level, i.unit) : null;
+  if (i.unit && !assigned) throw new ApiError(400, `The ${r.level} you chose doesn't exist.`);
+  if (!assigned && !r.zone && !r.area && !r.parish && !zoneName && !areaName && !parishName) throw new ApiError(400, `Choose the ${r.level} this administrator will manage before approving.`);
+  const over = assigned ? { zone: String(assigned.zone._id), area: assigned.area ? String(assigned.area._id) : undefined, parish: assigned.parish ? String(assigned.parish._id) : undefined } : { zone: i.zone, area: i.area, parish: i.parish };
+  const m = await matchTyped({ level: r.level, zoneName, areaName, parishName, zone: r.zone, area: r.area, parish: r.parish }, over);
+  const name = (assigned?.unit.name || r.orgName || "").trim();
   if (i.zone && !m.zone) throw new ApiError(400, "The zone you chose doesn't exist.");
   if (i.area && !m.area) throw new ApiError(400, "The area you chose isn't in that zone.");
   if (i.parish && !m.parish) throw new ApiError(400, "The parish you chose isn't in that zone or area.");

@@ -23,3 +23,24 @@ export async function matchTyped(r: Typed, over: { zone?: string; area?: string;
   }
   return { zone, area, parish };
 }
+
+/**
+ * People pick ONE thing that matches what they lead: a zone, an area or a parish. This finds it and works out the rest of its chain.
+ * Returns null when nothing valid was picked (the pick is optional).
+ */
+export async function chainFor(level: "zone" | "area" | "parish", id?: string | null) {
+  if (!id) return null;
+  const { Zone, Area, Parish } = await getDb();
+  if (level === "zone") {
+    const zone: any = await Zone.findOne({ _id: id, active: true }).lean();
+    return zone ? { zone, area: null as any, parish: null as any, unit: zone } : null;
+  }
+  if (level === "area") {
+    const area: any = await Area.findOne({ _id: id, active: true }).lean();
+    const zone: any = area ? await Zone.findById(area.zone).lean() : null;
+    return area && zone ? { zone, area, parish: null as any, unit: area } : null;
+  }
+  const parish: any = await Parish.findOne({ _id: id, active: true }).lean();
+  const [zone, area]: any[] = parish ? await Promise.all([Zone.findById(parish.zone).lean(), parish.area ? Area.findById(parish.area).lean() : null]) : [null, null];
+  return parish && zone ? { zone, area: area ?? null, parish, unit: parish } : null;
+}

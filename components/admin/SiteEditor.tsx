@@ -177,8 +177,8 @@ export function SiteEditor({ initial, updatedAt }: { initial: SiteData; updatedA
         ))}
       </div>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <div className={cn(view === "preview" && "hidden xl:block")}>
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <div className={cn("min-w-0", view === "preview" && "hidden xl:block")}>
           <div className="mb-4 flex gap-1.5 overflow-x-auto pb-2">
             {TABS.map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)} className={cn("relative flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition", tab === t.id ? "text-white" : "text-white/65 hover:text-white")}>

@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
 
 const ROLE: Record<string, string> = { zone: "Zonal administrator", area: "Area administrator", parish: "Parish administrator" };
-type Link = { zone?: string; area?: string; parish?: string };
+type Link = { zone?: string; area?: string; parish?: string; unit?: string };
 
 export function AdminRequests() {
   const toast = useToast();
@@ -24,6 +24,7 @@ export function AdminRequests() {
 
   async function act(r: any, action: "approve" | "reject") {
     const l = link[r.id] || {};
+    if (action === "approve" && r.needsUnit && !l.unit) { toast.err(`Choose the ${r.level} this person will manage first.`); return; }
     if (action === "approve") {
       const creates = [!r.zoneId && !l.zone ? `zone "${r.zoneName}"` : "", r.level !== "zone" && r.zoneHasAreas !== false && !r.areaId && !l.area && r.areaName ? `area "${r.areaName}"` : "", r.level === "parish" && !r.parishId && !l.parish ? `parish "${r.parishName}"` : ""].filter(Boolean);
       if (!(await confirm({ title: `Approve ${r.name}?`, message: `This creates a ${ROLE[r.level].toLowerCase()} account for ${r.orgName}.${creates.length ? ` It will also add ${creates.join(", ")} to your structure.` : ""} They can sign in straight away.`, confirmLabel: "Approve" }))) return;
@@ -37,6 +38,14 @@ export function AdminRequests() {
   if (!rows) return <p className="text-sm text-white/65" role="status">Loading…</p>;
   const list = rows.filter((r) => (tab === "pending") === (r.status === "pending"));
   const pending = rows.filter((r) => r.status === "pending").length;
+
+  const zn = (id: string) => org.zones.find((z: any) => z.id === id)?.name ?? "";
+  const an = (id: string | null) => (id ? org.areas.find((a: any) => a.id === id)?.name ?? "" : "");
+  const assignOptions = (level: string): { id: string; label: string }[] => (level === "zone"
+    ? org.zones.map((z: any) => ({ id: z.id, label: z.name }))
+    : level === "area" ? org.areas.map((a: any) => ({ id: a.id, label: `${a.name} (${zn(a.zone)})` }))
+    : org.parishes.map((p: any) => ({ id: p.id, label: `${p.name} (${[an(p.area), zn(p.zone)].filter(Boolean).join(", ")})` })))
+    .sort((x: any, y: any) => x.label.localeCompare(y.label, undefined, { numeric: true, sensitivity: "base" }));
 
   const Part = ({ r, kind, label, typed, matchedId, options, show }: { r: any; kind: keyof Link; label: string; typed: string; matchedId: string; options: any[]; show: boolean }) => {
     if (!show || !typed) return null;
@@ -78,6 +87,17 @@ export function AdminRequests() {
               <span className={`badge ${r.status === "approved" ? "badge-ok" : r.status === "rejected" ? "badge-bad" : "badge-warn"}`}>{r.status}</span>
             </div>
             <p className="text-sm"><span className="text-white/65">Wants to be: </span><span className="font-medium">{ROLE[r.level]}</span></p>
+            {r.status === "pending" && r.needsUnit && (
+              <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-3 text-sm">
+                <p className="font-medium">They didn't choose their {r.level}.</p>
+                <label className="mt-2 block text-xs text-white/70">Assign the {r.level} they will manage
+                  <select className="input mt-1" value={link[r.id]?.unit || ""} onChange={(e) => setL(r.id, { unit: e.target.value || undefined })}>
+                    <option value="">Choose a {r.level}…</option>
+                    {assignOptions(r.level).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  </select>
+                </label>
+              </div>
+            )}
             <div className="space-y-2">
               <Part r={r} kind="zone" label="Zone" typed={r.zoneName} matchedId={r.zoneId} options={org.zones} show />
               <Part r={r} kind="area" label="Area" typed={r.areaName} matchedId={r.areaId} options={areaOptions} show={wantsArea} />

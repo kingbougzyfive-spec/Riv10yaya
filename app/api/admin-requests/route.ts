@@ -19,11 +19,11 @@ export const GET = handle(async () => {
     const areaName = r.areaName || (r.area ? an.get(String(r.area)) : "") || "";
     const parishName = r.parishName || (r.parish ? pn.get(String(r.parish)) : "") || "";
     const base = { id: String(r._id), name: r.name, email: r.email, phone: r.phone || "", level: r.level, status: r.status, createdAt: r.createdAt, reason: r.reason || "", reviewedBy: r.reviewedBy || "", zoneName, areaName, parishName, orgName: r.orgName || (r.level === "zone" ? zoneName : r.level === "area" ? areaName : parishName) };
-    if (r.status !== "pending") return { ...base, zoneId: "", areaId: "", parishId: "", unitIsNew: false, existingAdmins: 0 };
+    if (r.status !== "pending") return { ...base, needsUnit: false, zoneId: "", areaId: "", parishId: "", unitIsNew: false, existingAdmins: 0 };
     const m = await matchTyped({ level: r.level, zoneName, areaName, parishName, zone: r.zone, area: r.area, parish: r.parish });
     const unit = r.level === "zone" ? m.zone : r.level === "area" ? m.area : m.parish;
     const existingAdmins = unit ? await User.countDocuments({ role: ROLE[r.level as keyof typeof ROLE], [r.level]: unit._id, active: true }) : 0;
-    return { ...base, zoneId: m.zone ? String(m.zone._id) : "", areaId: m.area ? String(m.area._id) : "", parishId: m.parish ? String(m.parish._id) : "", zoneHasAreas: m.zone ? !!m.zone.hasAreas : null, unitIsNew: !unit, existingAdmins };
+    return { ...base, needsUnit: !m.zone && !zoneName && !areaName && !parishName, zoneId: m.zone ? String(m.zone._id) : "", areaId: m.area ? String(m.area._id) : "", parishId: m.parish ? String(m.parish._id) : "", zoneHasAreas: m.zone ? !!m.zone.hasAreas : null, unitIsNew: !unit, existingAdmins };
   }));
   return { requests, pending: requests.filter((r) => r.status === "pending").length };
 });
