@@ -9,7 +9,7 @@ import { api } from "@/lib/fetcher";
 import { ROLES, ROLE_LABELS, type Role } from "@/lib/roles";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 
-type U = { id: string; name: string; email: string; phone?: string; role: Role; active: boolean; zone: string; area: string; parish: string; scopeLabel: string; unlinked?: boolean; lastLoginAt?: string };
+type U = { id: string; name: string; email: string; phone?: string; role: Role; active: boolean; zone: string; area: string; parish: string; scopeLabel: string; unlinked?: boolean; legacy?: boolean; lastLoginAt?: string };
 type Org = { zones: { id: string; name: string; hasAreas: boolean }[]; areas: { id: string; name: string; zone: string }[]; parishes: { id: string; name: string; zone: string; area: string | null }[] };
 
 export function UsersManager({ meId }: { meId: string }) {
@@ -17,30 +17,44 @@ export function UsersManager({ meId }: { meId: string }) {
   const [users, setUsers] = useState<U[] | null>(null);
   const [org, setOrg] = useState<Org | null>(null);
   const [dlg, setDlg] = useState<{ edit?: U } | null>(null);
-  const load = useCallback(() => api("/api/users").then((r) => setUsers(r.users)).catch((e) => toast.err(e.message)), [toast]);
-  useEffect(() => { load(); api("/api/org").then(setOrg).catch(() => {}); }, [load]);
+  const [loadErr, setLoadErr] = useState("");
+  const [orgErr, setOrgErr] = useState(false);
+  // A failed refresh keeps the list you already have on screen; only a first load that fails shows the retry card.
+  const load = useCallback(() => api("/api/users").then((r) => { setUsers(r.users); setLoadErr(""); }).catch((e) => setLoadErr(e.message || "Couldn't load the users.")), []);
+  const loadOrg = useCallback(() => { setOrgErr(false); return api("/api/org").then(setOrg).catch(() => setOrgErr(true)); }, []);
+  useEffect(() => { load(); loadOrg(); }, [load, loadOrg]);
 
   return (
     <>
       <div className="mb-5 flex justify-end"><button className="btn btn-primary" onClick={() => setDlg({})}><Plus className="h-4 w-4" />Add user</button></div>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
-        {users === null && [0, 1, 2].map((i) => <div key={i} className="skeleton h-20" />)}
+        {users === null && !loadErr && [0, 1, 2].map((i) => <div key={i} className="skeleton h-20" />)}
+        {users === null && loadErr && (
+          <div className="glass p-6 text-center" role="alert">
+            <p className="font-semibold">We couldn't load the users</p>
+            <p className="mt-1 text-sm text-white/65">{loadErr}</p>
+            <button className="btn btn-primary mt-4" onClick={() => { setLoadErr(""); load(); }}>Try again</button>
+          </div>
+        )}
         {users?.map((u, i) => (
           <motion.button key={u.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.4) }} onClick={() => setDlg({ edit: u })} className="glass glass-hover flex w-full min-w-0 flex-col items-stretch gap-3 p-4 text-left sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand/20 font-black text-brand">{u.name.slice(0, 1).toUpperCase()}</div>
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand/20 font-black text-brand">{(u.name || u.email || "?").slice(0, 1).toUpperCase()}</div>
               <div className="min-w-0"><p className="truncate font-semibold">{u.name}{u.id === meId && <span className="ml-2 text-xs text-white/65">(you)</span>}</p><p className="truncate text-xs text-white/65">{u.email}{u.scopeLabel ? ` · ${u.scopeLabel}` : ""}</p></div>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5 pl-14 sm:shrink-0 sm:flex-col sm:items-end sm:pl-0"><span className="badge">{ROLE_LABELS[u.role]}</span><span className={`badge ${u.active ? "badge-ok" : "badge-bad"}`}>{u.active ? "Active" : "Disabled"}</span>{u.unlinked && <span className="badge badge-warn">Not linked yet</span>}</div>
+            <div className="flex flex-wrap items-center gap-1.5 pl-14 sm:shrink-0 sm:flex-col sm:items-end sm:pl-0"><span className="badge">{ROLE_LABELS[u.role] ?? "Unknown role"}</span><span className={`badge ${u.active ? "badge-ok" : "badge-bad"}`}>{u.active ? "Active" : "Disabled"}</span>{u.unlinked && <span className="badge badge-warn">Not linked yet</span>}{u.legacy && <span className="badge badge-warn">Needs details</span>}</div>
           </motion.button>
         ))}
       </div>
-      {dlg && org && <UserDialog key={dlg.edit?.id ?? "new"} edit={dlg.edit} org={org} meId={meId} onClose={() => setDlg(null)} onDone={load} />}
+      {dlg && <UserDialog key={dlg.edit?.id ?? "new"} edit={dlg.edit} org={org} orgFailed={orgErr} onReloadOrg={loadOrg} meId={meId} onClose={() => setDlg(null)} onDone={load} />}
     </>
   );
 }
 
-function UserDialog({ edit, org, meId, onClose, onDone }: { edit?: U; org: Org; meId: string; onClose: () => void; onDone: () => void }) {
+function UserDialog({ edit, org: orgIn, orgFailed, onReloadOrg, meId, onClose, onDone }: { edit?: U; org: Org | null; orgFailed: boolean; onReloadOrg: () => void; meId: string; onClose: () => void; onDone: () => void }) {
+  // The form opens straight away; the zone / area / parish list fills in as soon as it arrives.
+  const org: Org = orgIn ?? { zones: [], areas: [], parishes: [] };
+  const orgReady = !!orgIn;
   const toast = useToast();
   const confirm = useConfirm();
   const [f, setF] = useState({ name: edit?.name ?? "", email: edit?.email ?? "", phone: edit?.phone ?? "", role: (edit?.role ?? "parish_admin") as Role, zone: edit?.zone ?? "", area: edit?.area ?? "", parish: edit?.parish ?? "", password: "", active: edit?.active ?? true });
@@ -81,20 +95,20 @@ function UserDialog({ edit, org, meId, onClose, onDone }: { edit?: U; org: Org; 
         {(needsZone || needsArea || needsParish) && (
           <div>
             <label className="label">{needsZone ? "Zone they manage" : needsArea ? "Area they manage" : "Parish they manage"} <span className="font-normal text-white/65">(optional)</span></label>
-            <select className="input" value={needsZone ? f.zone : needsArea ? f.area : f.parish} onChange={(e) => setF({ ...f, [needsZone ? "zone" : needsArea ? "area" : "parish"]: e.target.value })}>
-              <option value="">Not linked yet</option>
+            <select className="input" disabled={!orgReady} value={needsZone ? f.zone : needsArea ? f.area : f.parish} onChange={(e) => setF({ ...f, [needsZone ? "zone" : needsArea ? "area" : "parish"]: e.target.value })}>
+              <option value="">{orgReady ? "Not linked yet" : orgFailed ? "Couldn't load the list" : "Loading the list…"}</option>
               {needsZone && zoneOpts.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
               {needsArea && areaOpts.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
               {needsParish && parishOpts.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
-            <p className="hint">You can link them later. Until then they can sign in but won't see any organisation data.</p>
+            {orgFailed && !orgReady ? <p className="hint">The list didn't load. <button type="button" className="underline" onClick={onReloadOrg}>Try again</button></p> : <p className="hint">You can link them later. Until then they can sign in but won't see any organisation data.</p>}
           </div>
         )}
         <div><label className="label">{edit ? "New password (leave blank to keep)" : "Password"}</label><PasswordInput className="input" minLength={10} required={!edit} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
         {edit && edit.id !== meId && (
           <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-white/5 p-3 text-sm"><input type="checkbox" className="h-4 w-4 accent-emerald-500" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />Account is active (untick to block sign-in)</label>
         )}
-        <button className="btn btn-primary w-full py-3" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}{edit ? "Save changes" : "Create user"}</button>
+        <button className="btn btn-primary w-full py-3" disabled={busy || (!orgReady && (needsZone || needsArea || needsParish))}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}{edit ? "Save changes" : "Create user"}</button>
       </form>
     </Modal>
   );

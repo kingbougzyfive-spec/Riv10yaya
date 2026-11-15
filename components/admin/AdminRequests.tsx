@@ -87,22 +87,26 @@ export function AdminRequests() {
               <span className={`badge ${r.status === "approved" ? "badge-ok" : r.status === "rejected" ? "badge-bad" : "badge-warn"}`}>{r.status}</span>
             </div>
             <p className="text-sm"><span className="text-white/65">Wants to be: </span><span className="font-medium">{ROLE[r.level]}</span></p>
-            {r.status === "pending" && r.needsUnit && (
-              <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-3 text-sm">
-                <p className="font-medium">They didn't choose their {r.level}.</p>
+            {r.status === "pending" && (
+              <div className={`rounded-xl border p-3 text-sm ${r.needsUnit ? "border-amber-400/40 bg-amber-400/10" : "border-white/10"}`}>
+                <p className="font-medium">{r.needsUnit ? `They didn't choose their ${r.level}.` : `You can change which ${r.level} they manage.`}</p>
                 <label className="mt-2 block text-xs text-white/70">Assign the {r.level} they will manage
                   <select className="input mt-1" value={link[r.id]?.unit || ""} onChange={(e) => setL(r.id, { unit: e.target.value || undefined })}>
-                    <option value="">Choose a {r.level}…</option>
+                    <option value="">{r.needsUnit ? `Choose a ${r.level}…` : `Keep what they chose: ${r.orgName}`}</option>
                     {assignOptions(r.level).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                   </select>
                 </label>
               </div>
             )}
+            {link[r.id]?.unit && r.status === "pending" ? (
+              <p className="badge-ok rounded-xl p-2.5 text-xs">Will be linked to: <strong>{assignOptions(r.level).find((o) => o.id === link[r.id]?.unit)?.label}</strong></p>
+            ) : (
             <div className="space-y-2">
               <Part r={r} kind="zone" label="Zone" typed={r.zoneName} matchedId={r.zoneId} options={org.zones} show />
               <Part r={r} kind="area" label="Area" typed={r.areaName} matchedId={r.areaId} options={areaOptions} show={wantsArea} />
               <Part r={r} kind="parish" label="Parish" typed={r.parishName} matchedId={r.parishId} options={parishOptions} show={r.level === "parish"} />
             </div>
+            )}
             {r.status === "pending" && r.existingAdmins > 0 && <p className="badge-warn rounded-xl p-2.5 text-xs">{r.existingAdmins} active administrator{r.existingAdmins > 1 ? "s" : ""} already manage{r.existingAdmins > 1 ? "" : "s"} this {r.level}. Make sure this person should also have access.</p>}
             {r.status !== "pending" && <p className="text-xs text-white/65">{r.status === "approved" ? "Approved" : "Rejected"}{r.reviewedBy ? ` by ${r.reviewedBy}` : ""}{r.reason ? `. Reason: ${r.reason}` : ""}</p>}
             {r.status === "pending" && (rejecting === r.id ? (

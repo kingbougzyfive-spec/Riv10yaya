@@ -8,20 +8,32 @@ export class OfflineError extends Error {
   constructor(msg = "You're offline. Nothing was sent or saved. Please reconnect and try again.") { super(msg); }
 }
 
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function api<T = any>(url: string, init?: RequestInit & { json?: unknown }): Promise<T> {
   const method = (init?.method || "GET").toUpperCase();
   if (method !== "GET" && typeof navigator !== "undefined" && navigator.onLine === false) throw new OfflineError();
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      ...init,
-      headers: init?.json ? { "Content-Type": "application/json", ...init?.headers } : init?.headers,
-      body: init?.json ? JSON.stringify(init.json) : init?.body,
-    });
-  } catch {
-    throw new OfflineError(method === "GET" ? "Couldn't reach the server. Please check your connection." : "Couldn't reach the server. Nothing was confirmed. Please check your connection and try again.");
+  // Reading is safe to repeat, so a slow start or a brief network or database hiccup is retried quietly before anyone sees an error.
+  // Writes are never repeated automatically: a payment or approval must not be sent twice.
+  const attempts = method === "GET" ? 3 : 1;
+  let failure: Error = new Error("Request failed");
+  for (let n = 0; n < attempts; n++) {
+    if (n > 0) await wait(n === 1 ? 700 : 1600);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        ...init,
+        headers: init?.json ? { "Content-Type": "application/json", ...init?.headers } : init?.headers,
+        body: init?.json ? JSON.stringify(init.json) : init?.body,
+      });
+    } catch {
+      failure = new OfflineError(method === "GET" ? "Couldn't reach the server. Please check your connection." : "Couldn't reach the server. Nothing was confirmed. Please check your connection and try again.");
+      continue;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) return data as T;
+    failure = new Error(data?.error || (data?.requestId ? `Something went wrong (ref ${data.requestId}).` : `Request failed (${res.status})`));
+    if (![500, 502, 503, 504].includes(res.status)) throw failure; // a real answer (wrong input, not allowed, not found): do not retry
   }
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || (data?.requestId ? `Something went wrong (ref ${data.requestId}).` : `Request failed (${res.status})`));
-  return data as T;
+  throw failure;
 }

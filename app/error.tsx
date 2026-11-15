@@ -9,12 +9,12 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   const retry = () => startTransition(() => { router.refresh(); reset(); });
   useEffect(() => { console.error(error); }, [error]);
   useEffect(() => {
-    if (tries >= 4) return;
+    if (!error.digest || tries >= 4) return; // only server hiccups are worth retrying; a page that crashes while drawing will crash again
     const t = setTimeout(() => { setTries((n) => n + 1); retry(); }, 2500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tries]);
-  const retrying = tries < 4;
+  const retrying = !!error.digest && tries < 4;
   return (
     <main className="grid min-h-dvh place-items-center px-4">
       <div className="glass max-w-md p-10 text-center" role="status" aria-live="polite">

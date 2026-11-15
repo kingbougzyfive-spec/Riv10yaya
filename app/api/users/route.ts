@@ -36,6 +36,29 @@ const patchSchema = z.object({
 // Linking an administrator to a zone, area or parish is optional. Until linked they can sign in but see no organisation data (recordScope and resolveIdentity return nothing).
 const clean = (v?: string) => (v ? v : undefined);
 
+/**
+ * Works out the full zone / area / parish for the one thing an administrator manages, so a parish admin is always linked to its area and zone too.
+ * Whatever does not belong to the role is cleared. Choosing nothing is allowed (they can be linked later).
+ */
+async function scopeFor(role: string, ids: { zone?: string; area?: string; parish?: string }) {
+  const { Zone, Area, Parish } = await getDb();
+  if (role === "zonal_admin" && ids.zone) {
+    if (!(await Zone.exists({ _id: ids.zone }))) throw new ApiError(400, "That zone doesn't exist.");
+    return { zone: ids.zone, area: undefined, parish: undefined };
+  }
+  if (role === "area_admin" && ids.area) {
+    const a: any = await Area.findById(ids.area, { zone: 1 }).lean();
+    if (!a) throw new ApiError(400, "That area doesn't exist.");
+    return { zone: String(a.zone), area: ids.area, parish: undefined };
+  }
+  if (role === "parish_admin" && ids.parish) {
+    const p: any = await Parish.findById(ids.parish, { zone: 1, area: 1 }).lean();
+    if (!p) throw new ApiError(400, "That parish doesn't exist.");
+    return { zone: String(p.zone), area: p.area ? String(p.area) : undefined, parish: ids.parish };
+  }
+  return { zone: undefined, area: undefined, parish: undefined };
+}
+
 export const GET = handle(async () => {
   await requireApiUser(PERMS.users);
   const { User, Zone, Area, Parish } = await getDb();
@@ -44,12 +67,18 @@ export const GET = handle(async () => {
   const nm = (list: any[]) => new Map(list.map((x) => [String(x._id), x.name]));
   const z = nm(zones), a = nm(areas), p = nm(parishes);
   return {
-    users: users.map((u) => ({
-      id: String(u._id), name: u.name, email: u.email, phone: u.phone, role: u.role, active: u.active, lastLoginAt: u.lastLoginAt,
-      zone: u.zone ? String(u.zone) : "", area: u.area ? String(u.area) : "", parish: u.parish ? String(u.parish) : "",
-      unlinked: (u.role === "zonal_admin" && !u.zone) || (u.role === "area_admin" && !u.area) || (u.role === "parish_admin" && !u.parish),
-      scopeLabel: [u.zone && z.get(String(u.zone)), u.area && a.get(String(u.area)), u.parish && p.get(String(u.parish))].filter(Boolean).join(" → "),
-    })),
+    // Older databases can hold records from another system (no name, no email, a role this app doesn't have). Never let one of them break the page.
+    users: users.map((u) => {
+      const known = (ROLES as readonly string[]).includes(u.role);
+      const text = (v: unknown) => (typeof v === "string" ? v : "");
+      return {
+        id: String(u._id), name: text(u.name).trim() || text(u.email) || "(no name)", email: text(u.email), phone: text(u.phone) || undefined,
+        role: known ? u.role : "member", legacy: !known || !text(u.name) || !text(u.email), active: u.active === true, lastLoginAt: u.lastLoginAt,
+        zone: u.zone ? String(u.zone) : "", area: u.area ? String(u.area) : "", parish: u.parish ? String(u.parish) : "",
+        unlinked: (u.role === "zonal_admin" && !u.zone) || (u.role === "area_admin" && !u.area) || (u.role === "parish_admin" && !u.parish),
+        scopeLabel: [u.zone && z.get(String(u.zone)), u.area && a.get(String(u.area)), u.parish && p.get(String(u.parish))].filter(Boolean).join(" → "),
+      };
+    }),
   };
 });
 
@@ -57,13 +86,14 @@ export const POST = handle(async (req) => {
   const actor = await requireApiUser(PERMS.users);
   const i = createSchema.parse(await req.json());
   const { User } = await getDb();
+  const sc = await scopeFor(i.role, { zone: clean(i.zone), area: clean(i.area), parish: clean(i.parish) });
   const u = await User.create({
     name: i.name, email: i.email, phone: i.phone || undefined, role: i.role,
-    zone: clean(i.zone), area: clean(i.area), parish: clean(i.parish),
+    zone: sc.zone, area: sc.area, parish: sc.parish,
     passwordHash: await hashPassword(i.password),
     mustChangePassword: true, // an admin-chosen password is temporary: the person replaces it at first sign-in
   });
-  await audit(actor, "user.create", i.email, { entity: "user", entityId: String(u._id), after: { name: i.name, email: i.email, phone: i.phone || null, role: i.role, zone: clean(i.zone) ?? null, area: clean(i.area) ?? null, parish: clean(i.parish) ?? null, active: true } }, req);
+  await audit(actor, "user.create", i.email, { entity: "user", entityId: String(u._id), after: { name: i.name, email: i.email, phone: i.phone || null, role: i.role, zone: sc.zone ?? null, area: sc.area ?? null, parish: sc.parish ?? null, active: true } }, req);
   return { id: String(u._id) };
 });
 
@@ -85,9 +115,11 @@ export const PATCH = handle(async (req) => {
   if (i.name) u.name = i.name;
   if (i.phone !== undefined) u.phone = i.phone || undefined;
   if (i.role) u.role = i.role;
-  if (i.zone !== undefined) u.zone = clean(i.zone) as any;
-  if (i.area !== undefined) u.area = clean(i.area) as any;
-  if (i.parish !== undefined) u.parish = clean(i.parish) as any;
+  if (i.zone !== undefined || i.area !== undefined || i.parish !== undefined || i.role) {
+    // Re-derive the whole chain from the one thing they manage (what is not sent keeps its current value).
+    const sc = await scopeFor(nextRole, { zone: i.zone !== undefined ? clean(i.zone) : u.zone && String(u.zone), area: i.area !== undefined ? clean(i.area) : u.area && String(u.area), parish: i.parish !== undefined ? clean(i.parish) : u.parish && String(u.parish) });
+    u.zone = sc.zone as any; u.area = sc.area as any; u.parish = sc.parish as any;
+  }
   if (i.active !== undefined) u.active = i.active;
   if (i.password) { u.passwordHash = await hashPassword(i.password); u.mustChangePassword = true; u.passwordChangedAt = new Date(); }
   const after = { name: u.name, phone: u.phone ?? null, role: u.role, zone: u.zone ? String(u.zone) : null, area: u.area ? String(u.area) : null, parish: u.parish ? String(u.parish) : null, active: u.active };
