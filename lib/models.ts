@@ -21,6 +21,10 @@ const userSchema = new Schema(
     zone: { type: Schema.Types.ObjectId, ref: "Zone" },
     area: { type: Schema.Types.ObjectId, ref: "Area" },
     parish: { type: Schema.Types.ObjectId, ref: "Parish" },
+    /** What this administrator is IN CHARGE of. Anything beneath an assigned zone or area is included automatically (see lib/reach.ts). zone/area/parish above hold the first one's chain. */
+    zones: { type: [{ type: Schema.Types.ObjectId, ref: "Zone" }], default: undefined },
+    areas: { type: [{ type: Schema.Types.ObjectId, ref: "Area" }], default: undefined },
+    parishes: { type: [{ type: Schema.Types.ObjectId, ref: "Parish" }], default: undefined },
     active: { type: Boolean, default: true },
     /** Notification preferences (members manage their own). In-app notices are always on. */
     prefs: { email: { type: Boolean, default: true }, sms: { type: Boolean, default: true }, push: { type: Boolean, default: true }, /** categories the person has switched off (only optional ones can be) */ mute: [String] },

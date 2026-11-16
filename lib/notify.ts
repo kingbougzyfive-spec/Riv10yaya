@@ -1,5 +1,6 @@
 import { getDb } from "./db";
 import { dispatch } from "./notifier";
+import { SCOPED_ROLES } from "./reach";
 
 export type Note = { title: string; body?: string; link?: string; event?: string; dedupe?: string };
 
@@ -11,12 +12,13 @@ export async function notifyUsers(userIds: string[], n: Note) {
 /** The administrators responsible for a parish: its own, its area's and its zone's. */
 export async function adminsOf(o: { zone?: any; area?: any; parish?: any }): Promise<string[]> {
   const { User } = await getDb();
+  // Everyone in charge of this parish, area or zone (an assignment on any of them counts).
   const or: any[] = [];
-  if (o.parish) or.push({ role: "parish_admin", parish: o.parish });
-  if (o.area) or.push({ role: "area_admin", area: o.area });
-  if (o.zone) or.push({ role: "zonal_admin", zone: o.zone });
+  if (o.parish) or.push({ parishes: o.parish });
+  if (o.area) or.push({ areas: o.area });
+  if (o.zone) or.push({ zones: o.zone });
   if (!or.length) return [];
-  return (await User.find({ active: true, $or: or }, { _id: 1 }).lean<any[]>()).map((u) => String(u._id));
+  return (await User.find({ active: true, role: { $in: [...SCOPED_ROLES] }, $or: or }, { _id: 1 }).lean<any[]>()).map((u) => String(u._id));
 }
 
 export async function financeTeam(): Promise<string[]> {

@@ -5,6 +5,7 @@ import { ApiError, requireApiUser, type SessionUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { ensureStructure } from "@/lib/structure-seed";
 import { PERMS } from "@/lib/rbac";
+import { orgFilters } from "@/lib/scope";
 
 /** Plain copy of an organisation record for the audit trail (no transfer history, which can be long). */
 const snap = (d: any) => { if (!d) return null; const o = JSON.parse(JSON.stringify(d.toObject ? d.toObject() : d)); delete o.transfers; delete o.__v; return o; };
@@ -57,16 +58,7 @@ export const GET = handle(async () => {
   await ensureStructure();
   const { Zone, Area, Parish } = await getDb();
   let zf: any = {}, af: any = {}, pf: any = {};
-  if (scopeFilter(user) === null) {
-    if (user.role === "zonal_admin" && user.zone) { zf = { _id: user.zone }; af = { zone: user.zone }; pf = { zone: user.zone }; }
-    else if (user.role === "area_admin" && user.area) {
-      const a = await Area.findById(user.area).lean<any>();
-      zf = { _id: a?.zone }; af = { _id: user.area }; pf = { area: user.area };
-    } else if (user.role === "parish_admin" && user.parish) {
-      const p = await Parish.findById(user.parish).lean<any>();
-      zf = { _id: p?.zone }; af = p?.area ? { _id: p.area } : { _id: null }; pf = { _id: user.parish };
-    } else { zf = af = pf = { _id: null }; }
-  }
+  if (scopeFilter(user) === null) { const of = await orgFilters(user); zf = of.zone; af = of.area; pf = of.parish; }
   const [zones, areas, parishes] = await Promise.all([
     Zone.find(zf).sort({ name: 1 }).lean<any[]>(),
     Area.find(af).sort({ name: 1 }).lean<any[]>(),

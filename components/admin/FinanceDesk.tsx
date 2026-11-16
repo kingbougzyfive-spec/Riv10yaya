@@ -220,7 +220,7 @@ function PaymentCard({ r, pay, canReview, isParish, act, busy }: { r: any; pay: 
         </div>
       )}
       {isParish && problem && (
-        <div className="space-y-3 border-t border-white/10 pt-4"><p className="font-bold">Respond to finance</p><textarea className="input" rows={3} placeholder="Add transaction details or explain…" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /><EvidenceUpload label="Additional evidence (optional). Your original receipt stays on file." value={f.ev} onChange={(id) => setF({ ...f, ev: id })} />
+        <div className="space-y-3 border-t border-white/10 pt-4"><p className="font-bold">Respond to finance</p><textarea className="input" rows={3} placeholder="Add transaction details or explain…" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /><EvidenceUpload parish={r.parishId} label="Additional evidence (optional). Your original receipt stays on file." value={f.ev} onChange={(id) => setF({ ...f, ev: id })} />
           <button data-needs-online className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => act({ ...base, action: "respond", note: f.note, ...(f.ev ? { evidenceId: f.ev } : {}) }, `${key}-respond`)}>{busy === `${key}-respond` && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Send response</button></div>
       )}
     </section>
@@ -257,7 +257,7 @@ function AddPayment({ r, onDone }: { r: any; onDone: () => void }) {
       <div className="mt-3 space-y-3">
         <p className="text-xs text-white/65">Pay into the same official provincial account, then upload the receipt. It counts only after finance confirms it.</p>
         <div className="grid gap-3 sm:grid-cols-3"><div><label className="label">Amount paid (₦)</label><input className="input" type="number" step="0.01" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></div><div><label className="label">Date of payment</label><input className="input" type="date" value={f.paidAt} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setF({ ...f, paidAt: e.target.value })} /></div><div><label className="label">Reference</label><input className="input" value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} /></div></div>
-        <EvidenceUpload value={f.evidenceId} onChange={(id) => setF({ ...f, evidenceId: id })} />
+        <EvidenceUpload parish={r.parishId} value={f.evidenceId} onChange={(id) => setF({ ...f, evidenceId: id })} />
         <input className="input" placeholder="Remarks (optional)" value={f.remarks} onChange={(e) => setF({ ...f, remarks: e.target.value })} />
         <button data-needs-online className="btn btn-primary btn-sm" disabled={busy} onClick={save}>{busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Submit payment</button>
       </div>

@@ -203,6 +203,8 @@ async function connectFirstHealthy(): Promise<{ conn: Connection; id: string }> 
 
 /** Returns models bound to the healthy connection, failing over when needed. */
 let structureFailedAt = 0;
+let assignmentsDone = false;
+let assignmentsFailedAt = 0;
 /**
  * The connection plus every model, with the official Rivers Province 10 zone / area / parish list guaranteed to be loaded.
  * Every page, form, report and export gets its data through here, so none of them can ever see an empty list.
@@ -221,6 +223,10 @@ export async function getDb(): Promise<Models> {
       structureFailedAt = Date.now();
       console.error("The official zone, area and parish list could not be loaded yet:", e);
     }
+  }
+  if (!assignmentsDone && Date.now() - assignmentsFailedAt > 30_000) {
+    try { await (await import("./assignments-upgrade")).upgradeAssignments(); assignmentsDone = true; }
+    catch (e) { assignmentsFailedAt = Date.now(); console.error("Could not upgrade administrator assignments yet:", e); }
   }
   return models;
 }

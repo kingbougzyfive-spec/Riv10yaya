@@ -28,7 +28,7 @@ export const GET = handle<Ctx>(async (_req, ctx) => {
     // Payment evidence: owning parish, the uploader, or provincial finance/oversight staff only.
     const u = await getUser();
     const staff = u && ["super_admin", "finance_admin", "provincial_admin", "auditor"].includes(u.role);
-    const owner = u && (String(m.uploadedBy) === u.id || (u.parish && String(m.parish) === u.parish));
+    const owner = u && (String(m.uploadedBy) === u.id || (m.parish && u.parishes.includes(String(m.parish))));
     if (!staff && !owner) throw new ApiError(u ? 403 : 401, "You don't have access to this file.");
     const buf: Buffer = Buffer.isBuffer(m.data) ? m.data : Buffer.from(m.data.buffer);
     return new Response(new Uint8Array(buf), { headers: { "Content-Type": m.mime, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline" } });

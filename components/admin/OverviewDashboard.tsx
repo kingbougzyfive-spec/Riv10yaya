@@ -49,6 +49,16 @@ export function OverviewDashboard() {
           <select className="input !w-auto" aria-label="Year" value={p.year} onChange={(e) => setP({ ...p, year: Number(e.target.value) })}>{[y0 + 1, y0, y0 - 1, y0 - 2].map((y) => <option key={y}>{y}</option>)}</select>
         </div>
       </div>
+      {d?.mine?.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2" aria-label="The units you are in charge of">
+          <span className="text-xs font-semibold uppercase tracking-wider text-white/65">In your care</span>
+          {d.mine.map((m: any) => (
+            <button key={m.level + m.id} onClick={() => go(m.level, m.id)} className="rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white/80 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+              {m.name}<span className="ml-1 text-white/65">({m.level})</span>
+            </button>
+          ))}
+        </div>
+      )}
       {!d ? <div className="grid place-items-center py-16"><Loader2 className="h-6 w-6 animate-spin text-brand" /></div> : (
         <>
           {d.level === "parish" && <ParishView d={d} />}

@@ -26,7 +26,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   const { Report } = await getDb();
   const r = await Report.findById(id);
   if (!r) throw new ApiError(404, "Report not found.");
-  const me = await resolveIdentity(user);
+  const me = await resolveIdentity(user, { zone: String(r.zone), area: r.area ? String(r.area) : undefined, parish: r.parish ? String(r.parish) : undefined });
   const mine = me && me.type === r.type && me.zone === String(r.zone) && (me.area ?? null) === (r.area ? String(r.area) : null) && (me.parish ?? null) === (r.parish ? String(r.parish) : null);
   if (!mine) throw new ApiError(403, "You can only revise your own organisation's report.");
   if (r.status === "draft") throw new ApiError(409, "This report hasn't been submitted yet.");

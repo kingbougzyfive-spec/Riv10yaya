@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { ApiError, type SessionUser } from "./auth";
 import { getDb } from "./db";
 import { canView, isProvincialAdmin } from "./governance";
+import { reachFilter } from "./reach";
 import { isMinor } from "./members";
 import { keysOf } from "./member-store";
 import type { External } from "./notifier";
@@ -24,10 +25,7 @@ const sid = (v: any) => (v ? String(v) : "");
 /** Member filter that limits to the sender's own part of the church. */
 function memberScope(u: SessionUser): Record<string, unknown> | null {
   if (isProvincialAdmin(u.role)) return {};
-  if (u.role === "zonal_admin" && u.zone) return { zone: u.zone };
-  if (u.role === "area_admin" && u.area) return { area: u.area };
-  if (u.role === "parish_admin" && u.parish) return { parish: u.parish };
-  return null;
+  return reachFilter(u);
 }
 
 /** Turns member records into accounts (by phone) and email-only addresses. */

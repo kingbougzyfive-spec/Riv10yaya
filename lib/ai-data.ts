@@ -1,6 +1,6 @@
 import { ApiError, type SessionUser } from "./auth";
 import { getDb } from "./db";
-import { recordScope } from "./scope";
+import { orgFilters, recordScope, scopeLabelOf } from "./scope";
 import type { Area, Data } from "./ai-core";
 
 /**
@@ -13,7 +13,7 @@ export async function makeLoader(user: SessionUser) {
   const db = await getDb();
   const memo = new Map<string, Promise<any>>();
   const once = <T,>(k: string, f: () => Promise<T>): Promise<T> => { if (!memo.has(k)) memo.set(k, f()); return memo.get(k)!; };
-  const pf: any = scope.zone ? { zone: scope.zone } : scope.area ? { area: scope.area } : scope.parish ? { _id: scope.parish } : {};
+  const pf: any = (await orgFilters(user)).parish;
 
   const parishes = () => once<any[]>("parishes", () => db.Parish.find(pf).lean<any[]>());
   const zones = () => once<any[]>("zones", () => db.Zone.find({}, { name: 1, active: 1 }).lean<any[]>());
@@ -29,13 +29,7 @@ export async function makeLoader(user: SessionUser) {
       return new Map<string, { total: number; visitors: number }>(rows.map((x: any) => [String(x._id), { total: x.total, visitors: x.visitors }]));
     },
     reviewed: (start: Date, end: Date) => once<any[]>(`rv${+start}`, () => db.Remittance.find({ ...scope, $or: [{ reviewedAt: { $gte: start, $lt: end } }, { "payments.reviewedAt": { $gte: start, $lt: end } }] }, { history: 0, checks: 0, "payments.history": 0, "payments.checks": 0 }).lean<any[]>()),
-    async scopeLabel() {
-      const z = await zones(), a = await areas(), p = await parishes();
-      if (scope.zone) return `Zone: ${z.find((x) => String(x._id) === String(scope.zone))?.name ?? ""}`;
-      if (scope.area) return `Area: ${a.find((x) => String(x._id) === String(scope.area))?.name ?? ""}`;
-      if (scope.parish) return `Parish: ${p[0]?.name ?? ""}`;
-      return "Whole province";
-    },
+    async scopeLabel() { return scopeLabelOf(user); },
     /** Zone/area given by name → ids, but only ones that exist inside this person's own scope. */
     async resolve(zone?: string, area?: string): Promise<Area> {
       const out: Area = {};

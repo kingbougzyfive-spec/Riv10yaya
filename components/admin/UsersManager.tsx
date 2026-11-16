@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { UnitPicker } from "./UnitPicker";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/fetcher";
 import { ROLES, ROLE_LABELS, type Role } from "@/lib/roles";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 
-type U = { id: string; name: string; email: string; phone?: string; role: Role; active: boolean; zone: string; area: string; parish: string; scopeLabel: string; unlinked?: boolean; legacy?: boolean; lastLoginAt?: string };
+type U = {
+  zones?: string[]; areas?: string[]; parishes?: string[]; id: string; name: string; email: string; phone?: string; role: Role; active: boolean; zone: string; area: string; parish: string; scopeLabel: string; unlinked?: boolean; legacy?: boolean; lastLoginAt?: string };
 type Org = { zones: { id: string; name: string; hasAreas: boolean }[]; areas: { id: string; name: string; zone: string }[]; parishes: { id: string; name: string; zone: string; area: string | null }[] };
 
 export function UsersManager({ meId }: { meId: string }) {
@@ -57,11 +59,9 @@ function UserDialog({ edit, org: orgIn, orgFailed, onReloadOrg, meId, onClose, o
   const orgReady = !!orgIn;
   const toast = useToast();
   const confirm = useConfirm();
-  const [f, setF] = useState({ name: edit?.name ?? "", email: edit?.email ?? "", phone: edit?.phone ?? "", role: (edit?.role ?? "parish_admin") as Role, zone: edit?.zone ?? "", area: edit?.area ?? "", parish: edit?.parish ?? "", password: "", active: edit?.active ?? true });
+  const [f, setF] = useState({ name: edit?.name ?? "", email: edit?.email ?? "", phone: edit?.phone ?? "", role: (edit?.role ?? "parish_admin") as Role, zones: edit?.zones ?? [], areas: edit?.areas ?? [], parishes: edit?.parishes ?? [], password: "", active: edit?.active ?? true });
   const [busy, setBusy] = useState(false);
-  const needsZone = f.role === "zonal_admin";
-  const needsArea = f.role === "area_admin";
-  const needsParish = f.role === "parish_admin";
+  const scoped = f.role === "zonal_admin" || f.role === "area_admin" || f.role === "parish_admin";
   const byLabel = (x: { label: string }, y: { label: string }) => x.label.localeCompare(y.label, undefined, { numeric: true, sensitivity: "base" });
   const zoneName = (id: string) => org.zones.find((z) => z.id === id)?.name ?? "";
   const areaName = (id: string | null) => (id ? org.areas.find((a) => a.id === id)?.name ?? "" : "");
@@ -76,9 +76,9 @@ function UserDialog({ edit, org: orgIn, orgFailed, onReloadOrg, meId, onClose, o
     setBusy(true);
     try {
       if (edit) {
-        await api("/api/users", { method: "PATCH", json: { id: edit.id, name: f.name, phone: f.phone, role: f.role, zone: needsZone ? f.zone : "", area: needsArea ? f.area : "", parish: needsParish ? f.parish : "", active: f.active, ...(f.password ? { password: f.password } : {}) } });
+        await api("/api/users", { method: "PATCH", json: { id: edit.id, name: f.name, phone: f.phone, role: f.role, zones: scoped ? f.zones : [], areas: scoped ? f.areas : [], parishes: scoped ? f.parishes : [], active: f.active, ...(f.password ? { password: f.password } : {}) } });
       } else {
-        await api("/api/users", { method: "POST", json: { name: f.name, email: f.email, phone: f.phone, role: f.role, zone: needsZone ? f.zone : "", area: needsArea ? f.area : "", parish: needsParish ? f.parish : "", password: f.password } });
+        await api("/api/users", { method: "POST", json: { name: f.name, email: f.email, phone: f.phone, role: f.role, zones: scoped ? f.zones : [], areas: scoped ? f.areas : [], parishes: scoped ? f.parishes : [], password: f.password } });
       }
       toast.ok(edit ? "User updated" : "User created"); onClose(); onDone();
     } catch (e: any) { toast.err(e.message); }
@@ -92,23 +92,22 @@ function UserDialog({ edit, org: orgIn, orgFailed, onReloadOrg, meId, onClose, o
         <div><label className="label">Email</label><input className="input" type="email" required disabled={!!edit} value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
         <div><label className="label">Phone (optional)</label><input className="input" inputMode="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="0803 000 0000" /></div>
         <div><label className="label">Role</label><select className="input" value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })}>{ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}</select></div>
-        {(needsZone || needsArea || needsParish) && (
-          <div>
-            <label className="label">{needsZone ? "Zone they manage" : needsArea ? "Area they manage" : "Parish they manage"} <span className="font-normal text-white/65">(optional)</span></label>
-            <select className="input" disabled={!orgReady} value={needsZone ? f.zone : needsArea ? f.area : f.parish} onChange={(e) => setF({ ...f, [needsZone ? "zone" : needsArea ? "area" : "parish"]: e.target.value })}>
-              <option value="">{orgReady ? "Not linked yet" : orgFailed ? "Couldn't load the list" : "Loading the list…"}</option>
-              {needsZone && zoneOpts.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              {needsArea && areaOpts.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              {needsParish && parishOpts.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-            </select>
-            {orgFailed && !orgReady ? <p className="hint">The list didn't load. <button type="button" className="underline" onClick={onReloadOrg}>Try again</button></p> : <p className="hint">You can link them later. Until then they can sign in but won't see any organisation data.</p>}
-          </div>
+        {scoped && (
+          <fieldset className="space-y-3">
+            <legend className="label">In charge of <span className="font-normal text-white/65">(optional)</span></legend>
+            <p className="text-xs text-white/65">Pick any number of zones, areas and parishes. <strong>Everything inside a zone or area you pick is included automatically</strong>, so choosing a zone puts all its areas and parishes in their care.</p>
+            {!orgReady && <p className="text-xs text-amber-300">{orgFailed ? <>The list didn't load. <button type="button" className="underline" onClick={onReloadOrg}>Try again</button></> : "Loading the list…"}</p>}
+            <UnitPicker title="Zones" options={zoneOpts} value={f.zones} onChange={(zones) => setF({ ...f, zones })} disabled={!orgReady} />
+            <UnitPicker title="Areas" options={areaOpts} value={f.areas} onChange={(areas) => setF({ ...f, areas })} disabled={!orgReady} />
+            <UnitPicker title="Parishes" options={parishOpts} value={f.parishes} onChange={(parishes) => setF({ ...f, parishes })} disabled={!orgReady} />
+            <p className="hint">You can change this any time. Until something is chosen they can sign in but won't see any organisation data.</p>
+          </fieldset>
         )}
         <div><label className="label">{edit ? "New password (leave blank to keep)" : "Password"}</label><PasswordInput className="input" minLength={10} required={!edit} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /><p className="hint">At least 10 characters.</p></div>
         {edit && edit.id !== meId && (
           <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-white/5 p-3 text-sm"><input type="checkbox" className="h-4 w-4 accent-emerald-500" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />Account is active (untick to block sign-in)</label>
         )}
-        <button className="btn btn-primary w-full py-3" disabled={busy || (!orgReady && (needsZone || needsArea || needsParish))}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}{edit ? "Save changes" : "Create user"}</button>
+        <button className="btn btn-primary w-full py-3" disabled={busy || (!orgReady && scoped)}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}{edit ? "Save changes" : "Create user"}</button>
       </form>
     </Modal>
   );

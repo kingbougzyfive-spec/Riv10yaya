@@ -6,9 +6,10 @@ export const CONTACT_ROLES = ["super_admin", "provincial_admin", "finance_admin"
  * Administrator contact details on a report: provincial/zonal/area roles (already limited to their own scope by
  * recordScope) and the parish's own administrator. Members, auditors, event admins and the public never.
  */
-export function canSeeContact(user: { role: string; parish?: string | null }, report: { parish?: unknown }): boolean {
+export function canSeeContact(user: { role: string; parish?: string | null; parishes?: string[] }, report: { parish?: unknown }): boolean {
   if ((CONTACT_ROLES as readonly string[]).includes(user.role)) return true;
-  return user.role === "parish_admin" && !!user.parish && String(report.parish) === user.parish;
+  const mine = new Set([...(user.parishes ?? []), ...(user.parish ? [user.parish] : [])]);
+  return user.role === "parish_admin" && !!report.parish && mine.has(String(report.parish));
 }
 
 const NO_MATCH = "000000000000000000000000";

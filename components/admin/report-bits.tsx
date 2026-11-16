@@ -18,7 +18,7 @@ export function PeriodPicker({ month, year, onChange }: { month: number; year: n
 }
 
 /** Private evidence upload: receipts are never public. */
-export function EvidenceUpload({ value, onChange, label = "Payment evidence" }: { value: string; onChange: (id: string, name: string) => void; label?: string }) {
+export function EvidenceUpload({ value, onChange, label = "Payment evidence", parish, uploadUrl }: { value: string; onChange: (id: string, name: string) => void; label?: string; parish?: string; uploadUrl?: string }) {
   const toast = useToast();
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -28,7 +28,7 @@ export function EvidenceUpload({ value, onChange, label = "Payment evidence" }: 
     setBusy(true);
     try {
       const fd = new FormData(); fd.append("file", f);
-      const r = await api("/api/evidence", { method: "POST", body: fd });
+      const r = await api(uploadUrl ?? (parish ? `/api/evidence?parish=${parish}` : "/api/evidence"), { method: "POST", body: fd });
       setName(r.name); onChange(r.id, r.name); toast.ok("Evidence uploaded");
     } catch (e: any) { toast.err(e.message); }
     setBusy(false);

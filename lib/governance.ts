@@ -2,12 +2,14 @@
  * Governance rules: which organisational level a record belongs to, who may see it and who may change it.
  * Pure helpers (no database) so the access rules can be tested on their own.
  */
+import { inReach, reachFilter } from "./reach";
+
 export const LEVELS = ["province", "zone", "area", "parish"] as const;
 export type GLevel = (typeof LEVELS)[number];
 export const LEVEL_LABEL: Record<GLevel, string> = { province: "Province", zone: "Zone", area: "Area", parish: "Parish" };
 
 export type Org = { level: GLevel; zone?: string | null; area?: string | null; parish?: string | null };
-export type Actor = { role: string; zone?: string; area?: string; parish?: string };
+export type Actor = { role: string; zone?: string; area?: string; parish?: string; zones?: string[]; areas?: string[]; parishes?: string[] };
 
 const s = (v: unknown) => (v ? String(v) : "");
 export const PROVINCIAL_ROLES = ["super_admin", "provincial_admin"] as const;
@@ -31,22 +33,16 @@ export function orgComplete(o: Org) {
   return !!o.zone && !!o.parish;
 }
 
-/** Mongo filter of the records a user may SEE. Higher levels see everything beneath them, never the reverse. */
+/** Mongo filter of the records a user may SEE. Higher levels see everything beneath them, never the reverse. Several assigned units give an $or. */
 export function visibleFilter(u: Actor): Record<string, unknown> | null {
   if (["super_admin", "provincial_admin", "auditor"].includes(u.role)) return {};
-  if (u.role === "zonal_admin" && u.zone) return { zone: u.zone };
-  if (u.role === "area_admin" && u.area) return { area: u.area };
-  if (u.role === "parish_admin" && u.parish) return { parish: u.parish };
-  return null;
+  return reachFilter(u);
 }
 
 /** May this user see a record that belongs to `o`? (the same rule as visibleFilter, for a single record) */
 export function canView(u: Actor, o: Org) {
   if (["super_admin", "provincial_admin", "auditor"].includes(u.role)) return true;
-  if (u.role === "zonal_admin") return !!u.zone && s(o.zone) === u.zone;
-  if (u.role === "area_admin") return !!u.area && s(o.area) === u.area;
-  if (u.role === "parish_admin") return !!u.parish && s(o.parish) === u.parish;
-  return false;
+  return inReach(u, o);
 }
 
 /**
@@ -56,9 +52,9 @@ export function canView(u: Actor, o: Org) {
 export function canManage(u: Actor, o: Org) {
   if (isProvincialAdmin(u.role)) return true;
   if (o.level === "province") return false;
-  if (u.role === "zonal_admin") return !!u.zone && s(o.zone) === u.zone;
-  if (u.role === "area_admin") return !!u.area && (o.level === "area" || o.level === "parish") && s(o.area) === u.area;
-  if (u.role === "parish_admin") return !!u.parish && o.level === "parish" && s(o.parish) === u.parish;
+  if (u.role === "zonal_admin") return inReach(u, o);
+  if (u.role === "area_admin") return (o.level === "area" || o.level === "parish") && inReach(u, o);
+  if (u.role === "parish_admin") return o.level === "parish" && inReach(u, o);
   return false;
 }
 

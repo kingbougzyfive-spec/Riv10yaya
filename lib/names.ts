@@ -1,4 +1,5 @@
 import { getDb } from "./db";
+import { inReach, isScopedRole } from "./reach";
 
 /** id → name lookups for building readable API output. */
 export async function orgNames() {
@@ -8,19 +9,17 @@ export async function orgNames() {
   return { zone: mk(z), area: mk(a), parish: mk(p) };
 }
 
-/** Is `target` (zone/area/parish ids) inside the user's organisational scope? Used for create/manage checks. */
-export async function inScope(user: { role: string; zone?: string; area?: string; parish?: string }, target: { zone?: any; area?: any; parish?: any }) {
+/** Is `target` (zone/area/parish ids) inside what the user is in charge of? Used for create/manage checks. */
+export async function inScope(user: { role: string; zones?: string[]; areas?: string[]; parishes?: string[] }, target: { zone?: any; area?: any; parish?: any }) {
   if (["super_admin", "provincial_admin", "event_admin"].includes(user.role)) return true;
+  if (!isScopedRole(user.role)) return false;
   const { Area, Parish } = await getDb();
   const t = { zone: target.zone ? String(target.zone) : "", area: target.area ? String(target.area) : "", parish: target.parish ? String(target.parish) : "" };
-  if (user.role === "zonal_admin") return !!user.zone && t.zone === user.zone;
-  if (user.role === "area_admin") {
-    if (!user.area) return false;
-    if (t.area === user.area) return true;
-    if (t.parish) { const p = await Parish.findById(t.parish, { area: 1 }).lean<any>(); return String(p?.area) === user.area; }
-    return false;
-  }
-  if (user.role === "parish_admin") return !!user.parish && t.parish === user.parish;
-  void Area;
-  return false;
+  // Work out the whole chain from the database, so a target given by one id can't hide its parents.
+  if (t.parish && (!t.area || !t.zone)) { const p = await Parish.findById(t.parish, { zone: 1, area: 1 }).lean<any>(); if (p) { t.zone = String(p.zone); t.area = p.area ? String(p.area) : ""; } }
+  if (t.area && !t.zone) { const a = await Area.findById(t.area, { zone: 1 }).lean<any>(); if (a) t.zone = String(a.zone); }
+  const level = t.parish ? "parish" : t.area ? "area" : "zone";
+  if (user.role === "parish_admin" && level !== "parish") return false;
+  if (user.role === "area_admin" && level === "zone") return false;
+  return inReach(user, t);
 }

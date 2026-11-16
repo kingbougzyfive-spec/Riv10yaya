@@ -50,10 +50,10 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   const owners = () => adminsOf({ zone: r.zone, area: r.area, parish: r.parish });
 
   if (i.action === "respond") {
-    if (user.role !== "parish_admin" || String(r.parish) !== user.parish) throw new ApiError(403, "You can only respond for your own parish.");
+    if (user.role !== "parish_admin" || !user.parishes.includes(String(r.parish))) throw new ApiError(403, "You can only respond for a parish you are in charge of.");
     if (!PROBLEM_STATUSES.includes(p.status)) throw new ApiError(409, "There's nothing to respond to on this record.");
     if (!i.note && !i.evidenceId) throw new ApiError(400, "Add a message or upload new evidence.");
-    if (i.evidenceId && !(await Media.exists({ _id: i.evidenceId, private: true, parish: user.parish }))) throw new ApiError(400, "That evidence file isn't yours.");
+    if (i.evidenceId && !(await Media.exists({ _id: i.evidenceId, private: true, parish: r.parish }))) throw new ApiError(400, "That evidence file isn't yours.");
     p.history.push(entry({ action: "responded", note: i.note, evidenceId: i.evidenceId }));
     p.status = "awaiting_verification"; // the original receipt and every earlier submission stay on record
     await r.save();
@@ -65,7 +65,7 @@ export const PATCH = handle<Ctx>(async (req, ctx) => {
   // ---- everything below is a finance decision ----
   if (!(PERMS.financeReview as readonly string[]).includes(user.role)) throw new ApiError(403, "Only finance administrators can verify payments.");
   // A parish administrator must never approve their own payment (also guards any user mistakenly scoped to the parish).
-  if (user.parish && String(r.parish) === user.parish) throw new ApiError(403, "You can't review your own parish's payment.");
+  if (user.parishes.includes(String(r.parish)) || (user.parish && String(r.parish) === user.parish)) throw new ApiError(403, "You can't review your own parish's payment.");
   if (String(p.submittedBy ?? r.submittedBy) === user.id) throw new ApiError(403, "You can't review a payment you submitted.");
   if (i.evidenceId && !(await Media.exists({ _id: i.evidenceId }))) throw new ApiError(400, "That attachment doesn't exist.");
 

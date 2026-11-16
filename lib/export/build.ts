@@ -6,7 +6,7 @@ import { listFilter } from "../gov-server";
 import { listMembers } from "../member-list";
 import { orgNames } from "../names";
 import { ROLE_LABELS } from "../roles";
-import { CONTACT_ROLES, canSeeContact, clampScope as clamp, recordScope } from "../scope";
+import { CONTACT_ROLES, canSeeContact, clampScope as clamp, isProvincial, orgFilters, recordScope, scopeLabelOf } from "../scope";
 import { EXPORT_BY_KEY, isExportType, type ExportType } from "./catalog";
 import * as D from "./docs";
 import type { ReportDoc } from "./doc";
@@ -31,7 +31,8 @@ export async function buildExport(type: string, user: SessionUser, q: URLSearchP
   const scope: any = user.role === "event_admin" ? {} : await recordScope(user);
   if (scope === null) throw new ApiError(403, "No access.");
   const name = (m: Map<string, string>, v: any) => (v ? m.get(String(v)) ?? "" : "");
-  const scopeLabel = scope.zone ? `Zone: ${name(n.zone, scope.zone)}` : scope.area ? `Area: ${name(n.area, scope.area)}` : scope.parish ? `Parish: ${name(n.parish, scope.parish)}` : "Whole province";
+  const scopeLabel = user.role === "event_admin" ? "Whole province" : await scopeLabelOf(user);
+  const parishFilter: any = user.role === "event_admin" ? {} : (await orgFilters(user)).parish;
   const used: string[] = []; const f = clamp(scope, q);
   for (const [k, m] of [["zone", n.zone], ["area", n.area], ["parish", n.parish]] as const) if (oid(q.get(k)) && def.filters.includes(k)) used.push(`${k[0].toUpperCase() + k.slice(1)}: ${m.get(q.get(k)!) ?? "?"}`);
   const base = (extra: string[] = []): D.Base => ({ org, preparedBy: `${user.name} (${ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? user.role})`, scope: scopeLabel, filters: [...used, ...extra], now: new Date(), canContact: (CONTACT_ROLES as readonly string[]).includes(user.role) || (user.role === "parish_admin" && type === "parish_monthly") });
@@ -59,7 +60,7 @@ export async function buildExport(type: string, user: SessionUser, q: URLSearchP
   if (type === "reconciliation" || type === "confirmed_payments" || type === "outstanding_payments") {
     const { year, month } = period(q, 0); Object.assign(sel, { year, month });
     const rf: any = { ...clamp(scope, q), year, ...(month ? { month } : {}) };
-    const [rems, parishes, zones, areas] = await Promise.all([db.Remittance.find(rf, { history: 0, checks: 0, "payments.history": 0, "payments.checks": 0 }).lean<any[]>(), db.Parish.find(scope.parish ? { _id: scope.parish } : scope.area ? { area: scope.area } : scope.zone ? { zone: scope.zone } : {}).lean<any[]>(), db.Zone.find({}).lean<any[]>(), db.Area.find({}).lean<any[]>()]);
+    const [rems, parishes, zones, areas] = await Promise.all([db.Remittance.find(rf, { history: 0, checks: 0, "payments.history": 0, "payments.checks": 0 }).lean<any[]>(), db.Parish.find(parishFilter).lean<any[]>(), db.Zone.find({}).lean<any[]>(), db.Area.find({}).lean<any[]>()]);
     const input: D.FinIn & { names: typeof n } = { rems, parishes, zones, areas, year, month, zone: rf.zone ? String(rf.zone) : undefined, area: rf.area ? String(rf.area) : undefined, parish: rf.parish ? String(rf.parish) : undefined, kind: q.get("kind") ?? undefined, names: n };
     if (type === "reconciliation") return D.reconciliationDoc(base(), input);
     if (type === "outstanding_payments") return D.outstandingDoc(base(), input);
@@ -80,7 +81,7 @@ export async function buildExport(type: string, user: SessionUser, q: URLSearchP
     const rows = await db.Attendance.aggregate([{ $match: { session: { $in: sessions.map((s) => s._id) }, ...f } }, { $group: { _id: { s: "$session", z: "$zone", a: "$area", p: "$parish" }, n: { $sum: 1 }, visitors: { $sum: { $cond: ["$visitor", 1, 0] } } } }]);
     const counts = new Map<string, { total: number; visitors: number }>(); const by = { zone: new Map<string, number>(), area: new Map<string, number>(), parish: new Map<string, number>() };
     for (const r of rows) { const k = String(r._id.s); const c = counts.get(k) ?? { total: 0, visitors: 0 }; c.total += r.n; c.visitors += r.visitors; counts.set(k, c); for (const [t, v] of [["zone", r._id.z], ["area", r._id.a], ["parish", r._id.p]] as const) if (v) by[t].set(String(v), (by[t].get(String(v)) ?? 0) + r.n); }
-    const provincial = !scope.zone && !scope.area && !scope.parish && user.role !== "event_admin" || user.role === "event_admin";
+    const provincial = isProvincial(user) || user.role === "event_admin";
     return D.attendanceDoc(base(), { from, to, sessions, counts, byZone: by.zone, byArea: by.area, byParish: by.parish, names: n, provincial });
   }
 

@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db";
 import { MONTHS } from "@/lib/money";
 import { adminsOf, notifyUsers } from "@/lib/notify";
 import { REPORT_LABEL, type ReportStatus } from "@/lib/verification";
+import { inReach } from "@/lib/reach";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -15,8 +16,8 @@ const schema = z.object({ action: z.enum(["complete", "request_revision", "mark_
 /** Who may review which report: the level above it. Nobody reviews their own level's report. */
 function canReview(u: SessionUser, r: { type: string; zone: any; area: any }) {
   if (["super_admin", "provincial_admin"].includes(u.role)) return true;
-  if (u.role === "zonal_admin") return (r.type === "parish" || r.type === "area") && !!u.zone && String(r.zone) === u.zone;
-  if (u.role === "area_admin") return r.type === "parish" && !!u.area && String(r.area) === u.area;
+  if (u.role === "zonal_admin") return (r.type === "parish" || r.type === "area") && inReach(u, r);
+  if (u.role === "area_admin") return r.type === "parish" && inReach(u, r);
   return false;
 }
 

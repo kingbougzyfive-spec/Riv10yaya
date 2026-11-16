@@ -7,6 +7,7 @@ import { newToken } from "@/lib/ids";
 import { inScope, orgNames } from "@/lib/names";
 import { KINDS } from "@/lib/kinds";
 import { PERMS } from "@/lib/rbac";
+import { reachFilter } from "@/lib/reach";
 import { isProvincial } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
@@ -26,10 +27,9 @@ export const GET = handle(async () => {
   const { AttendanceSession, Attendance } = await getDb();
   let f: any = {};
   if (!isProvincial(user) && user.role !== "event_admin") {
-    const own = user.role === "zonal_admin" ? { zone: user.zone } : user.role === "area_admin" ? { area: user.area } : { parish: user.parish };
-    f = { $or: [own, { level: "province" }] };
-    if (user.role === "area_admin") f.$or.push({ level: "parish", area: user.area });
-    if (user.role === "zonal_admin") f.$or.push({ level: { $in: ["area", "parish"] }, zone: user.zone });
+    // What they are in charge of (records carry their whole chain, so area and parish sessions beneath an assigned zone are included), plus province-wide sessions.
+    const rf = reachFilter(user);
+    f = rf ? { $or: [rf, { level: "province" }] } : { level: "province" };
   }
   const sessions = await AttendanceSession.find(f).sort({ date: -1 }).limit(200).lean<any[]>();
   const counts = await Attendance.aggregate([{ $match: { session: { $in: sessions.map((s) => s._id) } } }, { $group: { _id: "$session", n: { $sum: 1 }, visitors: { $sum: { $cond: ["$visitor", 1, 0] } } } }]);
@@ -53,17 +53,17 @@ export const POST = handle(async (req) => {
   let { zone, area, parish } = i as { zone?: string; area?: string; parish?: string };
   // Always derive the full path from the lowest level given, from database ids.
   if (i.level === "parish") {
-    if (user.role === "parish_admin") parish = user.parish;
+    if (user.role === "parish_admin") parish = parish ?? user.parishes[0] ?? user.parish;
     const p = parish && (await Parish.findById(parish, { zone: 1, area: 1 }).lean<any>());
     if (!p) throw new ApiError(400, "Choose the parish.");
     zone = String(p.zone); area = p.area ? String(p.area) : undefined;
   } else if (i.level === "area") {
-    if (user.role === "area_admin") area = user.area;
+    if (user.role === "area_admin") area = area ?? user.areas[0] ?? user.area;
     const a = area && (await Area.findById(area, { zone: 1 }).lean<any>());
     if (!a) throw new ApiError(400, "Choose the area.");
     zone = String(a.zone); parish = undefined;
   } else if (i.level === "zone") {
-    if (user.role === "zonal_admin") zone = user.zone;
+    if (user.role === "zonal_admin") zone = zone ?? user.zones[0] ?? user.zone;
     if (!zone) throw new ApiError(400, "Choose the zone.");
     area = parish = undefined;
   } else { zone = area = parish = undefined; if (!["super_admin", "provincial_admin", "event_admin"].includes(user.role)) throw new ApiError(403, "Only provincial staff can create province-wide sessions."); }

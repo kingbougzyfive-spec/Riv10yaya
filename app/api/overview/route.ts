@@ -4,9 +4,23 @@ import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { attendanceStats, groupChildren, parishRows, requirements, sumRows, type Level } from "@/lib/overview";
 import { PERMS } from "@/lib/rbac";
-import { CONTACT_ROLES, recordScope } from "@/lib/scope";
+import { assignmentsOf, inReach } from "@/lib/reach";
+import { CONTACT_ROLES, isProvincial, recordScope } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
+/** The units an administrator is in charge of, by name, when there is more than one to choose between. */
+async function mineUnits(user: any) {
+  const a = assignmentsOf(user);
+  if (isProvincial(user) || a.zones.length + a.areas.length + a.parishes.length < 2) return [];
+  const { Zone, Area, Parish } = await getDb();
+  const [z, ar, p] = await Promise.all([
+    a.zones.length ? Zone.find({ _id: { $in: a.zones } }, { name: 1 }).lean<any[]>() : [],
+    a.areas.length ? Area.find({ _id: { $in: a.areas } }, { name: 1 }).lean<any[]>() : [],
+    a.parishes.length ? Parish.find({ _id: { $in: a.parishes } }, { name: 1 }).lean<any[]>() : [],
+  ]);
+  const by = (x: any, level: string) => ({ level, id: String(x._id), name: x.name });
+  return [...z.map((x) => by(x, "zone")), ...ar.map((x) => by(x, "area")), ...p.map((x) => by(x, "parish"))].sort((x, y) => x.name.localeCompare(y.name, undefined, { numeric: true }));
+}
 const ok = (v: string | null) => (v && mongoose.isValidObjectId(v) ? v : "");
 
 /**
@@ -24,18 +38,21 @@ export const GET = handle(async (req) => {
 
   // Resolve the target from the most specific id given, then derive its ancestors from the database (never from the client).
   let zoneId = ok(q.get("zone")), areaId = ok(q.get("area")), parishId = ok(q.get("parish"));
-  // Default to the user's own level; the checks below reject anything outside it.
-  if (scope.zone && !zoneId && !areaId && !parishId) zoneId = String(scope.zone);
-  if (scope.area && !areaId && !parishId) areaId = String(scope.area);
-  if (scope.parish) parishId = String(scope.parish);
+  // Default to the first unit they are in charge of; the checks below reject anything outside their reach.
+  const mineIds = assignmentsOf(user);
+  if (!isProvincial(user) && !zoneId && !areaId && !parishId) {
+    if (user.role === "parish_admin" && mineIds.parishes[0]) parishId = mineIds.parishes[0];
+    else if (user.role === "area_admin" && mineIds.areas[0]) areaId = mineIds.areas[0];
+    else if (mineIds.zones[0]) zoneId = mineIds.zones[0];
+    else if (mineIds.areas[0]) areaId = mineIds.areas[0];
+    else if (mineIds.parishes[0]) parishId = mineIds.parishes[0];
+  }
   let parishDoc: any = null, areaDoc: any = null, zoneDoc: any = null;
   if (parishId) { parishDoc = await Parish.findById(parishId).lean<any>(); if (!parishDoc) throw new ApiError(404, "Parish not found."); areaId = parishDoc.area ? String(parishDoc.area) : ""; zoneId = String(parishDoc.zone); }
   if (areaId) { areaDoc = await Area.findById(areaId).lean<any>(); if (!areaDoc) throw new ApiError(404, "Area not found."); zoneId = String(areaDoc.zone); }
   if (zoneId) { zoneDoc = await Zone.findById(zoneId).lean<any>(); if (!zoneDoc) throw new ApiError(404, "Zone not found."); }
-  // Scope check on the DERIVED ancestry, so a crafted id can't escape the user's assignment.
-  if (scope.zone && zoneId !== String(scope.zone)) throw new ApiError(403, "That zone isn't yours.");
-  if (scope.area && areaId !== String(scope.area)) throw new ApiError(403, "That area isn't yours.");
-  if (scope.parish && parishId !== String(scope.parish)) throw new ApiError(403, "That parish isn't yours.");
+  // Scope check on the DERIVED ancestry, so a crafted id can't escape the user's assignments. (Provincial roles see everything.)
+  if (!isProvincial(user) && !inReach(user, { zone: zoneId || undefined, area: areaId || undefined, parish: parishId || undefined })) throw new ApiError(403, "That isn't in your care.");
 
   const level: Level = parishId ? "parish" : areaId ? "area" : zoneId ? "zone" : "province";
   const loc: any = parishId ? { parish: parishId } : areaId ? { area: areaId } : zoneId ? { zone: zoneId } : {};
@@ -66,7 +83,9 @@ export const GET = handle(async (req) => {
     level, month, year,
     breadcrumb: [{ level: "province", id: "", name: "Province" }, ...(zoneDoc ? [{ level: "zone", id: zoneId, name: zoneDoc.name }] : []), ...(areaDoc ? [{ level: "area", id: areaId, name: areaDoc.name }] : []), ...(parishDoc ? [{ level: "parish", id: parishId, name: parishDoc.name }] : [])],
     // Where this user's own access begins: crumbs above it aren't clickable.
-    floor: scope.parish ? "parish" : scope.area ? "area" : scope.zone ? "zone" : "province",
+    floor: isProvincial(user) ? "province" : mineIds.zones.length ? "zone" : mineIds.areas.length ? "area" : "parish",
+    // Everything this person is in charge of (only when it is more than one unit), so they can switch between them.
+    mine: await mineUnits(user),
     totals: sum, attendance: att, hasDraft: !!draft,
     children: groupChildren(level, rows, areas, zones, areaReports),
   };
@@ -82,7 +101,7 @@ export const GET = handle(async (req) => {
       User.find({ role: "parish_admin", parish: parishId, active: { $ne: false } }, { name: 1, phone: 1, email: 1 }).lean<any[]>(),
       user.role === "parish_admin" ? Notification.find({ user: user.id }).sort({ createdAt: -1 }).limit(5).lean<any[]>() : Promise.resolve([]),
     ]);
-    const canSeeContacts = (CONTACT_ROLES as readonly string[]).includes(user.role) || String(user.parish) === parishId;
+    const canSeeContacts = (CONTACT_ROLES as readonly string[]).includes(user.role) || (user.role === "parish_admin" && inReach(user, { parish: parishId }));
     const snap = reports.find((r) => r.type === "parish")?.contact ?? null;
     out.parish = {
       name: parishDoc.name, address: parishDoc.address ?? null, row,

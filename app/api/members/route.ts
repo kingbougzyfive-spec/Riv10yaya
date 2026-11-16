@@ -50,7 +50,7 @@ const createSchema = z.object({
 export const POST = handle(async (req) => {
   const user = await requireApiUser(PERMS.members);
   const i = createSchema.parse(await req.json());
-  const parishId = user.role === "parish_admin" ? user.parish : i.parish;
+  const parishId = user.role === "parish_admin" ? (i.parish && user.parishes.includes(i.parish) ? i.parish : user.parishes[0] ?? user.parish) : i.parish;
   if (!parishId || !mongoose.isValidObjectId(parishId)) throw new ApiError(400, "Choose the member's parish.");
   const { Member, Parish } = await getDb();
   const p = await Parish.findById(parishId, { zone: 1, area: 1 }).lean<any>();

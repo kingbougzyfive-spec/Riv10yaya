@@ -44,6 +44,17 @@ export async function destroySession() {
   jar.delete(COOKIE);
 }
 
+const ids = (v: unknown) => (Array.isArray(v) ? v.map(String) : []);
+/** The assignment lists for a user document, falling back to the single legacy unit by role. */
+export function assignedFrom(u: any): { zones: string[]; areas: string[]; parishes: string[] } {
+  const z = ids(u.zones), a = ids(u.areas), p = ids(u.parishes);
+  if (z.length || a.length || p.length) return { zones: z, areas: a, parishes: p };
+  if (u.role === "zonal_admin" && u.zone) return { zones: [String(u.zone)], areas: [], parishes: [] };
+  if (u.role === "area_admin" && u.area) return { zones: [], areas: [String(u.area)], parishes: [] };
+  if (u.role === "parish_admin" && u.parish) return { zones: [], areas: [], parishes: [String(u.parish)] };
+  return { zones: [], areas: [], parishes: [] };
+}
+
 export type SessionUser = {
   id: string;
   name: string;
@@ -53,6 +64,10 @@ export type SessionUser = {
   zone?: string;
   area?: string;
   parish?: string;
+  /** What they are in charge of (assigned zones, areas, parishes). Everything beneath is included. See lib/reach.ts. */
+  zones: string[];
+  areas: string[];
+  parishes: string[];
   /** Using a temporary password: only the change-password screen is allowed until it is replaced. */
   mustChange?: boolean;
 };
@@ -89,6 +104,8 @@ export async function getUser(): Promise<SessionUser | null> {
       zone: u.zone ? String(u.zone) : undefined,
       area: u.area ? String(u.area) : undefined,
       parish: u.parish ? String(u.parish) : undefined,
+      // Older accounts (before several assignments existed) hold one unit in zone / area / parish: read it by role until upgraded.
+      ...assignedFrom(u),
       mustChange: !!u.mustChangePassword,
     };
   }

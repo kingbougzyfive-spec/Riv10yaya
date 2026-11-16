@@ -30,10 +30,10 @@ export const POST = handle<Ctx>(async (req, ctx) => {
   const i = schema.parse(await req.json());
   const { Remittance, Media } = await getDb();
   const r = await Remittance.findById(id);
-  if (!r || String(r.parish) !== user.parish) throw new ApiError(404, "Record not found.");
+  if (!r || !user.parishes.includes(String(r.parish))) throw new ApiError(404, "Record not found.");
   if (r.kind !== "yst") throw new ApiError(400, "Extra payments are for the Youth Sunday remittance.");
   if (totals(r.toObject()).satisfied) throw new ApiError(409, "This remittance is already fully confirmed. Contact the finance team if you believe an adjustment is needed.");
-  if (!(await Media.exists({ _id: i.evidenceId, private: true, parish: user.parish }))) throw new ApiError(400, "That evidence file isn't yours.");
+  if (!(await Media.exists({ _id: i.evidenceId, private: true, parish: r.parish }))) throw new ApiError(400, "That evidence file isn't yours.");
   r.payments.push({ amountKobo: toKobo(i.amountPaid), paidAt: new Date(i.paidAt), reference: i.reference, evidenceId: i.evidenceId, remarks: i.remarks, status: "submitted", submittedBy: user.id, history: [{ at: new Date(), by: user.id, byName: user.name, action: "submitted", note: "Additional payment submitted" }] });
   const pay = r.payments[r.payments.length - 1];
   pay.checks = await duplicateChecks({ _id: pay._id, evidenceId: pay.evidenceId, reference: pay.reference }).catch(() => null);

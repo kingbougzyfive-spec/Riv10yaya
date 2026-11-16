@@ -2,7 +2,7 @@ import { handle } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
-import { recordScope } from "@/lib/scope";
+import { isProvincial, orgFilters, recordScope } from "@/lib/scope";
 import { obligationFv, totals } from "@/lib/verification";
 
 export const dynamic = "force-dynamic";
@@ -22,22 +22,18 @@ export const GET = handle(async (req) => {
   const year = Number(q.get("year")) || now.getFullYear();
   const { Zone, Area, Parish, Report, Remittance } = await getDb();
 
-  // Parish docs use _id for the parish scope; the other scope keys are shared field names.
-  const pScope: any = { ...scope };
-  if (pScope.parish) { pScope._id = pScope.parish; delete pScope.parish; }
-  const aScope: any = { ...scope }; delete aScope.parish;
-
+  const of = await orgFilters(user);
   const [zones, areas, parishes, reports, yst, levies] = await Promise.all([
-    Zone.find(scope.zone ? { _id: scope.zone } : { active: true }, { name: 1 }).sort({ name: 1 }).lean<any[]>(),
-    Area.find({ ...aScope, active: true }, { name: 1, zone: 1 }).lean<any[]>(),
-    Parish.find({ ...pScope, active: true }, { name: 1, zone: 1, area: 1 }).sort({ name: 1 }).lean<any[]>(),
+    Zone.find({ ...of.zone, active: true }, { name: 1 }).sort({ name: 1 }).lean<any[]>(),
+    Area.find({ ...of.area, active: true }, { name: 1, zone: 1 }).lean<any[]>(),
+    Parish.find({ ...of.parish, active: true }, { name: 1, zone: 1, area: 1 }).sort({ name: 1 }).lean<any[]>(),
     Report.find({ ...scope, month, year, status: { $ne: "draft" } }, { type: 1, zone: 1, area: 1, parish: 1 }).lean<any[]>(),
     Remittance.find({ ...scope, month, year, kind: "yst" }).lean<any[]>(),
     Remittance.find({ ...scope, month, year, kind: "levy" }).lean<any[]>(),
   ]);
 
   const zoneIds = new Set(parishes.map((p) => String(p.zone)));
-  const sz = Object.keys(scope).length ? zones.filter((z) => zoneIds.has(String(z._id))) : zones;
+  const sz = isProvincial(user) ? zones : zones.filter((z) => zoneIds.has(String(z._id)));
   const doneP = new Set(reports.filter((r) => r.type === "parish").map((r) => String(r.parish)));
   const doneA = new Set(reports.filter((r) => r.type === "area").map((r) => String(r.area)));
   const doneZ = new Set(reports.filter((r) => r.type === "zone").map((r) => String(r.zone)));

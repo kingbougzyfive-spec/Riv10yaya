@@ -51,7 +51,10 @@ export function finish(head: string[], rows: Cell[][]): Table {
 
 export function parishRegister(parishes: any[], users: any[], n: Names): Table {
   const admin = new Map<string, any>();
-  for (const u of [...users].filter((u) => u.role === "parish_admin" && u.active !== false && u.parish).sort((a, b) => String(a.name).localeCompare(String(b.name)))) if (!admin.has(id(u.parish))) admin.set(id(u.parish), u);
+  // An administrator can be in charge of several parishes (parishes[]); older accounts hold one (parish).
+  for (const u of [...users].filter((u) => u.role === "parish_admin" && u.active !== false).sort((a, b) => String(a.name).localeCompare(String(b.name)))) {
+    for (const pid of (Array.isArray(u.parishes) && u.parishes.length ? u.parishes : u.parish ? [u.parish] : [])) if (!admin.has(id(pid))) admin.set(id(pid), u);
+  }
   const rows = parishes.map((p) => [id(p._id), p.name, n.zone.get(id(p.zone)) ?? "", p.area ? n.area.get(id(p.area)) ?? "" : "(directly under zone)", p.address ?? "", p.active === false ? "Inactive" : "Active", stamp(p.createdAt), admin.get(id(p._id))?.name ?? "", admin.get(id(p._id))?.phone ?? ""] as Cell[]);
   rows.sort((a, b) => String(a[2]).localeCompare(String(b[2])) || String(a[3]).localeCompare(String(b[3])) || String(a[1]).localeCompare(String(b[1])) || String(a[0]).localeCompare(String(b[0])));
   return finish(["Record ID", "Parish", "Zone", "Area", "Address", "Status", "Registered on", "Administrator", "Administrator phone"], rows);

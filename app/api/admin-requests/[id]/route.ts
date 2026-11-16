@@ -67,6 +67,7 @@ export const PATCH = handle(async (req, ctx: { params: Promise<{ id: string }> }
   const u = await User.create({
     name: r.name, email: r.email, phone: r.phone || undefined, role, passwordHash: r.passwordHash,
     zone: zoneId, area: r.level === "zone" ? undefined : areaId || undefined, parish: r.level === "parish" ? parishId || undefined : undefined,
+    zones: r.level === "zone" ? [zoneId] : [], areas: r.level === "area" && areaId ? [areaId] : [], parishes: r.level === "parish" && parishId ? [parishId] : [],
     mustChangePassword: false, // they chose this password themselves
   });
   r.status = "approved"; r.reviewedBy = actor.name; r.reviewedAt = new Date(); r.userId = u._id;
