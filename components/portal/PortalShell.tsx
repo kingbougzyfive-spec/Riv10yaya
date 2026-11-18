@@ -1,5 +1,5 @@
 "use client";
-import { Bell, ClipboardList, FileCheck, History, LayoutDashboard, QrCode, Wallet } from "lucide-react";
+import { Bell, ClipboardCheck, ClipboardList, Link2, FileCheck, History, LayoutDashboard, QrCode, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 
@@ -8,6 +8,8 @@ const NAV = [
   { href: "/portal/remittance", label: "Remittance", icon: Wallet },
   { href: "/portal/payment-evidence", label: "Payment evidence", icon: FileCheck },
   { href: "/portal/monthly-report", label: "Monthly report", icon: ClipboardList },
+  { href: "/admin/links", label: "Fill-in links", icon: Link2 },
+  { href: "/admin/event-records", label: "Event records", icon: ClipboardCheck },
   { href: "/portal/attendance", label: "Attendance", icon: QrCode },
   { href: "/portal/history", label: "History", icon: History },
   { href: "/portal/notifications", label: "Notifications", icon: Bell },

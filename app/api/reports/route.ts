@@ -3,7 +3,7 @@ import { handle, audit } from "@/lib/api";
 import { ApiError, requireApiUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { PERMS } from "@/lib/rbac";
-import { activitySchema, contactSchema, FIELDS, periodSchema } from "@/lib/report-config";
+import { reportDraftSchema, reportSubmitSchema, saveReportDraft, submitReport } from "@/lib/report-submit";
 import { areaRollup, zoneRollup } from "@/lib/rollup";
 import { MONTHS } from "@/lib/money";
 import { adminsOf, notifyUsers } from "@/lib/notify";
@@ -53,61 +53,19 @@ export const GET = handle(async (req) => {
   };
 });
 
-const submitSchema = periodSchema.extend({ contact: contactSchema, activity: z.record(z.unknown()) });
-
 export const POST = handle(async (req) => {
   const user = await requireApiUser(PERMS.reportSubmit);
-  const body = submitSchema.parse(await req.json());
+  const body = reportSubmitSchema.parse(await req.json());
   const id = await resolveIdentity(user);
   if (!id) throw new ApiError(400, "Your account isn't linked to a zone, area or parish yet.");
-  const activity = activitySchema([...FIELDS[id.type]]).parse(body.activity); // blank mandatory fields are rejected, never read as 0
-
-  const { Report, Remittance } = await getDb();
-  const key = { type: id.type, zone: id.zone, area: id.area, parish: id.parish, month: body.month, year: body.year };
-  const existing = await Report.findOne(key);
-  if (existing && existing.status !== "draft") throw new ApiError(409, "This report has already been submitted for that month.");
-
-  let remittance: string | undefined;
-  let rollup: unknown;
-  if (id.type === "parish") {
-    const y = await Remittance.findOne({ parish: id.parish, month: body.month, year: body.year, kind: "yst" }, { _id: 1 }).lean<any>();
-    if (!y) throw new ApiError(400, "Please complete the financial section (remittance and evidence) first, then submit the activity report.");
-    remittance = String(y._id);
-  } else if (id.type === "area") rollup = await areaRollup(id.area!, body.month, body.year);
-  else rollup = await zoneRollup(id.zone, body.month, body.year);
-
-  // A saved draft is promoted in place (same report ID); otherwise a new report is created.
-  const doc = existing ?? new Report({ ...key, reportId: reportRef(id.type) });
-  doc.set({ status: "submitted", revision: 1, names: id.names, contact: body.contact, activity, rollup, remittance, submittedBy: user.id, submittedAt: new Date() });
-  await doc.save();
-  await audit(user, `report.submit.${id.type}`, `${id.names.parish ?? id.names.area ?? id.names.zone} ${body.month}/${body.year}`, undefined, req);
-  // Tell the level above (and the provincial office for zone reports); the submitter gets a receipt.
-  const who = id.names.parish ?? id.names.area ?? id.names.zone;
-  const above = id.type === "parish" ? await adminsOf({ area: id.area, zone: id.zone }) : id.type === "area" ? await adminsOf({ zone: id.zone }) : (await (await getDb()).User.find({ role: "provincial_admin", active: true }, { _id: 1 }).lean<any[]>()).map((u) => String(u._id));
-  const when = `${MONTHS[body.month - 1]} ${body.year}`;
-  await notifyUsers(above.filter((x) => x !== user.id), { title: `Report submitted: ${who} · ${when}`, body: `${doc.reportId} is ready for review.`, link: "/admin/reports", event: "report_submitted" });
-  await notifyUsers([user.id], { title: `Your report was submitted · ${when}`, body: `Reference ${doc.reportId}. You'll be told if anything needs revising.`, link: "/admin/reports", event: "report_submitted" });
-  return { id: String(doc._id), reportId: doc.reportId };
+  return submitReport({ id: user.id, byName: user.name, audit: user }, id, body, req);
 });
 
-const draftSchema = periodSchema.extend({ contact: z.object({ fullName: z.string().max(120).optional(), phone: z.string().max(30).optional(), altPhone: z.string().max(30).optional() }).default({}), activity: z.record(z.unknown()).default({}) });
-
-/** Save progress without submitting. Nothing partial is validated or counted as submitted. */
+/** Save progress without submitting. */
 export const PUT = handle(async (req) => {
   const user = await requireApiUser(PERMS.reportSubmit);
-  const body = draftSchema.parse(await req.json());
+  const body = reportDraftSchema.parse(await req.json());
   const id = await resolveIdentity(user);
   if (!id) throw new ApiError(400, "Your account isn't linked to a zone, area or parish yet.");
-  const allowed = new Set(FIELDS[id.type].map((f) => f.key));
-  const activity: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(body.activity)) if (allowed.has(k) && (typeof v === "string" || typeof v === "number" || v === null)) activity[k] = typeof v === "string" ? v.slice(0, 5000) : v;
-  const { Report } = await getDb();
-  const key = { type: id.type, zone: id.zone, area: id.area, parish: id.parish, month: body.month, year: body.year };
-  const existing = await Report.findOne(key);
-  if (existing && existing.status !== "draft") throw new ApiError(409, "This report has already been submitted. Use Revise instead.");
-  const doc = existing ?? new Report({ ...key, reportId: reportRef(id.type) });
-  doc.set({ status: "draft", names: id.names, contact: body.contact, activity, submittedBy: user.id });
-  doc.markModified("activity");
-  await doc.save();
-  return { ok: true, savedAt: new Date().toISOString() };
+  return saveReportDraft({ id: user.id, byName: user.name, audit: user }, id, body);
 });

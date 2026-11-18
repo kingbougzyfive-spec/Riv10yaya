@@ -15,11 +15,14 @@ type Ctx = any;
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** `mode` lets the parish portal show the two halves on their own pages: the remittance (finance) or the activity report. */
-export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittance", reportHref = "/portal/monthly-report" }: { mode?: "all" | "remittance" | "report"; remittanceHref?: string; reportHref?: string }) {
+/** Where the wizard sends and fetches things. The signed-in portal uses the defaults; a password-protected fill-in link supplies its own addresses. */
+export type WizardEndpoints = { context: (month: number, year: number) => string; remittance: string; report: string; evidence?: string };
+
+export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittance", reportHref = "/portal/monthly-report", endpoints, fixedPeriod }: { mode?: "all" | "remittance" | "report"; remittanceHref?: string; reportHref?: string; endpoints?: WizardEndpoints; fixedPeriod?: { month: number; year: number } }) {
   const toast = useToast();
   const router = useRouter();
   const now = new Date();
-  const [period, setPeriod] = useState({ month: now.getMonth() + 1, year: now.getFullYear() });
+  const [period, setPeriod] = useState(fixedPeriod ?? { month: now.getMonth() + 1, year: now.getFullYear() });
   const [ctx, setCtx] = useState<Ctx>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [busy, setBusy] = useState(false);
@@ -31,7 +34,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
   const load = useCallback(async () => {
     setCtx(null);
     try {
-      const c = await api(`/api/reports/context?month=${period.month}&year=${period.year}`);
+      const c = await api(endpoints ? endpoints.context(period.month, period.year) : `/api/reports/context?month=${period.month}&year=${period.year}`);
       setCtx(c);
       if (c.draft) {
         setAct((a) => (Object.keys(a).length ? a : Object.fromEntries(Object.entries(c.draft.activity ?? {}).map(([k, v]) => [k, String(v ?? "")]))));
@@ -59,7 +62,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
     if (!fin.evidenceId) return toast.err("Please upload your payment evidence.");
     setBusy(true);
     try {
-      await api("/api/remittances", { method: "POST", json: {
+      await api(endpoints?.remittance ?? "/api/remittances", { method: "POST", json: {
         ...period, offering: Number(fin.offering), paidAt: fin.paidAt, reference: fin.reference, evidenceId: fin.evidenceId, remarks: fin.remarks,
         ...(fin.amountPaid ? { amountPaid: Number(fin.amountPaid) } : {}),
         levies: levies.filter((l) => l.description || l.amount).map((l) => ({ category: l.category, description: l.description, amount: Number(l.amount), paidAt: l.paidAt, reference: l.reference, ...(l.evidenceId ? { evidenceId: l.evidenceId } : {}) })),
@@ -73,7 +76,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
   async function saveDraft() {
     setBusy(true);
     try {
-      await api("/api/reports", { method: "PUT", json: { ...period, contact, activity: Object.fromEntries(Object.entries(act).map(([k, v]) => { const f = fields.find((x) => x.key === k); return [k, f?.kind === "int" ? (v.trim() === "" ? null : Number(v)) : v]; })) } });
+      await api(endpoints?.report ?? "/api/reports", { method: "PUT", json: { ...period, contact, activity: Object.fromEntries(Object.entries(act).map(([k, v]) => { const f = fields.find((x) => x.key === k); return [k, f?.kind === "int" ? (v.trim() === "" ? null : Number(v)) : v]; })) } });
       toast.ok("Draft saved. You can finish it later. It isn't submitted yet.");
     } catch (e: any) { toast.err(e.message); }
     setBusy(false);
@@ -93,14 +96,14 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
     }
     if (!contact.fullName.trim() || !contact.phone.trim()) return toast.err("Please complete the Administrator's Contact Information section.");
     setBusy(true);
-    try { await api("/api/reports", { method: "POST", json: { ...period, contact, activity } }); toast.ok("Report submitted. Thank you!"); await load(); router.refresh(); }
+    try { await api(endpoints?.report ?? "/api/reports", { method: "POST", json: { ...period, contact, activity } }); toast.ok("Report submitted. Thank you!"); await load(); router.refresh(); }
     catch (e: any) { toast.err(e.message); }
     setBusy(false);
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3"><PeriodPicker month={period.month} year={period.year} onChange={(month, year) => setPeriod({ month, year })} /></div>
+      {!fixedPeriod && <div className="flex flex-wrap items-center justify-between gap-3"><PeriodPicker month={period.month} year={period.year} onChange={(month, year) => setPeriod({ month, year })} /></div>}
 
       {/* Identity from database ids: names displayed prominently, never typed */}
       <div className="glass grid gap-4 p-5 sm:grid-cols-3">
@@ -154,7 +157,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
                       <div><label className="label">Amount you paid (₦)</label><input className="input" type="number" step="0.01" min={0} value={fin.amountPaid} onChange={(e) => setFin({ ...fin, amountPaid: e.target.value })} placeholder={(required / 100).toFixed(2)} /><p className="hint">Leave blank if you paid the exact amount above.</p></div>
                       <div className="sm:col-span-2"><label className="label">Payment reference</label><input className="input" value={fin.reference} onChange={(e) => setFin({ ...fin, reference: e.target.value })} placeholder="Transfer reference, where available" /></div>
                     </div>
-                    <EvidenceUpload value={fin.evidenceId} onChange={(id) => setFin({ ...fin, evidenceId: id })} />
+                    <EvidenceUpload uploadUrl={endpoints?.evidence} value={fin.evidenceId} onChange={(id) => setFin({ ...fin, evidenceId: id })} />
                     <div><label className="label">Additional financial remarks</label><textarea className="input" rows={2} value={fin.remarks} onChange={(e) => setFin({ ...fin, remarks: e.target.value })} /></div>
                   </div>
                   <div className="glass space-y-3 p-5 sm:p-6">
@@ -165,7 +168,7 @@ export function ReportWizard({ mode = "all", remittanceHref = "/portal/remittanc
                         <select className="input" value={l.category} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, category: e.target.value } : x))}><option value="levy">Levy (set by the province)</option><option value="contribution">Contribution (voluntary)</option></select>
                         <input className="input" placeholder="Description (e.g. Special provincial levy)" value={l.description} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
                         <div className="grid gap-3 sm:grid-cols-3"><input className="input" type="number" placeholder="Amount ₦" value={l.amount} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))} /><input className="input" type="date" max={today()} value={l.paidAt} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, paidAt: e.target.value } : x))} /><input className="input" placeholder="Reference" value={l.reference} onChange={(e) => setLevies(levies.map((x, j) => j === i ? { ...x, reference: e.target.value } : x))} /></div>
-                        <EvidenceUpload label="Evidence (if required)" value={l.evidenceId} onChange={(id) => setLevies(levies.map((x, j) => j === i ? { ...x, evidenceId: id } : x))} />
+                        <EvidenceUpload uploadUrl={endpoints?.evidence} label="Evidence (if required)" value={l.evidenceId} onChange={(id) => setLevies(levies.map((x, j) => j === i ? { ...x, evidenceId: id } : x))} />
                       </div>
                     ))}
                     <button className="btn btn-ghost w-full border-dashed" onClick={() => setLevies([...levies, { category: "levy", description: "", amount: "", paidAt: today(), reference: "", evidenceId: "" }])}><Plus className="h-4 w-4" />Add a levy or contribution</button>

@@ -10,6 +10,8 @@ const COOKIE = "yaya_session";
 const MAX_AGE = 60 * 60 * 12; // 12 hours
 
 async function ensureSecret() { await ensureAppSecret(); return secret(); }
+/** The key used to sign sessions (also signs the short-lived sessions opened with a fill-in link and its password). */
+export const sessionKey = ensureSecret;
 function secret() {
   const s = process.env.APP_SECRET;
   if (!s || s.length < 16) throw new ApiError(500, "APP_SECRET is not configured. It is normally created automatically in the database.");

@@ -67,6 +67,92 @@ const adminRequestSchema = new Schema(
   opts,
 );
 
+/**
+ * A shareable, password-protected form link. An administrator makes one for a unit in their care (a parish's monthly report and remittance,
+ * or an event record) and gives the link and the password to the person who will fill it in. Both are needed: the link alone opens nothing.
+ */
+const fillLinkSchema = new Schema(
+  {
+    /** The secret part of the web address. Kept so the administrator can copy the link again; useless without the password. */
+    token: { type: String, required: true, unique: true, index: true },
+    passwordHash: { type: String, required: true },
+    /** Bumped when the password is reset, which ends every session opened with the old one. */
+    passwordVersion: { type: Number, default: 0 },
+    purpose: { type: String, enum: ["monthly", "event"], required: true },
+    /** The unit the form is for (and its parents). */
+    unitType: { type: String, enum: ["parish", "area", "zone", "province"], required: true },
+    zone: { type: Schema.Types.ObjectId, ref: "Zone" },
+    area: { type: Schema.Types.ObjectId, ref: "Area" },
+    parish: { type: Schema.Types.ObjectId, ref: "Parish" },
+    /** monthly links: the reporting period the form is fixed to. */
+    month: Number,
+    year: Number,
+    /** event links: which event record form. */
+    eventForm: { type: Schema.Types.ObjectId, ref: "EventForm" },
+    label: { type: String, trim: true, maxlength: 80 },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    createdByName: String,
+    expiresAt: { type: Date, required: true, index: true },
+    revokedAt: Date,
+    failedAttempts: { type: Number, default: 0 },
+    lockedUntil: Date,
+    opens: { type: Number, default: 0 },
+    lastOpenedAt: Date,
+    lastFilledBy: { name: String, phone: String },
+    remittanceAt: Date,
+    reportAt: Date,
+    recordAt: Date,
+  },
+  opts,
+);
+
+/** A special event the Super Administrator wants records for: how many men and women came, the total (worked out automatically) and the offering. */
+const eventFormSchema = new Schema(
+  {
+    title: { type: String, required: true, trim: true, maxlength: 120 },
+    description: { type: String, trim: true, maxlength: 600 },
+    eventDate: { type: Date, required: true },
+    endDate: Date,
+    venue: { type: String, trim: true, maxlength: 120 },
+    /** Who submits one record each. province = a single record for the whole event. */
+    level: { type: String, enum: ["parish", "area", "zone", "province"], default: "parish", required: true },
+    collectOffering: { type: Boolean, default: true },
+    /** Extra whole-number counts the Super Administrator wants (for example first timers or salvations). */
+    customFields: { type: [{ key: { type: String, required: true }, label: { type: String, required: true, maxlength: 60 }, _id: false }], default: [] },
+    status: { type: String, enum: ["open", "closed"], default: "open", index: true },
+    closedAt: Date,
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    createdByName: String,
+  },
+  opts,
+);
+
+/** One unit's record for one event form. The total is always men + women, worked out on the server. */
+const eventRecordSchema = new Schema(
+  {
+    form: { type: Schema.Types.ObjectId, ref: "EventForm", required: true, index: true },
+    /** "parish:ID" / "area:ID" / "zone:ID" / "province": one record per unit per form. */
+    unitKey: { type: String, required: true },
+    unitType: { type: String, enum: ["parish", "area", "zone", "province"], required: true },
+    zone: { type: Schema.Types.ObjectId, ref: "Zone", index: true },
+    area: { type: Schema.Types.ObjectId, ref: "Area", index: true },
+    parish: { type: Schema.Types.ObjectId, ref: "Parish", index: true },
+    males: { type: Number, required: true, min: 0, validate: Number.isInteger },
+    females: { type: Number, required: true, min: 0, validate: Number.isInteger },
+    total: { type: Number, required: true, min: 0 },
+    offeringKobo: { type: Number, min: 0, validate: Number.isInteger },
+    extras: { type: Schema.Types.Mixed, default: {} },
+    notes: { type: String, trim: true, maxlength: 600 },
+    submittedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    submittedByName: String,
+    via: { type: String, enum: ["app", "link"], default: "app" },
+    filledBy: { name: String, phone: String },
+    history: { type: [{ at: Date, byName: String, action: String, note: String, _id: false }], default: [] },
+  },
+  opts,
+);
+eventRecordSchema.index({ form: 1, unitKey: 1 }, { unique: true });
+
 const zoneSchema = new Schema(
   {
     /** true only for rows created by the optional "sample data" button, so they can be told apart from (and removed without touching) real records */
@@ -786,12 +872,15 @@ for (const op of ["deleteOne", "deleteMany", "findOneAndDelete"] as const) bankR
 reportingPeriodSchema.pre("deleteOne", refuse("Reporting periods") as any);
 reportingPeriodSchema.pre("deleteMany", refuse("Reporting periods") as any);
 
-export const SYNC_COLLECTIONS = ["AdminRequest", "User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "SheetSyncLog", "AiLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument", "Role", "Permission", "ReportingPeriod", "AdditionalLevy", "Contribution", "PaymentTransaction", "FinancialApproval", "BankReconciliationRecord"] as const;
+export const SYNC_COLLECTIONS = ["FillLink", "EventForm", "EventRecord", "AdminRequest", "User", "Zone", "Area", "Parish", "Site", "Media", "Audit", "SystemConfig", "Remittance", "Report", "Event", "Registration", "Member", "AttendanceSession", "Attendance", "Announcement", "Department", "PasswordReset", "PushSub", "Notification", "NotificationLog", "SheetSyncLog", "AiLog", "Appointment", "Committee", "Task", "Meeting", "GovDocument", "Role", "Permission", "ReportingPeriod", "AdditionalLevy", "Contribution", "PaymentTransaction", "FinancialApproval", "BankReconciliationRecord"] as const;
 /** Collections that stay on the running database only (not copied to backup databases). */
 export const LOCAL_ONLY = ["RateLimit", "ErrorLog"] as const;
 export type ModelName = (typeof SYNC_COLLECTIONS)[number] | (typeof LOCAL_ONLY)[number];
 
 const schemas: Record<ModelName, Schema> = {
+  FillLink: fillLinkSchema,
+  EventForm: eventFormSchema,
+  EventRecord: eventRecordSchema,
   AdminRequest: adminRequestSchema,
   User: userSchema,
   Zone: zoneSchema,

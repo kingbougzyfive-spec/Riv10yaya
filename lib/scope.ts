@@ -93,3 +93,14 @@ export async function scopeLabelOf(u: SessionUser) {
   const bits = [a.zones.length && `${a.zones.length} zone${a.zones.length > 1 ? "s" : ""}`, a.areas.length && `${a.areas.length} area${a.areas.length > 1 ? "s" : ""}`, a.parishes.length && `${a.parishes.length} parish${a.parishes.length > 1 ? "es" : ""}`].filter(Boolean);
   return bits.join(", ");
 }
+
+/** The units someone is in charge of and so expected to report for: assigned units plus everything beneath them (not the parents above, which are only there for context). */
+export async function ownedUnits(u: SessionUser) {
+  const { Area, Parish } = await getDb();
+  const a = assignmentsOf(u);
+  const [areasIn, parishesIn] = await Promise.all([
+    a.zones.length ? Area.find({ zone: { $in: a.zones } }, { _id: 1 }).lean<any[]>() : [],
+    a.zones.length || a.areas.length ? Parish.find({ $or: [...(a.zones.length ? [{ zone: { $in: a.zones } }] : []), ...(a.areas.length ? [{ area: { $in: a.areas } }] : [])] }, { _id: 1 }).lean<any[]>() : [],
+  ]);
+  return { zones: a.zones, areas: [...new Set([...a.areas, ...areasIn.map((x) => String(x._id))])], parishes: [...new Set([...a.parishes, ...parishesIn.map((x) => String(x._id))])] };
+}

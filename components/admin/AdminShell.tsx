@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { UserPlus, ListChecks, Scale, Settings, UsersRound, CalendarClock, FileText, Wallet, Ticket, BarChart3, FileDown, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, ShieldCheck, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
+import { Link2, ClipboardCheck, UserPlus, ListChecks, Scale, Settings, UsersRound, CalendarClock, FileText, Wallet, Ticket, BarChart3, FileDown, Landmark, Send, Sparkles, Banknote, Plug, KeyRound, Megaphone, Network, Building2, CalendarDays, QrCode, UserRound, ClipboardList, Database, History, ShieldCheck, Home, ImageIcon, LayoutDashboard, LogOut, Menu, Palette, Users, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -19,12 +19,15 @@ const ITEMS = [
   { href: "/admin/requests", label: "Admin requests", icon: UserPlus, perm: "users" as const },
   { href: "/admin/members", label: "Members", icon: UserRound, perm: "members" as const },
   { href: "/admin/events", label: "Events", icon: CalendarDays, perm: "attendanceView" as const },
+  { href: "/admin/event-forms", label: "Event record forms", icon: ClipboardCheck, perm: "eventForms" as const },
+  { href: "/admin/event-records", label: "Event records", icon: ClipboardList, perm: "eventRecords" as const },
   { href: "/admin/registrations", label: "Registrations", icon: Ticket, perm: "attendanceView" as const },
   { href: "/admin/attendance", label: "QR Attendance", icon: QrCode, perm: "attendanceView" as const },
   { href: "/admin/remittances", label: "Remittances", icon: Wallet, perm: "finance" as const },
   { href: "/admin/finance", label: "Finance Desk", icon: Banknote, perm: "finance" as const },
   { href: "/admin/reconciliation", label: "Reconciliation", icon: Scale, perm: "finance" as const },
   { href: "/admin/reports", label: "Monthly Reports", icon: ClipboardList, perm: "reports" as const },
+  { href: "/admin/links", label: "Fill-in links", icon: Link2, perm: "fillLinks" as const },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3, perm: "finance" as const },
   { href: "/admin/exports", label: "Reports & Exports", icon: FileDown, perm: "exportAny" as const },
   { href: "/admin/leadership", label: "Leadership", icon: Landmark, perm: "governance" as const },
@@ -51,8 +54,8 @@ export type NavItem = { href: string; label: string; icon: any; group?: string }
 const GROUP_OF: Record<string, string> = {
   "/admin": "Overview", "/admin/analytics": "Overview",
   "/admin/organizations": "People & Structure", "/admin/users": "People & Structure", "/admin/requests": "People & Structure", "/admin/members": "People & Structure", "/admin/leadership": "People & Structure", "/admin/departments": "People & Structure",
-  "/admin/events": "Events", "/admin/registrations": "Events", "/admin/attendance": "Events",
-  "/admin/reports": "Reports & Finance", "/admin/remittances": "Reports & Finance", "/admin/finance": "Reports & Finance", "/admin/reconciliation": "Reports & Finance", "/admin/exports": "Reports & Finance",
+  "/admin/events": "Events", "/admin/event-forms": "Events", "/admin/event-records": "Events", "/admin/registrations": "Events", "/admin/attendance": "Events",
+  "/admin/reports": "Reports & Finance", "/admin/links": "Reports & Finance", "/admin/remittances": "Reports & Finance", "/admin/finance": "Reports & Finance", "/admin/reconciliation": "Reports & Finance", "/admin/exports": "Reports & Finance",
   "/admin/committees": "Governance", "/admin/tasks": "Governance", "/admin/meetings": "Governance", "/admin/documents": "Governance",
   "/admin/announcements": "Communications", "/admin/notifications": "Communications", "/admin/ai-assistant": "Communications", "/admin/site": "Communications", "/admin/media": "Communications",
   "/admin/integrations": "System", "/admin/database": "System", "/admin/settings": "System", "/admin/security": "System", "/admin/audit-logs": "System",

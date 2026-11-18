@@ -33,6 +33,12 @@ export const PERMS = {
   governance: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "auditor"],
   governanceManage: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin"],
   audit: ["super_admin", "auditor"],
+  /** Make password-protected fill-in links for units in their care (the monthly report and remittance, or an event record). */
+  fillLinks: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin"],
+  /** Create and manage special-event record forms (males, females, total, offering). */
+  eventForms: ["super_admin"],
+  /** Fill in, see and summarise event records for the units they are in charge of. */
+  eventRecords: ["super_admin", "provincial_admin", "zonal_admin", "area_admin", "parish_admin", "event_admin", "auditor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export const can = (role: Role, perm: keyof typeof PERMS) => (PERMS[perm] as readonly Role[]).includes(role);
