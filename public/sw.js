@@ -13,7 +13,7 @@
  *    short public allowlist below. Financial and personal data are never stored by the worker.
  *  - Never stores a response marked Cache-Control: no-store or private.
  */
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC = `yaya-static-${VERSION}`;
 const PAGES = `yaya-pages-${VERSION}`;
 const DATA = `yaya-data-${VERSION}`;
