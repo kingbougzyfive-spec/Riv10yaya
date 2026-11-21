@@ -1,7 +1,10 @@
+import { LogoLoader } from "@/components/ui/LogoLoader";
+
+/** Shown while any page is being prepared. It stays invisible for the first moment, so pages that open quickly never flash it. */
 export default function Loading() {
   return (
-    <div className="mx-auto max-w-6xl space-y-5 px-5 py-14" aria-busy="true" aria-label="Loading">
-      <div className="skeleton h-14 w-2/3" /><div className="skeleton h-5 w-1/2" /><div className="grid gap-5 pt-6 sm:grid-cols-3"><div className="skeleton h-44" /><div className="skeleton h-44" /><div className="skeleton h-44" /></div>
+    <div className="grid min-h-[70dvh] place-items-center px-4">
+      <LogoLoader size={132} delayed />
     </div>
   );
 }

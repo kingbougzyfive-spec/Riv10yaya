@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ReportWizard } from "@/components/admin/ReportWizard";
 import { EventRecordFields } from "@/components/event/EventRecordFields";
 import { formatNaira } from "@/lib/money";
+import { LogoLoader } from "@/components/ui/LogoLoader";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/fetcher";
@@ -48,7 +49,7 @@ export default function FillLinkPage() {
     </main>
   );
 
-  if (!info || open === null) return shell(<div className="space-y-3" role="status" aria-label="Loading"><div className="skeleton h-24" /><div className="skeleton h-48" /></div>);
+  if (!info || open === null) return shell(<div className="grid min-h-[50dvh] place-items-center"><LogoLoader size={120} label="Opening your form" delayed /></div>);
 
   if (info.state !== "ok") {
     return shell(
@@ -97,7 +98,7 @@ function EventLink({ base }: { base: string }) {
   const [done, setDone] = useState<any>(null);
   useEffect(() => { api(`${base}/event`).then(setD).catch((e) => setErr(e.message)); }, [base]);
   if (err) return <div className="glass p-6 text-center" role="alert"><p>{err}</p></div>;
-  if (!d) return <div className="skeleton h-64" />;
+  if (!d) return <div className="grid min-h-[40dvh] place-items-center"><LogoLoader size={104} label="Opening the form" delayed /></div>;
   if (done) {
     return (
       <div className="glass space-y-2 p-6 text-center" role="status">

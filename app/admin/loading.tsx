@@ -1,7 +1,10 @@
+import { LogoLoader } from "@/components/ui/LogoLoader";
+
+/** Inside the admin area the menu and header stay put; only the page itself shows the crest while it loads. */
 export default function Loading() {
   return (
-    <div className="space-y-5" aria-busy="true" aria-label="Loading">
-      <div className="skeleton h-9 w-64" /><div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-28" />)}</div><div className="skeleton h-64" />
+    <div className="grid min-h-[55dvh] place-items-center">
+      <LogoLoader size={112} delayed />
     </div>
   );
 }

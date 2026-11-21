@@ -5,6 +5,8 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { SwRegister } from "@/components/SwRegister";
 import { getSite } from "@/lib/cms";
+import { BootLoader } from "@/components/ui/BootLoader";
+import { LOADER_LOGO } from "@/components/ui/LogoLoader";
 import { appUrl } from "@/lib/ids";
 import { themeVars } from "@/lib/site-types";
 import { SPLASH } from "@/lib/splash";
@@ -44,8 +46,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { site } = await getSite();
   return (
     <html lang="en" style={themeVars(site) as React.CSSProperties} suppressHydrationWarning>
-      <head><script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem("yaya-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}` }} /></head>
+      <head><script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem("yaya-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}` }} />
+        {/* The crest loader is ready the instant the page starts, and lifts by itself if scripts are switched off. */}
+        <link rel="preload" as="image" href={LOADER_LOGO} type="image/webp" />
+        <noscript><style>{`.ll-boot{display:none!important}`}</style></noscript>
+      </head>
       <body>
+        <BootLoader />
         <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-xl focus:bg-brand focus:px-4 focus:py-2 focus:font-bold focus:text-[#04130d]">Skip to content</a>
         <Aurora />
         <ToastProvider><ConfirmProvider>{children}</ConfirmProvider></ToastProvider>
